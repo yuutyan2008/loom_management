@@ -1,0 +1,2 @@
+class ColorNumber < ApplicationRecord
+end
