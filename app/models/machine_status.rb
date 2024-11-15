@@ -1,0 +1,2 @@
+class MachineStatus < ApplicationRecord
+end
