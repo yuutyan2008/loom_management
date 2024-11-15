@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_11_15_033923) do
+ActiveRecord::Schema[7.2].define(version: 2024_11_15_040912) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -60,6 +60,18 @@ ActiveRecord::Schema[7.2].define(version: 2024_11_15_033923) do
     t.index ["color_number_id"], name: "index_orders_on_color_number_id"
     t.index ["company_id"], name: "index_orders_on_company_id"
     t.index ["product_number_id"], name: "index_orders_on_product_number_id"
+  end
+
+  create_table "process_estimates", force: :cascade do |t|
+    t.bigint "work_process_definition_id"
+    t.bigint "machine_type_id"
+    t.string "earliest_completion_estimate"
+    t.string "latest_completion_estimate"
+    t.date "update_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["machine_type_id"], name: "index_process_estimates_on_machine_type_id"
+    t.index ["work_process_definition_id"], name: "index_process_estimates_on_work_process_definition_id"
   end
 
   create_table "product_numbers", force: :cascade do |t|
