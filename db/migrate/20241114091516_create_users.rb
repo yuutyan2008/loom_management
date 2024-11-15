@@ -4,7 +4,7 @@ class CreateUsers < ActiveRecord::Migration[7.2]
       t.string :name
       t.string :email
       t.string :phone_number
-      t.bigint :company_id
+      t.references :company
       t.boolean :admin
       t.timestamps
     end
