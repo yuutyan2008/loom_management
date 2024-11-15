@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_11_15_040912) do
+ActiveRecord::Schema[7.2].define(version: 2024_11_15_045554) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -24,6 +24,17 @@ ActiveRecord::Schema[7.2].define(version: 2024_11_15_040912) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "machine_assignments", force: :cascade do |t|
+    t.bigint "work_process_id"
+    t.bigint "machine_id"
+    t.bigint "machine_status_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["machine_id"], name: "index_machine_assignments_on_machine_id"
+    t.index ["machine_status_id"], name: "index_machine_assignments_on_machine_status_id"
+    t.index ["work_process_id"], name: "index_machine_assignments_on_work_process_id"
   end
 
   create_table "machine_statuses", force: :cascade do |t|
