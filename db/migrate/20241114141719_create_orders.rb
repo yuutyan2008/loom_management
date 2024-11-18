@@ -4,8 +4,8 @@ class CreateOrders < ActiveRecord::Migration[7.2]
       t.references :company
       t.references :product_number
       t.references :color_number
-      t.string :roll_count
-      t.string :quantity
+      t.integer :roll_count
+      t.integer :quantity
       t.date :start_date
       t.timestamps
     end

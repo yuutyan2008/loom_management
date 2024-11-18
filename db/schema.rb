@@ -38,7 +38,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_11_15_062958) do
   end
 
   create_table "machine_statuses", force: :cascade do |t|
-    t.integer "name"
+    t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -63,8 +63,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_11_15_062958) do
     t.bigint "company_id"
     t.bigint "product_number_id"
     t.bigint "color_number_id"
-    t.string "roll_count"
-    t.string "quantity"
+    t.integer "roll_count"
+    t.integer "quantity"
     t.date "start_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -76,8 +76,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_11_15_062958) do
   create_table "process_estimates", force: :cascade do |t|
     t.bigint "work_process_definition_id"
     t.bigint "machine_type_id"
-    t.string "earliest_completion_estimate"
-    t.string "latest_completion_estimate"
+    t.integer "earliest_completion_estimate"
+    t.integer "latest_completion_estimate"
     t.date "update_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -103,14 +103,14 @@ ActiveRecord::Schema[7.2].define(version: 2024_11_15_062958) do
   end
 
   create_table "work_process_definitions", force: :cascade do |t|
-    t.integer "name"
+    t.string "name"
     t.integer "sequence"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
   create_table "work_process_statuses", force: :cascade do |t|
-    t.integer "name"
+    t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
