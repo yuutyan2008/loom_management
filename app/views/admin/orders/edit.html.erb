@@ -1,0 +1,52 @@
+<%# 発注済み商品の編集 %>
+<h1><%= t('view.users.admin.edit.title') %></h1>
+
+<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+<% if @order.errors.any? %>
+
+<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+<div id="error_explanation">
+  <h2><%= t('activerecord.errors.models.user.prohibited', count: @order.errors.count) %></h2>
+  <ul>
+    <% @order.errors.full_messages.each do |message| %>
+    <li><%= message %></li>
+    <% end %>
+  </ul>
+</div>
+<% end %>
+
+<%= form_with model: @order, url: admin_order_path(@order), local: true do |f| %>
+<div>
+  <%= f.label :company.name %>
+  <%= f.text_field :company_id %>
+</div>
+
+<div>
+  <%= f.label :product_number_id %>
+  <%= f.text_field :product_number_id %>
+</div>
+
+<div>
+  <%= f.label :color_number_id %>
+  <%= f.text_field :color_number_id %>
+</div>
+
+<div>
+  <%= f.label :roll_count %>
+  <%= f.text_field :roll_count %>
+</div>
+
+<div>
+  <%= f.label :quantity %>
+  <%= f.text_field :quantity %>
+</div>
+
+<div>
+  <%= f.label :quantity %>
+  <%= f.text_field :quantity %>
+</div>
+
+<%= f.submit t('helpers.submit.update'), id: 'update-order' %>
+<% end %>
+
+<%= link_to t('common.back'), admin_orders_path, id: 'back' %>

@@ -1,0 +1,80 @@
+<h1><%= t('view.users.admin.new.title') %></h1>
+
+<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+<% if @work_processes.errors.any? %>
+
+<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+<div id="error_explanation">
+  <h2><%= t('activerecord.errors.models.user.prohibited', count: @work_processes.errors.count) %></h2>
+  <ul>
+    <% @work_processes.errors.full_messages.each do |message| %>
+    <li><%= message %></li>
+    <% end %>
+  </ul>
+</div>
+<% end %>
+
+
+<%= form_with model: @work_processes, url: admin_orders_path, local: true do |f| %>
+<table>
+
+  <tbody>
+    <!-- 会社名 -->
+    <tr>
+      <td>会社名</td>
+      <td>
+        <%# セレクトボックスで会社を選択 %>
+        <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "会社を選択" %>
+      </td>
+    </tr>
+
+    <!-- 品番 -->
+    <tr>
+      <td>品番</td>
+      <td>
+        <%# テキストフィールドで品番を入力 %>
+        <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, placeholder: "品番を入力してください" %></td>
+    </tr>
+
+    <!-- 色番 -->
+    <tr>
+      <td>色番</td>
+      <td>
+        <%# テキストフィールドで色番を入力 %>
+        <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, placeholder: "色番を入力してください" %>
+      </td>
+    </tr>
+
+    <!-- 反数 -->
+    <tr>
+      <td>反数</td>
+      <td>
+        <%# 数値フィールドで反数を入力 %>
+        <%= f.number_field :roll_count, min: 1, placeholder: "反数を入力してください" %>
+      </td>
+    </tr>
+
+    <!-- 数量 -->
+    <tr>
+      <td>数量</td>
+      <td>
+        <%# 数値フィールドで数量を入力 %>
+        <%= f.number_field :quantity, min: 1, placeholder: "数量を入力してください" %>
+      </td>
+    </tr>
+    <!-- 発注日 -->
+    <tr>
+      <td>発注日</td>
+      <td>
+        <%= f.date_field :start_date, placeholder: "発注日を選択してください" %>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 提出ボタン -->
+
+<%= f.submit "発注する", id: 'update-order' %>
+<%= link_to t('common.back'), admin_orders_path, id: 'back' %>
+
+<% end %>

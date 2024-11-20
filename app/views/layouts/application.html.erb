@@ -1,23 +1,48 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title><%= content_for(:title) || "Loom Management" %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <%= csrf_meta_tags %>
-    <%= csp_meta_tag %>
 
-    <%= yield :head %>
+<head>
+  <title><%= content_for(:title) || "Loom Management" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
 
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_importmap_tags %>
-  </head>
+  <%= yield :head %>
 
-  <body>
-    <%= yield %>
-  </body>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.png" type="image/png">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon.png">
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_importmap_tags %>
+  <%# turboで削除機能追加 %>
+  <%= javascript_include_tag "turbo", type: "module" %>
+</head>
+
+<body>
+  <%# Flashメッセージのデザインをカスタムクラスで適用 %>
+  <% flash.each do |key, value| %>
+  <div class="flash-message <%= key %>">
+    <%= value %>
+    <button class="close-button" onclick="this.parentElement.style.display='none'">×</button>
+  </div>
+  <% end %>
+
+  <%# グローバルナビゲーションの作成 %>
+  <%# プレーンHTMLとCSSを使用したグローバルナビゲーション %>
+  <nav class="navbar">
+    <div class="navbar-brand">App</div>
+    <div class="navbar-toggle" onclick="toggleMenu()">☰</div>
+    <ul class="navbar-menu" id="navbarMenu">
+
+      <%# <><%= link_to "機屋一覧", admin_machines_path %>
+      <li><%= link_to "発注一覧", admin_orders_path, id: "orders-index" %></li>
+      <li><%= link_to "発注する", new_admin_order_path, id: "new-admin-order-label" %></li>
+
+    </ul>
+  </nav>
+  <%= yield %>
+</body>
+
 </html>

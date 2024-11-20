@@ -1,0 +1,36 @@
+<%# 発注済み商品一覧 %>
+<h1><%= t('view.users.admin.index.title') %></h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>会社名</th>
+      <th>品番</th>
+      <th>色番</th>
+      <th>現在の工程</th>
+      <th>機屋の予定納期</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @work_processes.each do |work_process| %>
+    <tr>
+      <td><%= work_process.order.company.name %></td>
+      <td><%= work_process.order.product_number.number %></td>
+      <td><%= work_process.order.color_number.color_code %></td>
+      <td>
+        <%# order.work_processesが複数存在するため全てを表示する %>
+        <%= work_process.work_process_definition&.name.presence || "未設定" %>
+      </td>
+      <td><%= work_process.factory_estimated_completion_date %></td>
+
+
+      <td>
+        <%= link_to t('common.show'), admin_order_path(work_process.order), class: 'show-order' %> |
+        <%= link_to t('common.edit'), edit_admin_order_path(work_process.order), class: "edit-order" %> |
+        |<%= link_to '削除', admin_order_path(work_process.order) ,method: :post,
+        data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"} %>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>

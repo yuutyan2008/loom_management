@@ -1,0 +1,48 @@
+<%# 発注済み商品の詳細 %>
+<h1><%= t('view.order.admin.show.title') %></h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>企業名</th>
+      <th>機械番号</th>
+      <th>機械の種類</th>
+      <th>品番</th>
+      <th>色番</th>
+      <th>反数</th>
+      <th>数量</th>
+      <th>現在の工程</th>
+      <th>現在の工程の状況</th>
+      <th>開始日</th>
+      <th>機屋の最短予定納期</th>
+      <th>機屋の最長予定納期</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><%= @order.company.name %></td>
+      <td><%= @order.product_number.number %></td>
+      <td><%= @order.color_number.color_code %></td>
+      <td><%= @order.roll_count %></td>
+      <td><%= @order.quantity %></td>
+      <td>
+        <%# machine.work_processesが複数存在するため全てを表示する %>
+        <%= @order.work_processes.order(updated_at: :desc).first&.work_process_definition&.name %>
+      </td>
+      <td>
+        <%# machine.work_processesが複数存在するため全てを表示する %>
+        <%= @order.work_processes.order(updated_at: :desc).first&.work_process_status&.name %>
+      </td>
+      <td><%= @order.work_processes.order(updated_at: :desc).first&.start_date %></td>
+      <td><%= @order.work_processes.order(updated_at: :desc).first&.factory_estimated_completion_date %></td>
+      <td>
+        <%= link_to t('common.show'), admin_order_path(@order), class: 'show-order' %> |
+        <%= link_to t('common.edit'), edit_admin_order_path(@order), class: "edit-order" %> |
+        |<%= link_to '削除', admin_order_path(@order) ,method: :post,
+        data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"} %>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<%= link_to t('common.back'), admin_orders_path, id: 'back' %>
