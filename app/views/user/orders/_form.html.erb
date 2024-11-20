@@ -1,0 +1,96 @@
+<%= form_with(model: [:user, @order], local: true) do |form| %>
+    <% if @order.errors.any? %>
+        <div class="alert alert-danger">
+        <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
+        <ul>
+            <% @order.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+            <% end %>
+        </ul>
+        </div>
+    <% end %>
+
+    <div class="form-group">
+        <%= form.label :company_id, "会社名" %>
+        <%= form.collection_select :company_id, Company.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :product_number_id, "品番" %>
+        <%= form.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "選択してください" }, { class: "form-control" } %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :color_number_id, "色番" %>
+        <%= form.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "選択してください" }, { class: "form-control" } %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :roll_count, "ロール数" %>
+        <%= form.number_field :roll_count, class: "form-control" %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :quantity, "数量" %>
+        <%= form.number_field :quantity, class: "form-control" %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :start_date, "開始日" %>
+        <%= form.date_select :start_date, { start_year: 2020, end_year: 2030 }, { class: "form-control" } %>
+    </div>
+
+    <h3>作業工程</h3>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>作業工程定義</th>
+            <th>ステータス</th>
+            <th>開始日</th>
+        </tr>
+        </thead>
+        <tbody>
+        <%= form.fields_for :work_processes do |wp_form| %>
+            <tr class="nested-fields">
+                <td>
+                    <%= form.collection_select :work_process_definition_id, WorkProcessDefinition.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+                </td>
+                <td>
+                    <%= form.collection_select :work_process_status_id, WorkProcessStatus.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+                </td>
+                <td>
+                    <%= form.date_select :start_date, { start_year: 2024, end_year: 2030 }, { class: "form-control" } %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>織機の稼働状況</h3>
+    <table class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>織機名</th>
+                <th>稼働状況</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%= form.fields_for :machines do |m_form| %>
+            <tr class="nested-fields">
+                <td>
+                    <%= form.collection_select :machine_id, Machine.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+                </td>
+                <td>
+                    <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+    <% end %>
+
+    <% if order.new_record? %>
+        <%= form.submit '作成', class: "btn btn-primary" %>
+    <% else %>
+        <%= form.submit '更新', class: "btn btn-primary" %>
+    <% end %>
+<% end %>
