@@ -4,4 +4,5 @@ class WorkProcess < ApplicationRecord
   belongs_to :work_process_definition
   belongs_to :work_process_status
   has_many :machine_assignments
+  has_many :machines, through: :machine_assignments
 end

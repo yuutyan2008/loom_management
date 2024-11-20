@@ -1,0 +1,31 @@
+<%= form_with(model: [:user, @machine], local: true) do |form| %>
+    <% if @machine.errors.any? %>
+        <div class="alert alert-danger">
+        <h4><%= pluralize(@machine.errors.count, "error") %> prohibited this machine from being saved:</h4>
+        <ul>
+            <% @machine.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+            <% end %>
+        </ul>
+        </div>
+    <% end %>
+
+    <div class="form-group">
+        <%= form.label :name, "織機名:" %>
+        <%= form.text_field :name, class: "form-control" %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :machine_type_id, "織機のタイプ:" %>
+        <%= form.collection_select :machine_type_id, MachineType.all, :id, :name, { prompt: "Select Machine Type" }, { class: "form-control" } %>
+    </div>
+
+    <div class="form-group">
+        <%= form.label :company_id, "会社名:" %>
+        <%= form.collection_select :company_id, Company.all, :id, :name, { prompt: "Select Company" }, { class: "form-control" } %>
+    </div>
+
+    <div class="actions">
+        <%= form.submit '更新', class: "btn btn-primary" %>
+    </div>
+<% end %>
