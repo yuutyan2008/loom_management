@@ -8,7 +8,6 @@ Rails.application.routes.draw do
   # 管理者用の名前空間
   namespace :admin do
     root to: 'home#index' # 管理者のホームページ
-    resources :tasks
     resources :machines
     resources :orders
     resources :users

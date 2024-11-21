@@ -35,13 +35,21 @@
     <div class="navbar-brand">App</div>
     <div class="navbar-toggle" onclick="toggleMenu()">☰</div>
     <ul class="navbar-menu" id="navbarMenu">
-
       <%# <><%= link_to "機屋一覧", admin_machines_path %>
       <li><%= link_to "発注一覧", admin_orders_path, id: "orders-index" %></li>
       <li><%= link_to "発注する", new_admin_order_path, id: "new-admin-order-label" %></li>
-
     </ul>
   </nav>
+
+  <nav>
+    <ul>
+      <li><%= link_to 'ホーム', user_root_path %></li>
+      <li><%= link_to 'ユーザー情報', user_user_path(User.first) %></li>
+      <li><%= link_to '織機一覧', user_machines_path %></li>
+      <li><%= link_to '受注管理', user_orders_path %></li>
+    </ul>
+  </nav>
+
   <%= yield %>
 </body>
 
