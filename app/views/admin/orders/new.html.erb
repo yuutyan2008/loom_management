@@ -1,13 +1,13 @@
-<h1><%= t('view.users.admin.new.title') %></h1>
+<h1>発注フォーム</h1>
 
 <%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
-<% if @work_processes.errors.any? %>
+<% if @order.errors.any? %>
 
 <%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
 <div id="error_explanation">
-  <h2><%= t('activerecord.errors.models.user.prohibited', count: @work_processes.errors.count) %></h2>
+  <h2><%= "#{@order.errors.count} 件のエラーが発生しました" %></h2>
   <ul>
-    <% @work_processes.errors.full_messages.each do |message| %>
+    <% @order.errors.full_messages.each do |message| %>
     <li><%= message %></li>
     <% end %>
   </ul>
@@ -15,7 +15,7 @@
 <% end %>
 
 
-<%= form_with model: @work_processes, url: admin_orders_path, local: true do |f| %>
+<%= form_with model: @order, url: admin_orders_path, local: true do |f| %>
 <table>
 
   <tbody>
@@ -69,12 +69,19 @@
         <%= f.date_field :start_date, placeholder: "発注日を選択してください" %>
       </td>
     </tr>
+
+    <tr>
+      <td>機屋の予定納期</td>
+      <td>
+        <%= f.date_field :factory_estimated_completion_date, placeholder: "機屋の予定納期を選択してください" %>
+      </td>
+    </tr>
   </tbody>
 </table>
 
 <!-- 提出ボタン -->
 
 <%= f.submit "発注する", id: 'update-order' %>
-<%= link_to t('common.back'), admin_orders_path, id: 'back' %>
+<%= link_to "戻る", admin_orders_path, id: 'back' %>
 
 <% end %>

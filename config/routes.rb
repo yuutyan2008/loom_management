@@ -14,7 +14,6 @@ Rails.application.routes.draw do
   #
   namespace :admin do
     resources :orders
-    resources :machines, only: %i[index show edit update destroy]
+    resources :machines
   end
-
 end
