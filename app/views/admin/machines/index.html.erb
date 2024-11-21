@@ -1,0 +1,42 @@
+<%# 発注済み商品一覧 %>
+<h1><%= t('view.users.admin.index.title') %></h1>
+<table>
+  <thead>
+    <tr>
+      <th>企業名</th>
+      <th>機械番号</th>
+      <th>商品番号</th>
+      <th>機械の稼働状況</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @machines.each do |machine| %>
+    <tr>
+      <td><%= machine.company.name %></td>
+      <td><%= machine.machine_type.name %></td>
+      <td>
+        <%# machine.work_processesが複数存在するため全てを表示する %>
+        <% machine.work_processes.each do |process| %>
+        <p><%= process.order.product_number_id %></p>
+        <% end %>
+      </td>
+      <td>
+        <% machine.machine_assignments.each do |process| %>
+        <p><%= process.work_process_id %></p>
+        <% end %>
+      </td>
+      <td>
+
+        <%= link_to t('common.show'), admin_machine_path(machine), class: 'show-machine' %> |
+        <%# <%= link_to t('common.destroy'), admin_machine_path(machine), method: :delete, data: { confirm: t('common.confirm_destroy') }, class: "destroy-machine" %>
+        <%= link_to '削除', admin_machine_path(machine), method: :post,
+  data: {
+    turbo_method: :delete,
+    turbo_confirm: "Are you sure?"
+}, class: "btn btn-outline-dark" %>
+
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>

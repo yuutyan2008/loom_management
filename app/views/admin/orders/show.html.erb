@@ -1,6 +1,6 @@
 <h1>発注済み商品の詳細</h1>
 
-<table>
+<table border="1" cellpadding="5" cellspacing="0">
   <thead>
     <tr>
       <th>企業名</th>
@@ -12,35 +12,32 @@
       <th>数量</th>
       <th>現在の工程</th>
       <th>現在の工程の状況</th>
-      <th>開始日</th>
+      <th>作業開始日</th>
       <th>機屋の最短予定納期</th>
       <th>機屋の最長予定納期</th>
     </tr>
   </thead>
   <tbody>
+    <%# 各工程を行単位で表示する %>
+    <% @order.work_processes.each do |process| %>
     <tr>
       <td><%= @order.company.name %></td>
       <td><%= @order.product_number.number %></td>
       <td><%= @order.color_number.color_code %></td>
       <td><%= @order.roll_count %></td>
       <td><%= @order.quantity %></td>
-      <td>
-        <%# machine.work_processesが複数存在するため全てを表示する %>
-        <%= @order.work_processes.order(updated_at: :desc).first&.work_process_definition&.name %>
-      </td>
-      <td>
-        <%# machine.work_processesが複数存在するため全てを表示する %>
-        <%= @order.work_processes.order(updated_at: :desc).first&.work_process_status&.name %>
-      </td>
-      <td><%= @order.work_processes.order(updated_at: :desc).first&.start_date %></td>
-      <td><%= @order.work_processes.order(updated_at: :desc).first&.factory_estimated_completion_date %></td>
+      <td><%= process&.work_process_definition&.name || "N/A" %></td>
+      <td><%= process&.work_process_status&.name || "N/A" %></td>
+      <td><%= process&.start_date || "N/A" %></td>
+      <td><%= process&.earliest_estimated_completion_date || "N/A" %></td>
+      <td><%= process&.latest_estimated_completion_date || "N/A" %></td>
       <td>
         <%= link_to '詳細', admin_order_path(@order), class: 'show-order' %> |
         <%= link_to '編集', edit_admin_order_path(@order), class: "edit-order" %> |
-        |<%= link_to '削除', admin_order_path(@order) ,method: :delete,
-        data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"} %>
+        <%= link_to '削除', admin_order_path(@order), method: :delete, data: { turbo_confirm: "本当に削除してよろしいですか？" } %>
       </td>
     </tr>
+    <% end %>
   </tbody>
 </table>
 
