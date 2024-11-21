@@ -1,25 +1,23 @@
 Rails.application.routes.draw do
-  # Deviseのルーティング（後ステップで設定）
-  # devise_for :users, controllers: {
-  #   sessions: 'users/sessions',
-  #   registrations: 'devise/registrations'
-  # }
+  # ログイン機能のルーティング
+  get 'login', to: 'sessions#new', as: 'login'
+  post 'login', to: 'sessions#create'
+  delete 'logout', to: 'sessions#destroy', as: 'logout'
+  get 'signin', to: 'users#new'
+  post 'signin', to: 'users#create'
 
   # 管理者用の名前空間
   namespace :admin do
-    root to: 'home#index' # 管理者のホームページ
+    root to: 'home#index'
     resources :machines
     resources :orders
     resources :users
     resources :products
   end
 
-  # 通常ユーザー用の名前空間
-  namespace :user do
-    get 'home/index'
-    root to: 'home#index'
-    resources :users, only: [:show, :edit, :update]
-    resources :machines, only: [:index, :show, :new, :create, :edit, :update, :destroy]
-    resources :orders, only: [:index, :show, :new, :create, :edit, :update, :destroy]
-  end
+  # 通常ユーザー用のリソース
+  resources :machines, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  resources :orders, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  resources :users, only: [:new, :create, :show, :edit, :update]
+  root to: 'home#index'
 end

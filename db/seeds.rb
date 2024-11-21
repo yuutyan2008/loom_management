@@ -3,6 +3,7 @@ ActiveRecord::Base.transaction do
   Company.find_or_create_by!(id: 1) { |c| c.name = 'エルトップ' }
   Company.find_or_create_by!(id: 2) { |c| c.name = '機屋A' }
   Company.find_or_create_by!(id: 3) { |c| c.name = '機屋B' }
+  Company.find_or_create_by!(id: 4) { |c| c.name = '機屋C' }
 
   # ユーザーデータを作成
   User.find_or_create_by!(id: 1) do |u|
@@ -11,6 +12,8 @@ ActiveRecord::Base.transaction do
     u.phone_number = '000-0000-0000'
     u.company_id = 1
     u.admin = true
+    u.password = 'password'
+    u.password_confirmation = 'password'
   end
 
   User.find_or_create_by!(id: 2) do |u|
@@ -19,6 +22,28 @@ ActiveRecord::Base.transaction do
     u.phone_number = '000-0000-0001'
     u.company_id = 2
     u.admin = false
+    u.password = 'password'
+    u.password_confirmation = 'password'
+  end
+
+  User.find_or_create_by!(id: 3) do |u|
+    u.name = '鈴木一郎'
+    u.email = 'ccc@example.com'
+    u.phone_number = '000-0000-0002'
+    u.company_id = 3
+    u.admin = false
+    u.password = 'password'
+    u.password_confirmation = 'password'
+  end
+
+  User.find_or_create_by!(id: 4) do |u|
+    u.name = '大谷翔平'
+    u.email = 'ddd@example.com'
+    u.phone_number = '000-0000-0004'
+    u.company_id = 4
+    u.admin = false
+    u.password = 'password'
+    u.password_confirmation = 'password'
   end
 
   # 品番データを作成
@@ -34,7 +59,7 @@ ActiveRecord::Base.transaction do
 
   # 発注データを作成
   Order.find_or_create_by!(id: 1) do |o|
-    o.company_id = 1
+    o.company_id = 2
     o.product_number_id = 1
     o.color_number_id = 1
     o.roll_count = 100
@@ -43,7 +68,7 @@ ActiveRecord::Base.transaction do
   end
 
   Order.find_or_create_by!(id: 2) do |o|
-    o.company_id = 2
+    o.company_id = 3
     o.product_number_id = 3
     o.color_number_id = 3
     o.roll_count = 50
@@ -72,6 +97,18 @@ ActiveRecord::Base.transaction do
     m.name = '3号機'
     m.machine_type_id = 2
     m.company_id = 2
+  end
+
+  Machine.find_or_create_by!(id: 4) do |m|
+    m.name = '1号機'
+    m.machine_type_id = 1
+    m.company_id = 3
+  end
+
+  Machine.find_or_create_by!(id: 5) do |m|
+    m.name = '2号機'
+    m.machine_type_id = 2
+    m.company_id = 3
   end
 
   # 織機の稼働状況データを作成
@@ -235,6 +272,66 @@ ActiveRecord::Base.transaction do
     wp.actual_completion_date = '2023-10-10'
   end
 
+  WorkProcess.find_or_create_by!(id: 6) do |wp|
+    wp.order_id = 2
+    wp.process_estimate_id = 1
+    wp.work_process_definition_id = 1
+    wp.work_process_status_id = 3
+    wp.start_date = '2023-10-01'
+    wp.earliest_estimated_completion_date = '2023-12-30'
+    wp.latest_estimated_completion_date = '2023-12-30'
+    wp.factory_estimated_completion_date = '2023-10-05'
+    wp.actual_completion_date = '2023-10-03'
+  end
+
+  WorkProcess.find_or_create_by!(id: 7) do |wp|
+    wp.order_id = 2
+    wp.process_estimate_id = 2
+    wp.work_process_definition_id = 2
+    wp.work_process_status_id = 2
+    wp.start_date = '2023-10-03'
+    wp.earliest_estimated_completion_date = '2023-10-17'
+    wp.latest_estimated_completion_date = '2023-10-17'
+    wp.factory_estimated_completion_date = '2023-10-10'
+    wp.actual_completion_date = '2023-10-10'
+  end
+
+  WorkProcess.find_or_create_by!(id: 8) do |wp|
+    wp.order_id = 2
+    wp.process_estimate_id = 3
+    wp.work_process_definition_id = 3
+    wp.work_process_status_id = 1
+    wp.start_date = '2023-10-05'
+    wp.earliest_estimated_completion_date = '2023-10-27'
+    wp.latest_estimated_completion_date = '2023-10-27'
+    wp.factory_estimated_completion_date = '2023-10-20'
+    wp.actual_completion_date = '2023-10-10'
+  end
+
+  WorkProcess.find_or_create_by!(id: 9) do |wp|
+    wp.order_id = 2
+    wp.process_estimate_id = 4
+    wp.work_process_definition_id = 4
+    wp.work_process_status_id = 4
+    wp.start_date = '2023-10-15'
+    wp.earliest_estimated_completion_date = '2023-11-26'
+    wp.latest_estimated_completion_date = '2023-11-26'
+    wp.factory_estimated_completion_date = '2023-11-01'
+    wp.actual_completion_date = '2023-10-10'
+  end
+
+  WorkProcess.find_or_create_by!(id: 10) do |wp|
+    wp.order_id = 2
+    wp.process_estimate_id = 5
+    wp.work_process_definition_id = 5
+    wp.work_process_status_id = 1
+    wp.start_date = '2023-10-20'
+    wp.earliest_estimated_completion_date = '2023-12-02'
+    wp.latest_estimated_completion_date = '2023-12-02'
+    wp.factory_estimated_completion_date = '2023-11-28'
+    wp.actual_completion_date = '2023-10-10'
+  end
+
   # 織機割り当てデータを作成（全作業工程を1つの織機に割り当て）
   MachineAssignment.find_or_create_by!(id: 1) do |ma|
     ma.work_process_id = 1
@@ -263,6 +360,36 @@ ActiveRecord::Base.transaction do
   MachineAssignment.find_or_create_by!(id: 5) do |ma|
     ma.work_process_id = 5
     ma.machine_id = 1
+    ma.machine_status_id = 1 # 未稼働
+  end
+
+  MachineAssignment.find_or_create_by!(id: 6) do |ma|
+    ma.work_process_id = 6
+    ma.machine_id = 4
+    ma.machine_status_id = 1 # 未稼働
+  end
+
+  MachineAssignment.find_or_create_by!(id: 7) do |ma|
+    ma.work_process_id = 7
+    ma.machine_id = 4
+    ma.machine_status_id = 2 # 準備中
+  end
+
+  MachineAssignment.find_or_create_by!(id: 8) do |ma|
+    ma.work_process_id = 8
+    ma.machine_id = 4
+    ma.machine_status_id = 3 # 稼働中
+  end
+
+  MachineAssignment.find_or_create_by!(id: 9) do |ma|
+    ma.work_process_id = 9
+    ma.machine_id = 4
+    ma.machine_status_id = 4 # 確認中（WorkProcessDefinition id:4に対応）
+  end
+
+  MachineAssignment.find_or_create_by!(id: 10) do |ma|
+    ma.work_process_id = 10
+    ma.machine_id = 4
     ma.machine_status_id = 1 # 未稼働
   end
 end
