@@ -4,8 +4,6 @@
   <thead>
     <tr>
       <th>企業名</th>
-      <th>機械番号</th>
-      <th>機械の種類</th>
       <th>品番</th>
       <th>色番</th>
       <th>反数</th>
@@ -13,8 +11,10 @@
       <th>現在の工程</th>
       <th>現在の工程の状況</th>
       <th>作業開始日</th>
-      <th>機屋の最短予定納期</th>
-      <th>機屋の最長予定納期</th>
+      <th>最短作業日数</th>
+      <th>最長作業日数</th>
+      <th>最短予定納期</th>
+      <th>最長予定納期</th>
     </tr>
   </thead>
   <tbody>
@@ -31,10 +31,11 @@
       <td><%= process&.start_date || "N/A" %></td>
       <td><%= process&.earliest_estimated_completion_date || "N/A" %></td>
       <td><%= process&.latest_estimated_completion_date || "N/A" %></td>
+      <td><%= process&.factory_estimated_completion_date || "N/A" %></td>
+      <td><%= process&.actual_completion_date || "N/A" %></td>
       <td>
-        <%= link_to '詳細', admin_order_path(@order), class: 'show-order' %> |
         <%= link_to '編集', edit_admin_order_path(@order), class: "edit-order" %> |
-        <%= link_to '削除', admin_order_path(@order), method: :delete, data: { turbo_confirm: "本当に削除してよろしいですか？" } %>
+        <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
       </td>
     </tr>
     <% end %>
