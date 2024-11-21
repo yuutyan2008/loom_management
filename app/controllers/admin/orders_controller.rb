@@ -1,5 +1,6 @@
 class Admin::OrdersController < ApplicationController
 before_action :order_params, only: %i[create update]
+before_action :require_login
 
   def index
     @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
