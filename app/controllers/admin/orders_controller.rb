@@ -1,6 +1,6 @@
 class Admin::OrdersController < ApplicationController
 before_action :order_params, only: %i[create update]
-before_action :require_login
+before_action :admin_user
 
   def index
     @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
@@ -92,5 +92,12 @@ before_action :require_login
       :factory_estimated_completion_date,
       :start_date,
     )
+  end
+
+  # 一般ユーザがアクセスした場合にはタスク一覧画面にリダイレクト
+  def admin_user
+    unless current_user&.admin?
+      redirect_to orders_path, alert: "管理者以外アクセスできません"
+    end
   end
 end
