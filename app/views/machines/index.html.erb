@@ -1,0 +1,53 @@
+<h1>織機一覧</h1>
+
+<%= link_to '新規織機追加', new_machine_path %>
+
+<% if @machines.any? %>
+    <table>
+        <thead>
+            <tr>
+                <th>織機名</th>
+                <th>品番</th>
+                <th>現在の作業工程</th>
+                <th>ステータス</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <% @machines.each do |machine| %>
+            <% current_wp = find_current_work_process(machine.work_processes) %>
+            <tr>
+                <td><%= machine.name %></td>
+                <td>
+                    <% if current_wp && current_wp.order %>
+                        <%= current_wp.order.product_number.number %>
+                    <% else %>
+                        N/A
+                    <% end %>
+                </td>
+                <td>
+                    <% if current_wp && current_wp.work_process_definition %>
+                        <%= current_wp.work_process_definition.name %>
+                    <% else %>
+                        N/A
+                    <% end %>
+                </td>
+                <td>
+                    <% if current_wp && current_wp.work_process_status %>
+                        <%= current_wp.work_process_status.name %>
+                    <% else %>
+                        N/A
+                    <% end %>
+                </td>
+                <td>
+                    <%= link_to '詳細', machine_path(machine) %>
+                    <%= link_to '編集', edit_machine_path(machine) %>
+                    <%= link_to '削除', machine_path(machine), data: { turbo_method: :delete, turbo_confirm: '本当に削除しますか？' }, class: "btn btn-danger btn-sm" %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+<% else %>
+    <p><%= @no_machines_message %></p>
+<% end %>
