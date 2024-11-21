@@ -1,0 +1,37 @@
+<h1>発注済み商品一覧</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>会社名</th>
+      <th>品番</th>
+      <th>色番</th>
+      <th>現在の工程</th>
+      <th>発注日</th>
+      <th>機屋の予定納期</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @orders.each do |order| %>
+    <tr>
+      <td><%= order.company.name %></td>
+      <td><%= order.product_number.number %></td>
+      <td><%= order.color_number.color_code %></td>
+      <td>
+        <%# order.work_processesが複数存在するため全てを表示する %>
+        <%= order.work_processes.order(updated_at: :desc).first&.work_process_definition&.name.presence || "未設定" %>
+      </td>
+      <td><%= order.work_processes.order(updated_at: :desc).first&.start_date %></td>
+      <td><%= order.work_processes.order(updated_at: :desc).first&.factory_estimated_completion_date %></td>
+
+
+      <td>
+        <%= link_to '詳細', admin_order_path(order), class: 'show-order' %> |
+        <%= link_to '編集', edit_admin_order_path(order), class: "edit-order" %> |
+        <%= link_to '削除', admin_order_path(order) ,method: :delete,
+        data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"} %>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>
