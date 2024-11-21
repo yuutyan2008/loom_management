@@ -1,0 +1,37 @@
+<h1>ユーザー登録</h1>
+
+<%= form_with(model: @user, url: signin_path, local: true) do |form| %>
+    <div>
+        <%= form.label :name, "名前" %>
+        <%= form.text_field :name, required: true %>
+    </div>
+
+    <div>
+        <%= form.label :email, "メールアドレス" %>
+        <%= form.email_field :email, required: true %>
+    </div>
+
+    <div>
+        <%= form.label :phone_number, "電話番号" %>
+        <%= form.text_field :phone_number, required: true %>
+    </div>
+
+    <div>
+        <%= form.label :company_id, "所属会社" %>
+        <%= form.collection_select :company_id, @companies, :id, :name, prompt: "会社を選択してください", required: true %>
+    </div>
+
+    <div>
+        <%= form.label :password, "パスワード" %>
+        <%= form.password_field :password, required: true %>
+    </div>
+
+    <div>
+        <%= form.label :password_confirmation, "パスワード確認" %>
+        <%= form.password_field :password_confirmation, required: true %>
+    </div>
+
+    <div>
+        <%= form.submit "登録" %>
+    </div>
+<% end %>

@@ -1,13 +1,13 @@
 require "test_helper"
 
-class User::MachinesControllerTest < ActionDispatch::IntegrationTest
+class MachinesControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
-    get user_machines_index_url
+    get machines_index_url
     assert_response :success
   end
 
   test "should get show" do
-    get user_machines_show_url
+    get machines_show_url
     assert_response :success
   end
 end
