@@ -1,0 +1,27 @@
+<h1>ユーザー情報編集</h1>
+
+<%= form_with model: @user, url: user_user_path(@user), local: true do |f| %>
+    <div>
+        <%= f.label :name, 'ユーザー名' %><br>
+        <%= f.text_field :name %>
+    </div>
+
+    <div>
+        <%= f.label :email, 'メールアドレス' %><br>
+        <%= f.email_field :email %>
+    </div>
+
+    <div>
+        <%= f.label :phone_number, '電話番号' %><br>
+        <%= f.text_field :phone_number %>
+    </div>
+
+    <div>
+        <%= f.label :phone_number, '電話番号' %><br>
+        <%= f.text_field :phone_number %>
+    </div>
+
+    <div>
+        <%= f.submit '更新' %>
+    </div>
+<% end %>
