@@ -1,0 +1,54 @@
+<%# 発注済み商品の詳細 %>
+<h1></h1>
+
+
+
+
+<table>
+  <thead>
+    <tr>
+      <th>企業名</th>
+      <th>機械番号</th>
+      <th>機械の種類</th>
+      <th>商品番号</th>
+      <th>現在の工程</th>
+      <th>現在の工程の状況</th>
+      <th>完成予定日</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%# <% @order.tasks.each do |order| %>
+    <tr>
+      <td><%= @machine.company.name %></td>
+      <td><%= @machine.name %></td>
+      <td><%= @machine.machine_type.name %></td>
+      <td>
+        <%# machine.work_processesが複数存在するため全てを表示する %>
+        <% @machine.work_processes.each do |process| %>
+        <p><%= process.order.product_number_id %></p>
+        <% end %>
+      </td>
+
+      <td>
+        <% @machine.work_processes.each do |process| %>
+        <p><%= process.work_process_definition.name %></p>
+        <% end %>
+      </td>
+      <td>
+        <% @machine.work_processes.each do |process| %>
+        <p><%= process.work_process_status.name %></p>
+        <% end %>
+      <td class="order-finished_at">
+        <% @machine.work_processes.each do |process| %>
+        <p><%= process.factory_estimated_completion_date %></p>
+        <% end %>
+      </td>
+      <td>
+        <%= link_to t('common.edit'), edit_admin_machine_path(@machine), class: 'edit-machine' %>
+      </td>
+    </tr>
+    <%# <% end %>
+  </tbody>
+</table>
+
+<%= link_to t('common.back'), admin_machines_path, id: 'back' %>

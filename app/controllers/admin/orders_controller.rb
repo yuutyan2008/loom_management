@@ -2,7 +2,7 @@ class Admin::OrdersController < ApplicationController
 before_action :order_params, only: %i[create update]
 
   def index
-    @orders= Order.all
+    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
   end
 
   def new
@@ -10,20 +10,21 @@ before_action :order_params, only: %i[create update]
   end
 
   def create
-
-    # 引数にorderテーブル以外を除外してインスタンス作成
+    # orderテーブル以外を除外してorderインスタンス作成
     @order = Order.new(order_params.except(:factory_estimated_completion_date, :start_date))
-      WorkProcess.initial_processes_list(order_params[:start_date])
-    # 一括作成したレコードを呼び出しWorkProcessと関連付け
+    # orderの子オブジェクトのworkProcessインスタンス作成
     @order.work_processes.build(
+      # 一括作成したレコードを呼び出して初期値を入れる
       WorkProcess.initial_processes_list(order_params[:start_date])
     )
 
-    # 保存
+    # order、work_processes保存
     if @order.save
-      @order.work_processes.create(
-        factory_estimated_completion_date: order_params[:factory_estimated_completion_date]
-      )
+      # work_processes更新
+      @order.work_processes.each do |process|
+        process.update(
+        factory_estimated_completion_date: order_params[:factory_estimated_completion_date])
+      end
       redirect_to admin_orders_path, notice: "注文が作成されました"
     else
       flash.now[:alert] = @order.errors.full_messages.join(", ")
