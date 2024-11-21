@@ -4,5 +4,4 @@ class Machine < ApplicationRecord
   has_many :machine_assignments
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :work_processes, through: :machine_assignments
-
 end

@@ -35,6 +35,6 @@ class WorkProcess < ApplicationRecord
         work_process_status_id: 1,
         start_date: start_date
       },
-     ]
+    ]
   end
 end
