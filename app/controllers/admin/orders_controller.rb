@@ -1,34 +1,29 @@
 class Admin::OrdersController < ApplicationController
-
-  # after_action :create_work_process, only: %i[create]
-  after_action :order_params, only: %i[update destroy]
-
+before_action :order_params, only: %i[create update]
 
   def index
-    @work_processes=WorkProcess.all
+    @orders= Order.all
   end
 
   def new
-    @work_processes = WorkProcess.new
+    @order = Order.new
   end
 
   def create
 
-    # 他モデルを除外して
-    @order = Order.new(order_params.except(:work_processes_attributes))
+    # 引数にorderテーブル以外を除外してインスタンス作成
+    @order = Order.new(order_params.except(:factory_estimated_completion_date, :start_date))
+      WorkProcess.initial_processes_list(order_params[:start_date])
+    # 一括作成したレコードを呼び出しWorkProcessと関連付け
     @order.work_processes.build(
-      WorkProcess.initial_processes_list
+      WorkProcess.initial_processes_list(order_params[:start_date])
     )
 
-    # 保存処理
-    # binding.irb
+    # 保存
     if @order.save
-      if params[:order][:work_process_definition_id].present?
-        @order.work_processes.create(
-          work_process_definition_id: params[:order][:work_process_definition_id]
-        )
-      end
-
+      @order.work_processes.create(
+        factory_estimated_completion_date: order_params[:factory_estimated_completion_date]
+      )
       redirect_to admin_orders_path, notice: "注文が作成されました"
     else
       flash.now[:alert] = @order.errors.full_messages.join(", ")
@@ -55,26 +50,26 @@ class Admin::OrdersController < ApplicationController
       # 国際化（i18n）
       # ja.yml に定義したフラッシュメッセージに翻訳
       # binding.irb
-      flash[:notice] = t("flash.admin.updated")
+      flash[:notice] = "発注が更新されました"
 
 
       redirect_to admin_orders_path
     else
-      flash.now[:alert] = @user.errors.full_messages.join(", ") # エラーメッセージを追加
+      flash.now[:alert] = @order.errors.full_messages.join(", ") # エラーメッセージを追加
       render :edit
     end
   end
 
   # 削除処理の開始し管理者削除を防ぐロジックはmodelで行う
   def destroy
-
+    # binding.irb
     @order = Order.find(params[:id])
     if @order.destroy
       # ココ(削除実行直前)でmodelに定義したコールバックが呼ばれる
 
-      flash[:notice] = t("flash.admin.destroyed")
+      flash[:notice] = "発注が削除されました"
     else
-      # バリデーションに失敗で@user.errors.full_messagesにエラーメッセージが配列として追加されます
+      # バリデーションに失敗で@order.errors.full_messagesにエラーメッセージが配列として追加されます
       # .join(", "): 配列内の全てのエラーメッセージをカンマ区切り（, ）で連結
       flash[:alert] = @order.errors.full_messages.join(", ")
     end
@@ -83,58 +78,17 @@ class Admin::OrdersController < ApplicationController
 
   private
   # フォームの入力値のみ許可
-  def work_processes_params
-    params.require(:work_processes).permit(
-      :order_id,
-      :process_estimate_id,
-      :work_process_status_id,
-      :work_process_definition_id,
-      :start_date,
-      :earliest_estimated_completion_date,
-      :latest_estimated_completion_date,
-      :factory_estimated_completion_date,
-      :actual_completion_date,
-      order_attributes: [
-        :company_id,
-        :product_number_id,
-        :color_number_id,
-        :roll_count,
-        :quantity,
-        :start_date
-      ],
 
+  def order_params
+    params.require(:order).permit(
+      :company_id,
+      :product_number_id,
+      :color_number_id,
+      :roll_count,
+      :quantity,
+      # :start_date, # 重複のためorderテーブルのstart_dateを削除
+      :factory_estimated_completion_date,
+      :start_date,
     )
   end
-
-
-  # def order_params
-  #   params.require(:order).permit(
-  #     :company_id,
-  #     :product_number_id,
-  #     :color_number_id,
-  #     :roll_count,
-  #     :quantity,
-  #     :start_date,
-  #     work_processes_attributes: [
-  #       :work_process_definition_id,
-  #       :work_process_status_id,
-  #       :factory_estimated_completion_date,
-  #       :id, # 更新時に必要
-  #       :_destroy # 削除時に必要
-  #     ]
-  #   )
-
-
-
-  # work_process_definition_idを登録
-  # def create_work_process
-  #   work_process_definition_id = params[:order][:work_process_definition_id]
-  #   return unless work_process_definition_id.present?
-
-  #   # 新しい作業工程を作成
-  #   @order.work_processes.create(work_process_definition_id: work_process_definition_id)
-  # end
-
-
-
 end
