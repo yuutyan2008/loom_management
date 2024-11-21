@@ -1,0 +1,23 @@
+<h1>新規織機追加</h1>
+
+<%= form_with model: @machine, url: user_machines_path, local: true do |f| %>
+    <div>
+        <%= f.label :name, '織機名' %><br>
+        <%= f.text_field :name %>
+    </div>
+
+    <div>
+        <%= f.label :machine_type_id, '織機の種類' %><br>
+        <%= f.collection_select :machine_type_id, MachineType.all, :id, :name %>
+    </div>
+
+    <div class="form-group">
+        <%= f.label :company_id, "会社名:" %><br>
+        <%= f.collection_select :company_id, Company.all, :id, :name, { prompt: "Select Company" }, { class: "form-control" } %>
+    </div>
+
+    <div>
+        <%= f.submit '作成' %>
+        <%= link_to '戻る', user_machines_path, class: "btn btn-secondary" %>
+    </div>
+<% end %>

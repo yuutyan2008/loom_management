@@ -1,0 +1,21 @@
+<h1>ユーザー情報</h1>
+
+<p>
+    <strong>名前:</strong>
+    <%= @user.name %>
+</p>
+<p>
+    <strong>メール:</strong>
+    <%= @user.email %>
+</p>
+<p>
+    <strong>電話番号:</strong>
+    <%= @user.phone_number %>
+</p>
+<p>
+    <strong>会社名:</strong>
+    <%= @user.company.name %>
+</p>
+
+<%= link_to '編集', edit_user_user_path(@user) %> |
+<%= link_to '戻る', user_root_path %>
