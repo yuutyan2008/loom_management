@@ -16,30 +16,21 @@
 
 <%= form_with model: @machine, url: admin_machines_path, local: true do |f| %>
 <table>
-
   <tbody>
-    <!-- 会社名 -->
     <tr>
       <td>会社名</td>
       <td>
-        <%# セレクトボックスで会社を選択 %>
         <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "会社を選択" %>
       </td>
     </tr>
-
-    <!-- 機械の種類 -->
     <tr>
       <td>種類</td>
       <td>
-        <%# テキストフィールドで品番を入力 %>
         <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, placeholder: "種類を選択してください" %></td>
     </tr>
-
-    <!-- 番号 -->
     <tr>
       <td>番号</td>
       <td>
-        <%# テキストフィールドで色番を入力 %>
         <%= f.collection_select :name, Machine.all, :id, :name, placeholder: "番号を入力してください" %>
       </td>
     </tr>
@@ -49,5 +40,4 @@
 <!-- 提出ボタン -->
 <%= f.submit "登録する", id: 'update-machine' %>
 <%= link_to "戻る", admin_machines_path, id: 'back' %>
-
 <% end %>

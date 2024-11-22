@@ -1,6 +1,7 @@
 class Admin::MachinesController < ApplicationController
   before_action :machine_params, only: %i[update]
   before_action :set_machine, only: %i[show edit update]
+  before_action :admin_user
   # 関連するモデルを事前に読み込む
   # Machineモデルごとの作業工程を表示するため、@machinesを中心にデータを取得
 
@@ -18,14 +19,7 @@ class Admin::MachinesController < ApplicationController
   end
 
   def index
-    @machines = Machine.includes(
-      :machine_type,
-      :company,
-      machine_assignments: [:machine_status],
-      # :machine_statuses,
-
-      work_processes: [:work_process_status, :work_process_definition, :order]
-    )
+    @machines = Machine.machine_associations
   end
 
   def show
@@ -92,15 +86,22 @@ class Admin::MachinesController < ApplicationController
   end
 
   # Machineモデル、関連するモデルのデータを事前に取得
-  def set_machine
-    @machine = Machine.includes(
-      :machine_type,
-      :company,
-      machine_assignments: [:machine_status],
-      work_processes: [
-        :work_process_definition,
-        :work_process_status
-      ]
-    ).find(params[:id])
+  # def set_machine
+  #   Machine.includes(
+  #     :machine_assignments,
+  #     machine_assignments: [:machine_status], # MachineAssignment関連のステータス
+  #     work_processes: {
+  #       work_process_status: {},              # WorkProcess関連のステータス
+  #       work_process_definition: {},         # 作業工程定義
+  #       order: [:company, :product_number, :color_number] # Orderに紐づくデータ
+  #     }
+  #   )
+  # end
+
+  # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
+  def admin_user
+    unless current_user&.admin?
+      redirect_to orders_path, alert: "管理者以外アクセスできません"
+    end
   end
 end

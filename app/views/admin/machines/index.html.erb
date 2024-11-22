@@ -1,42 +1,28 @@
-<%# 発注済み商品一覧 %>
-<h1><%= t('view.users.admin.index.title') %></h1>
-<table>
+<h1>発注済み商品の製造状況</h1>
+<table border="1" cellpadding="5" cellspacing="0">
   <thead>
     <tr>
       <th>企業名</th>
-      <th>機械番号</th>
       <th>商品番号</th>
       <th>機械の稼働状況</th>
     </tr>
   </thead>
   <tbody>
     <% @machines.each do |machine| %>
+    <% machine.work_processes&.each do |process| %>
     <tr>
-      <td><%= machine.company.name %></td>
-      <td><%= machine.machine_type.name %></td>
+      <td><%= machine&.company&.name || "N/A" %></td>
+      <td><%= process&.order.product_number&.number || "N/A" %></td>
+      <td><%= process&.work_process_status&.name || "N/A" %></td>
       <td>
-        <%# machine.work_processesが複数存在するため全てを表示する %>
-        <% machine.work_processes.each do |process| %>
-        <p><%= process.order.product_number_id %></p>
-        <% end %>
-      </td>
-      <td>
-        <% machine.machine_assignments.each do |process| %>
-        <p><%= process.work_process_id %></p>
-        <% end %>
-      </td>
-      <td>
-
         <%= link_to t('common.show'), admin_machine_path(machine), class: 'show-machine' %> |
-        <%# <%= link_to t('common.destroy'), admin_machine_path(machine), method: :delete, data: { confirm: t('common.confirm_destroy') }, class: "destroy-machine" %>
-        <%= link_to '削除', admin_machine_path(machine), method: :post,
+        <%= link_to '削除', admin_machine_path(machine), method: :delete,
   data: {
     turbo_method: :delete,
-    turbo_confirm: "Are you sure?"
-}, class: "btn btn-outline-dark" %>
-
+    turbo_confirm: "本当に削除してよろしいですか？"} %>
       </td>
     </tr>
+    <% end %>
     <% end %>
   </tbody>
 </table>
