@@ -1,0 +1,108 @@
+<%# 発注済み商品の編集 %>
+<h1></h1>
+
+<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+<% if @machine.errors.any? %>
+
+<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+<div id="error_explanation">
+  <h2><%= t('activerecord.errors.models.user.prohibited', count: @machine.errors.count) %></h2>
+  <ul>
+    <% @machine.errors.full_messages.each do |message| %>
+    <li><%= message %></li>
+    <% end %>
+  </ul>
+</div>
+<% end %>
+
+
+<%= form_with model: @machine, url: admin_machine_path(@machine), method: :patch, local: true do |f| %>
+<table>
+  <thead>
+    <tr>
+      <th>項目</th>
+      <th>現在の値</th>
+      <th>変更後の値</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- 企業名 -->
+    <tr>
+      <td>企業名</td>
+      <td><%= @machine.company&.name || "企業情報なし" %></td>
+      <td>---</td>
+    </tr>
+
+    <!-- 機械番号 -->
+    <tr>
+      <td>機械番号</td>
+      <td><%= @machine.name || "番号が設定されていません" %></td>
+      <td>
+        <%= f.text_field :name, placeholder: "新しい機械番号を入力" %>
+      </td>
+    </tr>
+
+    <!-- 機械の種類 -->
+    <tr>
+      <td>機械の種類</td>
+      <td><%= @machine.machine_type&.name || "種類なし" %></td>
+      <td>---</td>
+    </tr>
+
+    <!-- 商品番号 -->
+    <tr>
+      <td>商品番号</td>
+      <td>
+        <% @machine.work_processes.each do |process| %>
+        <p><%= process.order&.product_number_id || "商品番号なし" %></p>
+        <% end %>
+      </td>
+      <td>---</td>
+    </tr>
+
+    <!-- 現在の工程 -->
+    <tr>
+      <td>現在の工程</td>
+      <td>
+        <%= @latest_work_process&.work_process_definition&.name || "工程なし" %>
+      </td>
+      <td>
+        <%= f.collection_select :work_process_id,
+                                  WorkProcessDefinition.all,
+                                  :id, :name,
+                                  prompt: "新しい工程を選択" %>
+      </td>
+    </tr>
+
+    <!-- 現在の工程の状況 -->
+    <tr>
+      <td>現在の工程の状況</td>
+      <td>
+      <td><%= @latest_work_process_status&.name || "状況なし" %></td>
+      </td>
+      <td>
+        <%= f.select :current_work_process_status,
+          options_for_select([['作業前', 0], ['作業中', 1], ['作業完了', 2], ['確認中', 3]],
+          selected: @machine.work_processes.first&.work_process_status_id),
+          prompt: "選択してください" %>
+      </td>
+    </tr>
+
+    <!-- 完成予定日 -->
+    <tr>
+      <td>完成予定日</td>
+      <td><%= @latest_factory_estimated_completion_date&.strftime("%Y-%m-%d") || "日付なし" %></td>
+      <td>
+        <%= date_field_tag "work_process[factory_estimated_completion_date]",
+        @machine.work_processes.first&.factory_estimated_completion_date&.strftime("%Y-%m-%d") %>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 提出ボタン -->
+
+<%= f.submit "更新する", id: 'update-machine' %>
+<%= link_to t('common.back'), admin_machines_path, id: 'back' %>
+
+<% end %>

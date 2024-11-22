@@ -1,0 +1,2 @@
+class ProcessEstimateController < ApplicationController
+end
