@@ -14,10 +14,8 @@
 </p>
 <p>
     <strong>稼働状況:</strong>
-    <% current_work_process = find_current_work_process(@machine.work_processes) %>
-    <%= current_work_process&.machine_assignments&.map { |a| a.machine_status.name }&.join(', ').presence || 'N/A' %>
+    <%= machine_statuses(@machine) %>
 </p>
-
 
 <h2>作業工程</h2>
 
@@ -29,26 +27,28 @@
                 <th>作業工程</th>
                 <th>ステータス</th>
                 <th>開始日</th>
+                <th>予定納期</th>
                 <th>受注状況</th>
             </tr>
         </thead>
 
         <tbody>
-            <% @work_processes.each do |wp| %>
+            <% @work_processes.each do |current_wp| %>
             <tr>
-                <td><%= wp.order.product_number.number %></td>
-                <td><%= wp.work_process_definition.name %></td>
-                <td><%= wp.work_process_status.name %></td>
-                <td><%= wp.start_date %></td>
+                <td><%= current_wp.order.product_number.number %></td>
+                <td><%= current_wp.work_process_definition.name %></td>
+                <td><%= current_wp.work_process_status.name %></td>
+                <td><%= current_wp.start_date %></td>
+                <td><%= current_wp.factory_estimated_completion_date %></td>
                 <td>
-                    <%= link_to '受注を確認する', order_path(wp.order), class: 'btn btn-info btn-sm' %>
+                    <%= link_to '受注を確認する', order_path(current_wp.order), class: 'btn btn-info btn-sm' %>
                 </td>
             </tr>
             <% end %>
         </tbody>
     </table>
 <% else %>
-    <p>織機情報が見つかりませんでした。</p>
+    <p><%= @no_machines_message %></p>
 <% end %>
 
 <%= link_to '織機を編集', edit_machine_path(@machine), class: 'btn btn-primary' %>

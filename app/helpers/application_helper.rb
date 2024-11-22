@@ -15,4 +15,55 @@ module ApplicationHelper
       work_processes.order(:start_date).first
     end
   end
+
+  def not_available(value)
+    value.presence || 'N/A'
+  end
+
+  # 受注の現在の作業工程名を取得
+  def work_process_name(order)
+    current_wp = find_current_work_process(order.work_processes)
+    not_available(current_wp&.work_process_definition&.name)
+  end
+
+  # 受注の現在のステータスを取得
+  def work_process_status(order)
+    current_wp = find_current_work_process(order.work_processes)
+    not_available(current_wp&.work_process_status&.name)
+  end
+
+  # 受注に関連する織機の名前を取得
+  def machine_names(order)
+    current_wp = find_current_work_process(order.work_processes)
+    names = current_wp&.machines&.map(&:name)&.join(', ')
+    not_available(names)
+  end
+
+  # 稼働状況を取得
+  def machine_statuses(machine)
+    current_wp = find_current_work_process(machine.work_processes)
+    statuses = current_wp&.machine_assignments&.map { |a| a.machine_status.name }&.join(', ')
+    not_available(statuses)
+  end
+
+  # 品番を取得
+  def product_number(machine)
+    current_wp = find_current_work_process(machine.work_processes)
+    number = current_wp&.order&.product_number&.number
+    not_available(number)
+  end
+
+  # 現在の作業工程名を取得
+  def work_process_name(machine)
+    current_wp = find_current_work_process(machine.work_processes)
+    name = current_wp&.work_process_definition&.name
+    not_available(name)
+  end
+
+  # ステータスを取得
+  def work_process_status(machine)
+    current_wp = find_current_work_process(machine.work_processes)
+    status = current_wp&.work_process_status&.name
+    not_available(status)
+  end
 end

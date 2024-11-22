@@ -1,10 +1,6 @@
 <h1>受注詳細</h1>
 
 <p>
-    <strong>会社名:</strong>
-    <%= @order.company.name %>
-</p>
-<p>
     <strong>品番:</strong>
     <%= @order.product_number.number %>
 </p>
@@ -29,19 +25,21 @@
 <table class="table table-bordered">
     <thead>
         <tr>
-        <th>作業工程定義</th>
-        <th>織機</th>
-        <th>開始日</th>
-        <th>ステータス</th>
+            <th>作業工程定義</th>
+            <th>織機</th>
+            <th>開始日</th>
+            <th>予定納期</th>
+            <th>ステータス</th>
         </tr>
     </thead>
     <tbody>
-        <% @work_processes.each do |wp| %>
+        <% @work_processes.each do |current_wp| %>
         <tr>
-            <td><%= wp.work_process_definition.name %></td>
-            <td><%= wp.machines.map(&:name).join(', ').presence || 'N/A' %></td>
-            <td><%= wp.start_date %></td>
-            <td><%= wp.work_process_status.name %></td>
+            <td><%= current_wp.work_process_definition.name %></td>
+            <td><%= machine_names(@order) %></td>
+            <td><%= current_wp.start_date %></td>
+            <td><%= current_wp.factory_estimated_completion_date %></td>
+            <td><%= current_wp.work_process_status.name %></td>
         </tr>
         <% end %>
     </tbody>
@@ -55,20 +53,12 @@
             <%= machine.name %>
         </p>
         <p>
-            <strong>織機のタイプ:</strong>
-            <%= machine.machine_type.name %>
-        </p>
-        <p>
-            <strong>会社名:</strong>
-            <%= machine.company.name %>
-        </p>
-        <p>
             <strong>稼働状況:</strong>
-            <%= @current_machine_assignments.map { |a| a.machine_status.name }.join(', ').presence || 'N/A' %>
+            <%= machine_statuses(machine) %>
         </p>
     <% end %>
 <% else %>
-    <p>織機情報が見つかりませんでした。</p>
+    <p><%= @no_orders_message %></p>
 <% end %>
 
 <%= link_to '編集', edit_order_path(@order), class: "btn btn-warning" %> |

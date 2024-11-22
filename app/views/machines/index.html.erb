@@ -16,13 +16,12 @@
         </thead>
         <tbody>
             <% @machines.each do |machine| %>
-            <% current_wp = find_current_work_process(machine.work_processes) %>
             <tr>
                 <td><%= machine.name %></td>
-                <td><%= current_wp&.machine_assignments&.map { |a| a.machine_status.name }&.join(', ').presence || 'N/A' %></td>
-                <td><%= current_wp&.order&.product_number&.number.presence || 'N/A' %></td>
-                <td><%= current_wp&.work_process_definition&.name.presence || 'N/A' %></td>
-                <td><%= current_wp&.work_process_status&.name.presence || 'N/A' %></td>
+                <td><%= machine_statuses(machine) %></td>
+                <td><%= product_number(machine) %></td>
+                <td><%= work_process_name(machine) %></td>
+                <td><%= work_process_status(machine) %></td>
                 <td>
                     <%= link_to '詳細', machine_path(machine) %>
                     <%= link_to '編集', edit_machine_path(machine) %>
