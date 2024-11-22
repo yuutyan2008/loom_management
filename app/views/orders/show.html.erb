@@ -39,11 +39,7 @@
         <% @work_processes.each do |wp| %>
         <tr>
             <td><%= wp.work_process_definition.name %></td>
-            <td>
-            <% wp.machines.each do |machine| %>
-                <%= machine.name %><br>
-            <% end %>
-            </td>
+            <td><%= wp.machines.map(&:name).join(', ').presence || 'N/A' %></td>
             <td><%= wp.start_date %></td>
             <td><%= wp.work_process_status.name %></td>
         </tr>
@@ -68,13 +64,7 @@
         </p>
         <p>
             <strong>稼働状況:</strong>
-            <% if @current_machine_assignments.any? %>
-                <% @current_machine_assignments.each do |assignment| %>
-                    <%= assignment.machine_status.name %>
-                <% end %>
-            <% else %>
-                N/A
-            <% end %>
+            <%= @current_machine_assignments.map { |a| a.machine_status.name }.join(', ').presence || 'N/A' %>
         </p>
     <% end %>
 <% else %>

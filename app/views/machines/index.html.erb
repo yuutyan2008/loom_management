@@ -7,6 +7,7 @@
         <thead>
             <tr>
                 <th>織機名</th>
+                <th>稼働状況</th>
                 <th>品番</th>
                 <th>現在の作業工程</th>
                 <th>ステータス</th>
@@ -18,27 +19,10 @@
             <% current_wp = find_current_work_process(machine.work_processes) %>
             <tr>
                 <td><%= machine.name %></td>
-                <td>
-                    <% if current_wp && current_wp.order %>
-                        <%= current_wp.order.product_number.number %>
-                    <% else %>
-                        N/A
-                    <% end %>
-                </td>
-                <td>
-                    <% if current_wp && current_wp.work_process_definition %>
-                        <%= current_wp.work_process_definition.name %>
-                    <% else %>
-                        N/A
-                    <% end %>
-                </td>
-                <td>
-                    <% if current_wp && current_wp.work_process_status %>
-                        <%= current_wp.work_process_status.name %>
-                    <% else %>
-                        N/A
-                    <% end %>
-                </td>
+                <td><%= current_wp&.machine_assignments&.map { |a| a.machine_status.name }&.join(', ').presence || 'N/A' %></td>
+                <td><%= current_wp&.order&.product_number&.number.presence || 'N/A' %></td>
+                <td><%= current_wp&.work_process_definition&.name.presence || 'N/A' %></td>
+                <td><%= current_wp&.work_process_status&.name.presence || 'N/A' %></td>
                 <td>
                     <%= link_to '詳細', machine_path(machine) %>
                     <%= link_to '編集', edit_machine_path(machine) %>
