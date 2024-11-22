@@ -94,7 +94,7 @@ before_action :admin_user
     )
   end
 
-  # 一般ユーザがアクセスした場合にはタスク一覧画面にリダイレクト
+  # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
   def admin_user
     unless current_user&.admin?
       redirect_to orders_path, alert: "管理者以外アクセスできません"
