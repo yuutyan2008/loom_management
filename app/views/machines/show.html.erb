@@ -15,13 +15,7 @@
 <p>
     <strong>稼働状況:</strong>
     <% current_work_process = find_current_work_process(@machine.work_processes) %>
-    <% if current_work_process && current_work_process.machine_assignments.any? %>
-        <% current_work_process.machine_assignments.each do |assignment| %>
-        <%= assignment.machine_status.name %><br>
-        <% end %>
-    <% else %>
-        N/A
-    <% end %>
+    <%= current_work_process&.machine_assignments&.map { |a| a.machine_status.name }&.join(', ').presence || 'N/A' %>
 </p>
 
 
