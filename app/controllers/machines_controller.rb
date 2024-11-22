@@ -9,7 +9,7 @@ class MachinesController < ApplicationController
       @machines = @company.machines
     else
       @machines = []
-      @no_machines_message = "現在受注している商品はありません"
+      @no_machines_message = "現在織機はありません"
     end
     @work_processes = WorkProcess.all
   end
