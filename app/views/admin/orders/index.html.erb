@@ -7,7 +7,7 @@
       <th>品番</th>
       <th>色番</th>
       <th>現在の工程</th>
-      <th>発注日</th>
+      <th>開始日</th>
       <th>機屋の予定納期</th>
     </tr>
   </thead>
@@ -23,6 +23,7 @@
       </td>
       <td><%= order.work_processes.order(updated_at: :desc).first&.start_date %></td>
       <td><%= order.work_processes.order(updated_at: :desc).first&.factory_estimated_completion_date %></td>
+
 
 
       <td>

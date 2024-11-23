@@ -10,7 +10,12 @@ Rails.application.routes.draw do
   namespace :admin do
     root to: 'home#index'
     resources :machines
-    resources :orders
+    resources :orders do
+      member do
+        get 'edit_work_processes'
+        patch 'update_work_processes'
+      end
+    end
     resources :users
     resources :products
   end
