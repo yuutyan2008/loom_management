@@ -1,4 +1,4 @@
-<%= form_with(model: [@machine], local: true) do |form| %>
+<%= form_with(model: @machine, local: true) do |form| %>
     <% if @machine.errors.any? %>
         <div class="alert alert-danger">
         <h4><%= pluralize(@machine.errors.count, "error") %> prohibited this machine from being saved:</h4>
@@ -19,10 +19,10 @@
         <%= form.label :machine_type_id, "織機のタイプ:" %>
         <%= form.collection_select :machine_type_id, MachineType.all, :id, :name, { prompt: "Select Machine Type" }, { class: "form-control" } %>
     </div>
-
+    
     <div class="form-group">
-        <%= form.label :company_id, "会社名:" %>
-        <%= form.collection_select :company_id, Company.all, :id, :name, { prompt: "Select Company" }, { class: "form-control" } %>
+        <%= form.label :machine_status_id, "稼働状況:" %>
+        <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name, { prompt: "Select Status" }, { class: "form-control" } %>
     </div>
 
     <div class="actions">

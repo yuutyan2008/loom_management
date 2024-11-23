@@ -46,30 +46,26 @@ class OrdersController < ApplicationController
   end
 
   def edit
-    @company = current_user.company
-    unless @order.company == @company
-      redirect_to orders_path, alert: "アクセス権限がありません。"
-    else
-      @order.work_processes.build if @order.work_processes.empty?
+    # 既存の work_processes と machines がロードされていることを確認
+    @order.work_processes.each do |wp|
+      wp.machine_assignments.build if wp.machine_assignments.empty?
     end
   end
 
   def update
-    @company = current_user.company
-    if @order.company == @company
-      ActiveRecord::Base.transaction do
-        if @order.update(order_params)
-          update_related_models
-          redirect_to order_path(@order), notice: "受注情報が更新されました。"
-        else
-          render :edit
-        end
+    ActiveRecord::Base.transaction do
+      if @order.update(order_params)
+        update_work_processes
+        update_machine_assignments
+        update_machine_statuses
+        redirect_to @order, notice: '受注が正常に更新されました。'
+      else
+        render :edit
       end
-    else
-      redirect_to orders_path, alert: "アクセス権限がありません。"
     end
-  rescue ActiveRecord::UnknownAttributeError => e
-    render :edit, alert: "更新中にエラーが発生しました: #{e.message}"
+  rescue ActiveRecord::RecordInvalid => e
+    flash.now[:alert] = "更新に失敗しました: #{e.message}"
+    render :edit
   end
 
   def destroy
@@ -118,6 +114,43 @@ class OrdersController < ApplicationController
         machine_id: params[:order][:machine_id],
         machine_status_id: params[:order][:machine_status_id]
       ) if machine_assignment
+    end
+  end
+
+  def update_work_processes
+    if params[:work_processes]
+      params[:work_processes].each do |wp_param|
+        wp = @order.work_processes.find(wp_param[:id])
+        wp.update!(
+          start_date: wp_param[:start_date],
+          factory_estimated_completion_date: wp_param[:factory_estimated_completion_date],
+          work_process_status_id: wp_param[:work_process_status_id]
+        )
+      end
+    end
+  end
+
+  def update_machine_assignments
+    if params[:machine_assignments]
+      params[:machine_assignments].each do |ma_param|
+        ma = MachineAssignment.find(ma_param[:id])
+        ma.update!(
+          machine_status_id: ma_param[:machine_status_id]
+        )
+      end
+    end
+  end
+
+  # 織機の稼働状況を一括更新するメソッドの追加
+  def update_machine_statuses
+    if params[:machine_statuses]
+      params[:machine_statuses].each do |ms_param|
+        machine_id = ms_param[:machine_id]
+        new_status_id = ms_param[:machine_status_id]
+
+        # 同じ machine_id を持つ全ての MachineAssignment を更新
+        MachineAssignment.where(machine_id: machine_id, work_process: @order.work_processes).update_all(machine_status_id: new_status_id)
+      end
     end
   end
 end

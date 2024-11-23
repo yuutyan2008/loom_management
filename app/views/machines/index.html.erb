@@ -24,7 +24,7 @@
                 <td><%= work_process_status(machine) %></td>
                 <td>
                     <%= link_to '詳細', machine_path(machine) %>
-                    <%= link_to '編集', edit_machine_path(machine) %>
+                    <%= link_to '織機を編集', edit_machine_path(machine) %>
                     <%= link_to '削除', machine_path(machine), data: { turbo_method: :delete, turbo_confirm: '本当に削除しますか？' }, class: "btn btn-danger btn-sm" %>
                 </td>
             </tr>
