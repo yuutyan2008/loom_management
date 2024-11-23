@@ -10,11 +10,11 @@
       <th>数量</th>
       <th>現在の工程</th>
       <th>現在の工程の状況</th>
-      <th>作業開始日</th>
-      <th>最短作業日数</th>
-      <th>最長作業日数</th>
-      <th>最短予定納期</th>
-      <th>最長予定納期</th>
+      <th>開始日</th>
+      <th>完了見込み(最短)</th>
+      <th>完了見込み(最長)</th>
+      <th>機屋の完了予定日</th>
+      <th>機屋の完了日</th>
     </tr>
   </thead>
   <tbody>
@@ -34,7 +34,8 @@
       <td><%= process&.factory_estimated_completion_date || "N/A" %></td>
       <td><%= process&.actual_completion_date || "N/A" %></td>
       <td>
-        <%= link_to '編集', edit_admin_order_path(@order), class: "edit-order" %> |
+        <%= link_to '発注の編集', edit_admin_order_path(@order), class: "edit-order" %> |
+        <%= link_to '作業工程の編集', edit_work_processes_admin_order_path(@order), class: "edit_work_processes_admin_order" %>|
         <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
       </td>
     </tr>
