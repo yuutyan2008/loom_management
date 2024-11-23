@@ -44,16 +44,41 @@ class MachinesController < ApplicationController
   end
 
   def update
-    @company = current_user.company
+  @company = current_user.company
     if @machine.company == @company
-      if @machine.update(machine_params)
-        redirect_to machines_path, notice: "織機が更新されました。"
-      else
-        render :edit, status: :unprocessable_entity
+      ActiveRecord::Base.transaction do
+        # `machine_status_id` を params から抽出し、machine_params から削除
+        machine_status_id = params[:machine].delete(:machine_status_id)
+        # 織機自体の更新
+        if @machine.update(machine_params)
+          # `machine_status_id` が存在する場合、関連する MachineAssignments を一括更新
+          if machine_status_id.present?
+            # MachineAssignmentが存在するか確認
+            assignment = @machine.machine_assignments.first
+            if assignment
+              # 既存のMachineAssignmentを更新
+              assignment.update!(machine_status_id: machine_status_id)
+            else
+              # MachineAssignmentがない場合は新規作成
+              MachineAssignment.create!(
+                machine_id: @machine.id,
+                machine_status_id: machine_status_id,
+                work_process_id: nil # 発注がないためnilを設定
+              )
+            end
+          end
+          redirect_to machines_path, notice: "織機が更新されました。"
+        else
+          render :edit, status: :unprocessable_entity
+          raise ActiveRecord::Rollback, "織機の更新に失敗しました。"
+        end
       end
     else
       redirect_to machines_path, alert: "アクセス権限がありません。"
     end
+  rescue ActiveRecord::RecordInvalid => e
+    flash.now[:alert] = "更新に失敗しました: #{e.message}"
+    render :edit
   end
 
   def destroy
@@ -75,6 +100,6 @@ class MachinesController < ApplicationController
   end
 
   def machine_params
-    params.require(:machine).permit(:name, :machine_type_id, :company_id)
+    params.require(:machine).permit(:name, :machine_type_id, :company_id, :machine_status_id)
   end
 end
