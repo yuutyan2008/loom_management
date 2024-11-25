@@ -20,14 +20,14 @@
   </thead>
   <tbody>
     <%# 各工程を行単位で表示する %>
-    <% @order.work_processes.each do |process| %>
+    <% @work_process.each do |process| %>
     <% process.machine_assignments.each do |assignment| %>
     <tr>
-      <td><%= @order.company.name %></td>
-      <td><%= @order.product_number.number %></td>
-      <td><%= @order.color_number.color_code %></td>
-      <td><%= @order.roll_count %></td>
-      <td><%= @order.quantity %></td>
+      <td><%= process.order.company.name %></td>
+      <td><%= process.order.product_number.number %></td>
+      <td><%= process.order.color_number.color_code %></td>
+      <td><%= process.order.roll_count %></td>
+      <td><%= process.order.quantity %></td>
       <td><%= process&.work_process_definition&.name || "N/A" %></td>
       <td><%= assignment&.machine_status.name || "N/A" %></td>
       <td><%= process&.work_process_status&.name || "N/A" %></td>
