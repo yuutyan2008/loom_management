@@ -1,0 +1,43 @@
+<h1>織機登録フォーム</h1>
+
+<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+<% if @machine.errors.any? %>
+
+<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+<div id="error_explanation">
+  <h2><%= "#{@machine.errors.count} 件のエラーが発生しました" %></h2>
+  <ul>
+    <% @machine.errors.full_messages.each do |message| %>
+    <li><%= message %></li>
+    <% end %>
+  </ul>
+</div>
+<% end %>
+
+<%= form_with model: @machine, url: admin_machines_path, local: true do |f| %>
+<table>
+  <tbody>
+    <tr>
+      <td>会社名</td>
+      <td>
+        <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "会社を選択" %>
+      </td>
+    </tr>
+    <tr>
+      <td>種類</td>
+      <td>
+        <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, placeholder: "種類を選択してください" %></td>
+    </tr>
+    <tr>
+      <td>番号</td>
+      <td>
+        <%= f.collection_select :name, Machine.all, :id, :name, placeholder: "番号を入力してください" %>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 提出ボタン -->
+<%= f.submit "登録する", id: 'update-machine' %>
+<%= link_to "戻る", admin_machines_path, id: 'back' %>
+<% end %>
