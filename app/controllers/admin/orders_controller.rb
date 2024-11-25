@@ -74,7 +74,7 @@ before_action :admin_user
   # 作業工程の編集
   def edit_work_processes
     # 必要なデータを渡す
-    @work_processes = @order.work_processes
+    @work_processes = @order.work_processes.joins(:work_process_definition).order("work_process_definitions.sequence ASC")
   end
 
   # 作業工程の更新
@@ -91,6 +91,21 @@ before_action :admin_user
       # フォームデータからこのレコードに対応するパラメータを取得、idを文字列に変換
       update_record = permitted_params[work_process.id.to_s]
 
+      # machine_assignments の更新処理
+      if update_record.key?('machine_assignments')
+        update_record['machine_assignments'].each do |assignment_id, assignment_params|
+          assignment = work_process.machine_assignments.find(assignment_id)
+
+          if assignment.update(assignment_params)
+            flash.now[:alert] = "機械割り当ての更新に成功しました。"
+          else
+            flash.now[:alert] = "機械割り当ての更新に失敗しました。"
+            render :edit_work_processes and return
+          end
+        end
+        update_record.delete('machine_assignments')
+      end
+
       # 更新処理を実行
       unless work_process.update(update_record)
 
@@ -99,7 +114,11 @@ before_action :admin_user
       end
 
     end
-    # binding.irb/
+# binding.irb
+    # 更新後に並び替えを行う
+    @work_processes = @work_processes.joins(:work_process_definition)
+    .order("work_process_definitions.sequence ASC")
+
     redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
   end
 
@@ -145,7 +164,8 @@ before_action :admin_user
         :earliest_estimated_completion_date,
         :latest_estimated_completion_date,
         :factory_estimated_completion_date,
-        :actual_completion_date
+        :actual_completion_date,
+        machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]
       ]
     end
     params.require(:work_processes).permit(permitted)
