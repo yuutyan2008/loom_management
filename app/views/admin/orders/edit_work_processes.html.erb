@@ -5,6 +5,7 @@
     <thead>
         <tr>
             <th>現在の工程</th>
+            <th>機械の稼働状況</th>
             <th>現在の工程のステータス</th>
             <th>作業開始日</th>
             <th>完了見込み(最短)</th>
@@ -15,14 +16,24 @@
     </thead>
     <tbody>
         <% @work_processes.each do |process| %>
+        <% process.machine_assignments.each do |assignment| %>
         <tr>
             <td><%= process&.work_process_definition&.name || "N/A" %></td>
 
-            <td><%= f.collection_select :name,
-          WorkProcessStatus.all, :id, :name,
-          selected: process&.work_process_status_id,
+            <td>
+                <%= f.collection_select "work_processes[#{process.id}][machine_assignments][#{assignment.id}][machine_status_id]",
+          MachineStatus.all, :id, :name,
+          selected: assignment.machine_status_id,
           include_blank: "選択してください" %>
             </td>
+
+            <td>
+                <%= f.collection_select "work_processes[#{process.id}][work_process_status_id]",
+          WorkProcessStatus.all, :id, :name,
+          selected: process.work_process_status_id,
+          include_blank: "選択してください" %>
+            </td>
+
 
             <td><%= f.date_field "work_processes[#{process.id}][start_date]",
         value: process&.start_date,
@@ -53,6 +64,7 @@
         placeholder: "機屋の完了日を選択してください" %>
             </td>
         </tr>
+        <% end %>
         <% end %>
     </tbody>
 </table>
