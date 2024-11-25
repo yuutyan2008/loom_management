@@ -1,5 +1,4 @@
-<%# 発注済み商品の編集 %>
-<h1><%= t('view.users.admin.edit.title') %></h1>
+<h1>発注済み商品の編集</h1>
 
 <%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
 <% if @order.errors.any? %>
@@ -25,7 +24,6 @@
     </tr>
   </thead>
   <tbody>
-    <!-- 企業名 -->
     <tr>
       <td>企業名</td>
       <td><%= @order.company&.name || "企業情報なし" %></td>
@@ -38,7 +36,6 @@
       </td>
     </tr>
 
-    <!-- 商品番号 -->
     <tr>
       <td>商品番号</td>
       <td><%= @order.product_number&.number || "番号なし" %></td>
@@ -51,7 +48,6 @@
       </td>
     </tr>
 
-    <!-- 色番号 -->
     <tr>
       <td>色番号</td>
       <td><%= @order.color_number&.color_code || "色番号なし" %></td>
@@ -64,7 +60,6 @@
       </td>
     </tr>
 
-    <!-- ロール数 -->
     <tr>
       <td>ロール数</td>
       <td><%= @order.roll_count || "未設定" %></td>
@@ -73,7 +68,6 @@
       </td>
     </tr>
 
-    <!-- 数量 -->
     <tr>
       <td>数量</td>
       <td><%= @order.quantity || "未設定" %></td>
@@ -82,7 +76,6 @@
       </td>
     </tr>
 
-    <!-- 開始日 -->
     <tr>
       <td>開始日</td>
       <td><%= @order.start_date&.strftime("%Y-%m-%d") || "日付なし" %></td>
