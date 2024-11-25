@@ -10,6 +10,8 @@
         </div>
     <% end %>
 
+    <!-- 受注の基本情報 開始日のみの編集セクション -->
+    <h3>基本情報</h3>
     <div class="form-group">
         <strong><%= form.label :product_number_id, "品番" %></strong>
         <%= @order.product_number.number %>
@@ -30,6 +32,57 @@
         <strong><%= form.label :start_date, "開始日" %></strong>
         <%= form.date_field :start_date, class: "form-control" %>
     </div>
+
+    <!-- 織機の稼働状況 一括編集セクション -->
+    <h3>織機の稼働状況</h3>
+    <% machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
+    <% if machine_ids.any? %>
+        <!-- 織機の割り当てがある場合のフォーム -->
+        <table class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>織機名</th>
+                <th>稼働状況</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% machines = Machine.where(id: machine_ids) %>
+            <% machines.each do |machine| %>
+            <!-- 最新の稼働状況を取得 -->
+            <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
+            <tr>
+                <td><%= machine.name %></td>
+                <td>
+                    <%= hidden_field_tag "machine_statuses[][machine_id]", machine.id %>
+                    <%= select_tag "machine_statuses[][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+        </table>
+    <% else %>
+        <!-- 織機の割り当てがない場合のフォーム -->
+        <p>この受注にはまだ織機が割り当てられていません。織機と稼働状況を割り当ててください。</p>
+        <table class="table table-sm table-bordered">
+            <thead>
+                <tr>
+                    <th>織機</th>
+                    <th>稼働状況</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 必要な数だけ織機の割り当てを追加できます。ここでは1つだけ例として示します。 -->
+                <tr>
+                    <td>
+                        <%= select_tag "new_machine_assignments[][machine_id]", options_from_collection_for_select(Machine.all, :id, :name), { prompt: "織機を選択してください", class: "form-control" } %>
+                    </td>
+                    <td>
+                        <%= select_tag "new_machine_assignments[][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    <% end %>
 
     <!-- 作業工程 -->
     <h3>作業工程</h3>
@@ -69,38 +122,12 @@
         </tbody>
     </table>
 
-    <!-- 織機の稼働状況 一括編集セクション -->
-    <h3>織機の稼働状況</h3>
-    <table class="table table-sm table-bordered">
-        <thead>
-            <tr>
-                <th>織機名</th>
-                <th>稼働状況</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
-            <% machines = Machine.where(id: machine_ids) %>
-            <% machines.each do |machine| %>
-                <!-- 最新の稼働状況を取得 -->
-                <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
-                <tr>
-                    <td><%= machine.name %></td>
-                    <td>
-                        <%= hidden_field_tag "machine_statuses[][machine_id]", machine.id %>
-                        <%= select_tag "machine_statuses[][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
-                    </td>
-                </tr>
-            <% end %>
-        </tbody>
-    </table>
-
     <!-- フォーム送信ボタン -->
     <% if @order.new_record? %>
         <%= form.submit '作成', class: "btn btn-primary" %>
-        <%= link_to '戻る', order_path, class: "btn btn-primary" %>
+        <%= link_to '戻る', order_path(@order), class: "btn btn-primary" %>
     <% else %>
         <%= form.submit '更新', class: "btn btn-primary" %>
-        <%= link_to '戻る', order_path, class: "btn btn-primary" %>
+        <%= link_to '戻る', order_path(@order), class: "btn btn-primary" %>
     <% end %>
 <% end %>
