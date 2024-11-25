@@ -1,12 +1,12 @@
 ActiveRecord::Base.transaction do
   # 企業データを作成
-  Company.find_or_create_by!(id: 1) { |c| c.name = 'エルトップ' }
-  Company.find_or_create_by!(id: 2) { |c| c.name = '機屋A' }
-  Company.find_or_create_by!(id: 3) { |c| c.name = '機屋B' }
-  Company.find_or_create_by!(id: 4) { |c| c.name = '機屋C' }
+  Company.find_or_create_by!(name: 'エルトップ') { |c| c.name = 'エルトップ' }
+  Company.find_or_create_by!(name: '機屋A') { |c| c.name = '機屋A' }
+  Company.find_or_create_by!(name: '機屋B') { |c| c.name = '機屋B' }
+  Company.find_or_create_by!(name: '機屋C') { |c| c.name = '機屋C' }
 
   # ユーザーデータを作成
-  User.find_or_create_by!(id: 1) do |u|
+  User.find_or_create_by!(name: '山田太郎') do |u|
     u.name = '山田太郎'
     u.email = 'aaa@example.com'
     u.phone_number = '000-0000-0000'
@@ -16,7 +16,7 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  User.find_or_create_by!(id: 2) do |u|
+  User.find_or_create_by!(name: '佐藤花子') do |u|
     u.name = '佐藤花子'
     u.email = 'bbb@example.com'
     u.phone_number = '000-0000-0001'
@@ -26,7 +26,7 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  User.find_or_create_by!(id: 3) do |u|
+  User.find_or_create_by!(name: '鈴木一郎') do |u|
     u.name = '鈴木一郎'
     u.email = 'ccc@example.com'
     u.phone_number = '000-0000-0002'
@@ -36,7 +36,7 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  User.find_or_create_by!(id: 4) do |u|
+  User.find_or_create_by!(name: '大谷翔平') do |u|
     u.name = '大谷翔平'
     u.email = 'ddd@example.com'
     u.phone_number = '000-0000-0004'
@@ -47,15 +47,15 @@ ActiveRecord::Base.transaction do
   end
 
   # 品番データを作成
-  ProductNumber.find_or_create_by!(id: 1) { |pn| pn.number = 'PN-10' }
-  ProductNumber.find_or_create_by!(id: 2) { |pn| pn.number = 'PN-20' }
-  ProductNumber.find_or_create_by!(id: 3) { |pn| pn.number = 'PN-30' }
+  ProductNumber.find_or_create_by!(number: 'PN-10') { |pn| pn.number = 'PN-10' }
+  ProductNumber.find_or_create_by!(number: 'PN-20') { |pn| pn.number = 'PN-20' }
+  ProductNumber.find_or_create_by!(number: 'PN-30') { |pn| pn.number = 'PN-30' }
 
   # 色番データを作成
-  ColorNumber.find_or_create_by!(id: 1) { |cn| cn.color_code = 'C-001' }
-  ColorNumber.find_or_create_by!(id: 2) { |cn| cn.color_code = 'C-002' }
-  ColorNumber.find_or_create_by!(id: 3) { |cn| cn.color_code = 'C-003' }
-  ColorNumber.find_or_create_by!(id: 4) { |cn| cn.color_code = 'C-004' }
+  ColorNumber.find_or_create_by!(color_code: 'C-001') { |cn| cn.color_code = 'C-001' }
+  ColorNumber.find_or_create_by!(color_code: 'C-002') { |cn| cn.color_code = 'C-002' }
+  ColorNumber.find_or_create_by!(color_code: 'C-003') { |cn| cn.color_code = 'C-003' }
+  ColorNumber.find_or_create_by!(color_code: 'C-004') { |cn| cn.color_code = 'C-004' }
 
   # 発注データを作成
   Order.find_or_create_by!(id: 1) do |o|

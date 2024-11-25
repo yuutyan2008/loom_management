@@ -1,10 +1,6 @@
 <h1>受注詳細</h1>
 
 <p>
-    <strong>会社名:</strong>
-    <%= @order.company.name %>
-</p>
-<p>
     <strong>品番:</strong>
     <%= @order.product_number.number %>
 </p>
@@ -25,32 +21,6 @@
     <%= @order.start_date %>
 </p>
 
-<h2>作業工程</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-        <th>作業工程定義</th>
-        <th>織機</th>
-        <th>開始日</th>
-        <th>ステータス</th>
-        </tr>
-    </thead>
-    <tbody>
-        <% @work_processes.each do |wp| %>
-        <tr>
-            <td><%= wp.work_process_definition.name %></td>
-            <td>
-            <% wp.machines.each do |machine| %>
-                <%= machine.name %><br>
-            <% end %>
-            </td>
-            <td><%= wp.start_date %></td>
-            <td><%= wp.work_process_status.name %></td>
-        </tr>
-        <% end %>
-    </tbody>
-</table>
-
 <h2>織機詳細</h2>
 <% if @machines.any? %>
     <% @machines.each do |machine| %>
@@ -59,27 +29,37 @@
             <%= machine.name %>
         </p>
         <p>
-            <strong>織機のタイプ:</strong>
-            <%= machine.machine_type.name %>
-        </p>
-        <p>
-            <strong>会社名:</strong>
-            <%= machine.company.name %>
-        </p>
-        <p>
             <strong>稼働状況:</strong>
-            <% if @current_machine_assignments.any? %>
-                <% @current_machine_assignments.each do |assignment| %>
-                    <%= assignment.machine_status.name %>
-                <% end %>
-            <% else %>
-                N/A
-            <% end %>
+            <%= machine_statuses(machine) %>
         </p>
     <% end %>
 <% else %>
-    <p>織機情報が見つかりませんでした。</p>
+    <p><%= @no_orders_message %></p>
 <% end %>
 
-<%= link_to '編集', edit_order_path(@order), class: "btn btn-warning" %> |
+<h2>作業工程</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>作業工程定義</th>
+            <th>開始日</th>
+            <th>予定納期</th>
+            <th>完了日</th>
+            <th>ステータス</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @work_processes.each do |current_wp| %>
+        <tr>
+            <td><%= current_wp.work_process_definition.name %></td>
+            <td><%= current_wp.start_date %></td>
+            <td><%= current_wp.factory_estimated_completion_date %></td>
+            <td><%= current_wp.actual_completion_date %></td>
+            <td><%= current_wp.work_process_status.name %></td>
+        </tr>
+        <% end %>
+    </tbody>
+</table>
+
+<%= link_to '編集', edit_order_path(@order), class: "btn btn-warning" %>
 <%= link_to '戻る', orders_path, class: "btn btn-primary" %>

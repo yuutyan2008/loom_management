@@ -1,4 +1,4 @@
-<%= form_with(model: [@order], local: true) do |form| %>
+<%= form_with(model: @order, local: true) do |form| %>
     <% if @order.errors.any? %>
         <div class="alert alert-danger">
         <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
@@ -11,60 +11,65 @@
     <% end %>
 
     <div class="form-group">
-        <%= form.label :company_id, "会社名" %>
-        <%= form.collection_select :company_id, Company.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+        <strong><%= form.label :product_number_id, "品番" %></strong>
+        <%= @order.product_number.number %>
     </div>
-
     <div class="form-group">
-        <%= form.label :product_number_id, "品番" %>
-        <%= form.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "選択してください" }, { class: "form-control" } %>
+        <strong><%= form.label :color_number_id, "色番" %></strong>
+        <%= @order.color_number.color_code %>
     </div>
-
     <div class="form-group">
-        <%= form.label :color_number_id, "色番" %>
-        <%= form.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "選択してください" }, { class: "form-control" } %>
+        <strong><%= form.label :roll_count, "ロール数" %></strong>
+        <%= @order.roll_count %>
     </div>
-
     <div class="form-group">
-        <%= form.label :roll_count, "ロール数" %>
-        <%= form.number_field :roll_count, class: "form-control" %>
+        <strong><%= form.label :quantity, "数量" %></strong>
+        <%= @order.quantity %>
     </div>
-
     <div class="form-group">
-        <%= form.label :quantity, "数量" %>
-        <%= form.number_field :quantity, class: "form-control" %>
+        <strong><%= form.label :start_date, "開始日" %></strong>
+        <%= form.date_field :start_date, class: "form-control" %>
     </div>
 
-    <div class="form-group">
-        <%= form.label :start_date, "開始日" %>
-        <%= form.date_select :start_date, { start_year: 2020, end_year: 2030 }, { class: "form-control" } %>
-    </div>
-
+    <!-- 作業工程 -->
     <h3>作業工程</h3>
     <table class="table table-bordered">
         <thead>
         <tr>
             <th>作業工程定義</th>
-            <th>ステータス</th>
             <th>開始日</th>
+            <th>予定納期</th>
+            <th>完了日</th>
+            <th>ステータス</th>
         </tr>
         </thead>
         <tbody>
-        <%= form.fields_for :work_processes do |wp_form| %>
+        <% @order.work_processes.each do |wp| %>
+            <% machine_assignment = wp.machine_assignments.first %>
             <tr class="nested-fields">
                 <td>
-                    <%= form.collection_select :work_process_definition_id, WorkProcessDefinition.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+                    <%= wp.work_process_definition.name %>
+                    <%= hidden_field_tag "work_processes[][id]", wp.id %>
+                    <%= hidden_field_tag "work_processes[][work_process_definition_id]", wp.work_process_definition_id %>
                 </td>
                 <td>
-                    <%= form.collection_select :work_process_status_id, WorkProcessStatus.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
+                    <%= date_field_tag "work_processes[][start_date]", wp.start_date&.strftime('%Y-%m-%d'), class: "form-control" %>
                 </td>
                 <td>
-                    <%= form.date_select :start_date, { start_year: 2024, end_year: 2030 }, { class: "form-control" } %>
+                    <%= date_field_tag "work_processes[][factory_estimated_completion_date]", wp.factory_estimated_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                </td>
+                <td>
+                    <%= date_field_tag "work_processes[][actual_completion_date]", wp.actual_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                </td>
+                <td>
+                    <%= select_tag "work_processes[][work_process_status_id]", options_from_collection_for_select(WorkProcessStatus.all, :id, :name, wp.work_process_status_id), { prompt: "選択してください", class: "form-control" } %>
                 </td>
             </tr>
+        <% end %>
         </tbody>
     </table>
 
+    <!-- 織機の稼働状況 一括編集セクション -->
     <h3>織機の稼働状況</h3>
     <table class="table table-sm table-bordered">
         <thead>
@@ -74,23 +79,28 @@
             </tr>
         </thead>
         <tbody>
-            <%= form.fields_for :machines do |m_form| %>
-            <tr class="nested-fields">
-                <td>
-                    <%= form.collection_select :machine_id, Machine.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
-                </td>
-                <td>
-                    <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name, { prompt: "選択してください" }, { class: "form-control" } %>
-                </td>
-            </tr>
+            <% machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
+            <% machines = Machine.where(id: machine_ids) %>
+            <% machines.each do |machine| %>
+                <!-- 最新の稼働状況を取得 -->
+                <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
+                <tr>
+                    <td><%= machine.name %></td>
+                    <td>
+                        <%= hidden_field_tag "machine_statuses[][machine_id]", machine.id %>
+                        <%= select_tag "machine_statuses[][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
+                    </td>
+                </tr>
             <% end %>
         </tbody>
     </table>
-    <% end %>
 
-    <% if order.new_record? %>
+    <!-- フォーム送信ボタン -->
+    <% if @order.new_record? %>
         <%= form.submit '作成', class: "btn btn-primary" %>
+        <%= link_to '戻る', order_path, class: "btn btn-primary" %>
     <% else %>
         <%= form.submit '更新', class: "btn btn-primary" %>
+        <%= link_to '戻る', order_path, class: "btn btn-primary" %>
     <% end %>
 <% end %>
