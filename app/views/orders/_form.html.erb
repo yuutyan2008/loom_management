@@ -39,6 +39,7 @@
             <th>作業工程定義</th>
             <th>開始日</th>
             <th>予定納期</th>
+            <th>完了日</th>
             <th>ステータス</th>
         </tr>
         </thead>
@@ -46,20 +47,23 @@
         <% @order.work_processes.each do |wp| %>
             <% machine_assignment = wp.machine_assignments.first %>
             <tr class="nested-fields">
-            <td>
-                <%= wp.work_process_definition.name %>
-                <%= hidden_field_tag "work_processes[][id]", wp.id %>
-                <%= hidden_field_tag "work_processes[][work_process_definition_id]", wp.work_process_definition_id %>
-            </td>
-            <td>
-                <%= date_field_tag "work_processes[][start_date]", wp.start_date&.strftime('%Y-%m-%d'), class: "form-control" %>
-            </td>
-            <td>
-                <%= date_field_tag "work_processes[][factory_estimated_completion_date]", wp.factory_estimated_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
-            </td>
-            <td>
-                <%= select_tag "work_processes[][work_process_status_id]", options_from_collection_for_select(WorkProcessStatus.all, :id, :name, wp.work_process_status_id), { prompt: "選択してください", class: "form-control" } %>
-            </td>
+                <td>
+                    <%= wp.work_process_definition.name %>
+                    <%= hidden_field_tag "work_processes[][id]", wp.id %>
+                    <%= hidden_field_tag "work_processes[][work_process_definition_id]", wp.work_process_definition_id %>
+                </td>
+                <td>
+                    <%= date_field_tag "work_processes[][start_date]", wp.start_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                </td>
+                <td>
+                    <%= date_field_tag "work_processes[][factory_estimated_completion_date]", wp.factory_estimated_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                </td>
+                <td>
+                    <%= date_field_tag "work_processes[][actual_completion_date]", wp.actual_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                </td>
+                <td>
+                    <%= select_tag "work_processes[][work_process_status_id]", options_from_collection_for_select(WorkProcessStatus.all, :id, :name, wp.work_process_status_id), { prompt: "選択してください", class: "form-control" } %>
+                </td>
             </tr>
         <% end %>
         </tbody>
@@ -94,7 +98,9 @@
     <!-- フォーム送信ボタン -->
     <% if @order.new_record? %>
         <%= form.submit '作成', class: "btn btn-primary" %>
+        <%= link_to '戻る', order_path, class: "btn btn-primary" %>
     <% else %>
         <%= form.submit '更新', class: "btn btn-primary" %>
+        <%= link_to '戻る', order_path, class: "btn btn-primary" %>
     <% end %>
 <% end %>

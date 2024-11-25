@@ -8,7 +8,7 @@
                 <th>現在の作業工程</th>
                 <th>ステータス</th>
                 <th>織機</th>
-                <th></th>
+                <th>稼働状況</th>
             </tr>
         </thead>
 
@@ -19,6 +19,7 @@
                 <td><%= work_process_name(order) %></td>
                 <td><%= work_process_status(order) %></td>
                 <td><%= machine_names(order) %></td>
+                <td><%= machine_statuses_for_order(order) %></td>
                 <td>
                     <%= link_to '詳細', order_path(order), class: "btn btn-info btn-sm" %>
                     <%= link_to '編集', edit_order_path(order), class: "btn btn-warning btn-sm" %>
