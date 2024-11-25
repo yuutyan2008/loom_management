@@ -8,8 +8,9 @@ module ApplicationHelper
                                         .first
     if latest_completed_wp
       # 最新の「作業完了」より後の作業工程を取得
-      next_process = work_processes.where('start_date > ?', latest_completed_wp.start_date).order(:start_date).first
-      next_process
+      work_processes.where('start_date > ?', latest_completed_wp.start_date)
+                    .order(:start_date)
+                    .first
     else
       # 「作業完了」がない場合、最も古い作業工程を取得
       work_processes.order(:start_date).first
@@ -43,19 +44,27 @@ module ApplicationHelper
     not_available(names)
   end
 
+  # 受注に関連する稼働状況を取得
+  def machine_statuses_for_order(order)
+    current_wp = find_current_work_process(order.work_processes)
+    assignments = current_wp.machine_assignments.includes(:machine_status)
+    statuses = assignments.map { |assignment| assignment.machine_status&.name }
+    ms_name = statuses.uniq.join(', ')
+    not_machine_status(ms_name)
+  end
+
   # 稼働状況を取得
   def machine_statuses(machine)
     current_wp = find_current_work_process(machine.work_processes)
-    statuses = []
-    if current_wp
-      # 現在の作業工程に関連する MachineAssignment のステータスを追加
-      statuses += current_wp.machine_assignments.map { |a| a.machine_status.name }
-    end
+    # 現在の作業工程に関連する MachineAssignment のステータスを追加
+    current_statuses = current_wp ? current_wp.machine_assignments.map { |a| a.machine_status.name } : []
     # work_process_id が nil の MachineAssignment のステータスを追加
-    statuses += machine.machine_assignments.where(work_process_id: nil).map { |a| a.machine_status.name }
+    wp_nil_statuses = machine.machine_assignments
+                        .where(work_process_id: nil)
+                        .map { |a| a.machine_status.name }
     # 重複を排除し、カンマ区切りで表示
-    statuses = statuses.uniq.join(', ')
-    not_machine_status(statuses)
+    ms_statuses = (current_statuses + wp_nil_statuses).uniq.join(', ')
+    not_machine_status(ms_statuses)
   end
 
   # 品番を取得
