@@ -6,6 +6,16 @@ before_action :admin_user
 
   def index
     @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
+
+    # 各注文に対して現在作業中の作業工程を取得
+    @current_work_processes = {}
+    @orders.each do |order|
+      if order.work_processes.any?
+        @current_work_processes[order.id] = order.work_processes.current_work_process
+      else
+        @current_work_processes[order.id] = nil
+      end
+    end
   end
 
   def new
@@ -89,7 +99,7 @@ before_action :admin_user
       end
 
     end
-    binding.irb
+    # binding.irb/
     redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
   end
 

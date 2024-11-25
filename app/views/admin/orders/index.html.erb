@@ -13,16 +13,17 @@
   </thead>
   <tbody>
     <% @orders.each do |order| %>
+    <% current_process = @current_work_processes[order.id] %>
+    <% if current_process %>
     <tr>
       <td><%= order.company.name %></td>
       <td><%= order.product_number.number %></td>
       <td><%= order.color_number.color_code %></td>
       <td>
-        <%# order.work_processesが複数存在するため全てを表示する %>
-        <%= order.work_processes.order(updated_at: :desc).first&.work_process_definition&.name.presence || "未設定" %>
+        <%= current_process.work_process_definition&.name.presence || "未設定" %>
       </td>
-      <td><%= order.work_processes.order(updated_at: :desc).first&.start_date %></td>
-      <td><%= order.work_processes.order(updated_at: :desc).first&.factory_estimated_completion_date %></td>
+      <td><%= current_process.start_date %></td>
+      <td><%= current_process.factory_estimated_completion_date %></td>
 
 
 
@@ -33,6 +34,7 @@
         data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"} %>
       </td>
     </tr>
+    <% end %>
     <% end %>
   </tbody>
 </table>
