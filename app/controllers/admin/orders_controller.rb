@@ -46,7 +46,8 @@ before_action :admin_user
   end
 
   def show
-    @order
+    @work_process = @order.work_processes.joins(:work_process_definition)
+    .order("work_process_definitions.sequence ASC")
   end
 
   def edit
