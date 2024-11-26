@@ -5,7 +5,7 @@ before_action :set_order, only: [:edit, :show, :update, :destroy, :edit_work_pro
 before_action :admin_user
 
   def index
-    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
+    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate, process_estimate: :machine_type])
 
     # 各注文に対して現在作業中の作業工程を取得
     @current_work_processes = {}
@@ -20,6 +20,7 @@ before_action :admin_user
 
   def new
     @order = Order.new
+
   end
 
   def create
@@ -46,7 +47,8 @@ before_action :admin_user
   end
 
   def show
-    @order
+    @work_process = @order.work_processes.joins(:work_process_definition)
+    .order("work_process_definitions.sequence ASC")
   end
 
   def edit
