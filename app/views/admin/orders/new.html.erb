@@ -45,6 +45,15 @@
       </td>
     </tr>
 
+    <!-- 機械の種類 -->
+    <tr>
+      <td>機械の種類</td>
+      <td>
+        <%# テキストフィールドで色番を入力 %>
+        <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, placeholder: "機械の種類を選択してください" %>
+      </td>
+    </tr>
+
     <!-- 反数 -->
     <tr>
       <td>反数</td>
