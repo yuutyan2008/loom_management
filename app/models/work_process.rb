@@ -39,4 +39,21 @@ class WorkProcess < ApplicationRecord
       },
     ]
   end
+
+  # 現在作業中の作業工程を取得するスコープ
+  def self.current_work_process
+    # 最新の「作業完了」ステータスの作業工程を取得
+    latest_completed_wp = joins(:work_process_status)
+                            .where(work_process_statuses: { name: '作業完了' })
+                            .order(start_date: :desc)
+                            .first
+
+    if latest_completed_wp
+      # 最新の「作業完了」より後の作業工程を取得
+      where('start_date > ?', latest_completed_wp.start_date).order(:start_date).first
+    else
+      # 「作業完了」がない場合、最も古い作業工程を取得
+      order(:start_date).first
+    end
+  end
 end

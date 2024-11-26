@@ -37,6 +37,18 @@ module ApplicationHelper
     not_available(current_wp&.work_process_status&.name)
   end
 
+  # 受注の開始日を取得
+  def work_process_start_date(order)
+    current_wp = find_current_work_process(order.work_processes)
+    not_available(current_wp&.start_date)
+  end
+
+  # 受注の完了予定日を取得
+  def work_process_factory_estimated_completion_date(order)
+    current_wp = find_current_work_process(order.work_processes)
+    not_available(current_wp&.factory_estimated_completion_date)
+  end
+
   # 受注に関連する織機の名前を取得
   def machine_names(order)
     current_wp = find_current_work_process(order.work_processes)

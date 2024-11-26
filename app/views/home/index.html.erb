@@ -6,25 +6,28 @@
     <table>
         <thead>
             <tr>
-                <th>会社名</th>
                 <th>品番</th>
                 <th>色番</th>
                 <th>数量</th>
+                <th>現在の作業工程</th>
+                <th>ステータス</th>
                 <th>開始日</th>
-                <th>詳細</th>
+                <th>完了予定日</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             <% @orders.each do |order| %>
             <tr>
-                <td><%= order.company&.name %></td>
                 <td><%= order.product_number&.number %></td>
                 <td><%= order.color_number&.color_code %></td>
                 <td><%= order.quantity %></td>
+                <td><%= work_process_name(order) %></td>
+                <td><%= work_process_status(order) %></td>
                 <td><%= order.start_date %></td>
+                <td><%= work_process_factory_estimated_completion_date(order) %></td>
                 <td><%= link_to '詳細', order_path(order) %></td>
                 <td><%= link_to '編集', edit_order_path(order) %></td>
-                <td><%= link_to '戻る', root_path %></td>
             </tr>
             <% end %>
         </tbody>
