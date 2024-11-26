@@ -7,12 +7,12 @@ class MachinesController < ApplicationController
 
   def index
     @machines = @company.machines
-    @no_machines_message = "現在織機はありません" if @machines.empty?
-    @work_processes = WorkProcess.all
+    @no_machines_message = "現在保有している織機はありません" if @machines.empty?
+    @work_processes = WorkProcess.ordered
   end
 
   def show
-    @work_processes = @machine.work_processes
+    @work_processes = @machine.work_processes.ordered
   end
 
   def new
