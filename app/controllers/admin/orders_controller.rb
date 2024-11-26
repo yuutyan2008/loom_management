@@ -5,7 +5,7 @@ before_action :set_order, only: [:edit, :show, :update, :destroy, :edit_work_pro
 before_action :admin_user
 
   def index
-    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate, process_estimate: :machine_type])
+    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
 
     # 各注文に対して現在作業中の作業工程を取得
     @current_work_processes = {}
@@ -25,8 +25,8 @@ before_action :admin_user
 
   def create
     # orderテーブル以外を除外してorderインスタンス作成
-    @order = Order.new(order_params.except(:factory_estimated_completion_date, :start_date))
-    # orderの子オブジェクトのworkProcessインスタンス作成
+    @order = Order.new(order_params.except(work_processes: :start_date, process_estimate: [:id, :machine_type]))
+    # orderの子オブジェクトのworkProcessインス[タンス作成
     @order.work_processes.build(
       # 一括作成したレコードを呼び出して初期値を入れる
       WorkProcess.initial_processes_list(order_params[:start_date])
@@ -36,9 +36,11 @@ before_action :admin_user
     if @order.save
       # work_processes更新
       @order.work_processes.each do |process|
-        process.update(
-        factory_estimated_completion_date: order_params[:factory_estimated_completion_date])
+        process.update(start_date: order_params[:start_date])
+        process.process_estimate.machine_type.update(name: order_params[:start_date])
       end
+      # machine_type登録
+      #
       redirect_to admin_orders_path, notice: "注文が作成されました"
     else
       flash.now[:alert] = @order.errors.full_messages.join(", ")
@@ -116,7 +118,6 @@ before_action :admin_user
       end
 
     end
-# binding.irb
     # 更新後に並び替えを行う
     @work_processes = @work_processes.joins(:work_process_definition)
     .order("work_process_definitions.sequence ASC")
@@ -148,11 +149,16 @@ before_action :admin_user
       :roll_count,
       :quantity,
       # :start_date, # 重複のためorderテーブルのstart_dateを削除
-      :factory_estimated_completion_date,
+      # :factory_estimated_completion_date,
       :earliest_estimated_completion_date,
       :latest_estimated_completion_date,
-      :actual_completion_date,
+      # :actual_completion_date,
       :start_date,
+      # machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id],
+      # process_estimate: [:id, :machine_type]
+    # ).merge(process_estimates_id: [:id, :machine_type], machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]),
+    {:process_estimates=> [] } # machine_typeの取得
+
     )
   end
 
@@ -165,9 +171,10 @@ before_action :admin_user
         :start_date,
         :earliest_estimated_completion_date,
         :latest_estimated_completion_date,
-        :factory_estimated_completion_date,
-        :actual_completion_date,
-        machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]
+        # :factory_estimated_completion_date,
+        # :actual_completion_date,
+        machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id],
+        process_estimate: [:id, :machine_type]
       ]
     end
     params.require(:work_processes).permit(permitted)
