@@ -1,0 +1,76 @@
+<h1>作業工程の編集</h1>
+
+<%= form_with url: update_work_processes_admin_order_path(@order), method: :patch, local: true do |f| %>
+<table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+        <tr>
+            <th>現在の工程</th>
+            <th>機械の稼働状況</th>
+            <th>現在の工程のステータス</th>
+            <th>作業開始日</th>
+            <th>完了見込み(最短)</th>
+            <th>完了見込み(最長)</th>
+            <th>機屋の完了予定日</th>
+            <th>機屋の完了日</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% @work_processes.each do |process| %>
+        <% process.machine_assignments.each do |assignment| %>
+        <tr>
+            <td><%= process&.work_process_definition&.name || "N/A" %></td>
+
+            <td>
+                <%= f.collection_select "work_processes[#{process.id}][machine_assignments][#{assignment.id}][machine_status_id]",
+          MachineStatus.all, :id, :name,
+          selected: assignment.machine_status_id,
+          include_blank: "選択してください" %>
+            </td>
+
+            <td>
+                <%= f.collection_select "work_processes[#{process.id}][work_process_status_id]",
+          WorkProcessStatus.all, :id, :name,
+          selected: process.work_process_status_id,
+          include_blank: "選択してください" %>
+            </td>
+
+
+            <td><%= f.date_field "work_processes[#{process.id}][start_date]",
+        value: process&.start_date,
+        placeholder: "作業開始日を選択してください" %>
+            </td>
+
+            <td>
+                <%= f.date_field "work_processes[#{process.id}][earliest_estimated_completion_date]",
+        value: process&.earliest_estimated_completion_date,
+        placeholder: "完了見込み(最短)を選択してください" %>
+            </td>
+
+            <td>
+                <%= f.date_field "work_processes[#{process.id}][latest_estimated_completion_date]",
+        value: process&.latest_estimated_completion_date,
+        placeholder: "完了見込み(最長)を選択してください" %>
+            </td>
+
+            <td>
+                <%= f.date_field "work_processes[#{process.id}][factory_estimated_completion_date]",
+        value: process&.factory_estimated_completion_date,
+        placeholder: "機屋の完了予定日を選択してください" %>
+            </td>
+
+            <td>
+                <%= f.date_field "work_processes[#{process.id}][actual_completion_date]",
+        value: process&.actual_completion_date,
+        placeholder: "機屋の完了日を選択してください" %>
+            </td>
+        </tr>
+        <% end %>
+        <% end %>
+    </tbody>
+</table>
+
+<div>
+    <%= f.submit "更新", class: "btn btn-primary" %>
+    <%= link_to "キャンセルして戻る", admin_order_path(@order), class: "btn btn-secondary" %>
+</div>
+<% end %>

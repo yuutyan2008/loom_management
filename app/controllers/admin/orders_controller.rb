@@ -1,9 +1,21 @@
 class Admin::OrdersController < ApplicationController
-before_action :order_params, only: %i[create update]
+before_action :order_params, only: [:create,  :update]
+before_action :work_processes_params, only: [:update_work_processes]
+before_action :set_order, only: [:edit, :show, :update, :destroy, :edit_work_processes, :update_work_processes]
 before_action :admin_user
 
   def index
     @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
+
+    # 各注文に対して現在作業中の作業工程を取得
+    @current_work_processes = {}
+    @orders.each do |order|
+      if order.work_processes.any?
+        @current_work_processes[order.id] = order.work_processes.current_work_process
+      else
+        @current_work_processes[order.id] = nil
+      end
+    end
   end
 
   def new
@@ -34,20 +46,17 @@ before_action :admin_user
   end
 
   def show
-    @order = Order.find(params[:id])
+    @order
   end
+
   def edit
-    @order = Order.find_by(id: params[:id])
     if @order.nil?
       Rails.logger.debug "注文が見つかりません"
-      # もしくは以下のコードで例外を投げる
       raise "注文が見つかりません"
     end
   end
 
   def update
-    @order = Order.find(params[:id])
-
     if @order.update(order_params)
       # 国際化（i18n）
       # ja.yml に定義したフラッシュメッセージに翻訳
@@ -55,17 +64,66 @@ before_action :admin_user
       flash[:notice] = "発注が更新されました"
 
 
-      redirect_to admin_orders_path
+      redirect_to admin_order_path(@order)
     else
       flash.now[:alert] = @order.errors.full_messages.join(", ") # エラーメッセージを追加
       render :edit
     end
   end
 
+  # 作業工程の編集
+  def edit_work_processes
+    # 必要なデータを渡す
+    @work_processes = @order.work_processes.joins(:work_process_definition).order("work_process_definitions.sequence ASC")
+  end
+
+  # 作業工程の更新
+  def update_work_processes
+    # strongparameterで許可されたフォームのname属性値を取得
+    permitted_params = work_processes_params.to_h
+    # フォームデータからIDを取得
+    work_process_ids = permitted_params.keys
+    # IDを指定してDBからデータ取得
+    @work_processes = WorkProcess.where(id: work_process_ids)
+
+    # success = true # フラグ初期化
+    @work_processes.each do |work_process|
+      # フォームデータからこのレコードに対応するパラメータを取得、idを文字列に変換
+      update_record = permitted_params[work_process.id.to_s]
+
+      # machine_assignments の更新処理
+      if update_record.key?('machine_assignments')
+        update_record['machine_assignments'].each do |assignment_id, assignment_params|
+          assignment = work_process.machine_assignments.find(assignment_id)
+
+          if assignment.update(assignment_params)
+            flash.now[:alert] = "機械割り当ての更新に成功しました。"
+          else
+            flash.now[:alert] = "機械割り当ての更新に失敗しました。"
+            render :edit_work_processes and return
+          end
+        end
+        update_record.delete('machine_assignments')
+      end
+
+      # 更新処理を実行
+      unless work_process.update(update_record)
+
+        flash.now[:alert] = "作業工程の更新に失敗しました。"
+        render :edit_work_processes and return
+      end
+
+    end
+# binding.irb
+    # 更新後に並び替えを行う
+    @work_processes = @work_processes.joins(:work_process_definition)
+    .order("work_process_definitions.sequence ASC")
+
+    redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
+  end
+
   # 削除処理の開始し管理者削除を防ぐロジックはmodelで行う
   def destroy
-    # binding.irb
-    @order = Order.find(params[:id])
     if @order.destroy
       # ココ(削除実行直前)でmodelに定義したコールバックが呼ばれる
 
@@ -80,7 +138,6 @@ before_action :admin_user
 
   private
   # フォームの入力値のみ許可
-
   def order_params
     params.require(:order).permit(
       :company_id,
@@ -90,8 +147,33 @@ before_action :admin_user
       :quantity,
       # :start_date, # 重複のためorderテーブルのstart_dateを削除
       :factory_estimated_completion_date,
+      :earliest_estimated_completion_date,
+      :latest_estimated_completion_date,
+      :actual_completion_date,
       :start_date,
     )
+  end
+
+  def work_processes_params
+    permitted = {}
+    params[:work_processes].keys.each do |key|
+      permitted[key] = [
+        :id,
+        :work_process_status_id,
+        :start_date,
+        :earliest_estimated_completion_date,
+        :latest_estimated_completion_date,
+        :factory_estimated_completion_date,
+        :actual_completion_date,
+        machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]
+      ]
+    end
+    params.require(:work_processes).permit(permitted)
+  end
+
+
+  def set_order
+    @order = Order.find(params[:id])
   end
 
   # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
