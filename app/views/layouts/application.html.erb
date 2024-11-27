@@ -46,7 +46,7 @@
       <%# 一般ユーザー用ナビゲーション %>
       <li><%= link_to "ホーム", root_path %></li>
       <li><%= link_to "織機一覧", machines_path %></li>
-      <li><%= link_to "受注管理", orders_path %></li>
+      <li><%= link_to "受注一覧", orders_path %></li>
       <% end %>
       <li><%= link_to "ユーザー情報", user_path(current_user) %></li>
       <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete } %></li>
