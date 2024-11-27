@@ -1,11 +1,12 @@
 class Admin::OrdersController < ApplicationController
 before_action :order_params, only: [:create,  :update]
-before_action :work_processes_params, only: [:update_work_processes]
 before_action :set_order, only: [:edit, :show, :update, :destroy, :edit_work_processes, :update_work_processes]
+before_action :work_process_params, only: [:create, :update]
+# before_action :process_estimate_params, only: [:create, :update]
 before_action :admin_user
 
   def index
-    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, :process_estimate])
+    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
 
     # 各注文に対して現在作業中の作業工程を取得
     @current_work_processes = {}
@@ -24,29 +25,51 @@ before_action :admin_user
 
   def create
     # orderテーブル以外を除外してorderインスタンス作成
-    @order = Order.new(order_params.except(:factory_estimated_completion_date, :start_date))
-    # orderの子オブジェクトのworkProcessインスタンス作成
-    @order.work_processes.build(
-      # 一括作成したレコードを呼び出して初期値を入れる
-      WorkProcess.initial_processes_list(order_params[:start_date])
-    )
+    # @order = Order.new(order_params.except(work_processes: :start_date, process_estimate: [:id, :machine_type]))
+    @order = Order.new(order_params)
+    # unless @order.save
+    #   redirect_to admin_orders_path, alert: "注文の保存に失敗しました" and return
+    # end
 
-    # order、work_processes保存
-    if @order.save
-      # work_processes更新
-      @order.work_processes.each do |process|
-        process.update(
-        factory_estimated_completion_date: order_params[:factory_estimated_completion_date])
-      end
-      redirect_to admin_orders_path, notice: "注文が作成されました"
-    else
-      flash.now[:alert] = @order.errors.full_messages.join(", ")
-      render :new
+    start_date = work_process_params[:start_date]
+    machine_type_id = work_process_params[:process_estimate][:machine_type_id].to_i
+    # 5個のwork_process配列を作成
+    # orderの子オブジェクトのworkProcess関連付け
+    if machine_type_id == 1
+      @order.work_processes.build(
+        WorkProcess.dobby_initial_processes_list(start_date))
+
+    elsif machine_type_id == 2
+      @order.work_processes.build(
+        WorkProcess.jacquard_initial_processes_list(start_date))
     end
+
+    # machine_type_idをナレッジに保存
+    # @order.work_processes.each do |work_process|
+    #   work_process.earliest_estimated_completion_date = Date.today
+    #   work_process.latest_estimated_completion_date = Date.today
+    #   unless work_process.save
+    #     redirect_to admin_orders_path, alert: "作業工程の保存に失敗しました" and return
+    #   end
+
+    # end
+
+    # ナレッジが計算される(初回はそのまま表示)
+#binding.irb
+    @order.save
+    redirect_to admin_orders_path, notice: "注文が作成されました"
+
+
+    # # orderの子オブジェクトのworkProcessインスタンス作成
+    # @order.work_processes.build(
+    #   WorkProcess.initial_processes_list(order_params[:start_date]).map {|process| {**process, process_estimates_id: 1}}
+    # )
+
   end
 
   def show
-    @order
+    @work_process = @order.work_processes.joins(:work_process_definition)
+    .order("work_process_definitions.sequence ASC")
   end
 
   def edit
@@ -114,7 +137,6 @@ before_action :admin_user
       end
 
     end
-# binding.irb
     # 更新後に並び替えを行う
     @work_processes = @work_processes.joins(:work_process_definition)
     .order("work_process_definitions.sequence ASC")
@@ -145,32 +167,15 @@ before_action :admin_user
       :color_number_id,
       :roll_count,
       :quantity,
-      # :start_date, # 重複のためorderテーブルのstart_dateを削除
-      :factory_estimated_completion_date,
-      :earliest_estimated_completion_date,
-      :latest_estimated_completion_date,
-      :actual_completion_date,
-      :start_date,
+    # ).merge(process_estimates_id: [:id, :machine_type], machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]),
+    # {:process_estimates=> [] } # machine_typeの取得
+
     )
   end
 
-  def work_processes_params
-    permitted = {}
-    params[:work_processes].keys.each do |key|
-      permitted[key] = [
-        :id,
-        :work_process_status_id,
-        :start_date,
-        :earliest_estimated_completion_date,
-        :latest_estimated_completion_date,
-        :factory_estimated_completion_date,
-        :actual_completion_date,
-        machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]
-      ]
-    end
-    params.require(:work_processes).permit(permitted)
+  def work_process_params
+    params.require(:work_process).permit(:start_date, process_estimate: [:machine_type_id])
   end
-
 
   def set_order
     @order = Order.find(params[:id])

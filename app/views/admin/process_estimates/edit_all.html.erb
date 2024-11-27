@@ -1,0 +1,57 @@
+<h1>問屋側の製造見込み日数の編集</h1>
+
+<h2>ドビー</h2>
+<%= form_with url: update_all_admin_process_estimates_path, method: :patch, local: true do %>
+<h2>ドビー</h2>
+<table border="1" cellpadding="5" cellspacing="0">
+  <thead>
+    <tr>
+      <th>工程</th>
+      <th>最短の完了日数</th>
+      <th>最長の完了日数</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @dobbie_estimates.each do |estimate| %>
+    <tr>
+      <td><%= estimate.work_process_definition.name %></td>
+      <td>
+        <%= number_field_tag "process_estimates[#{estimate.id}][earliest_completion_estimate]", estimate.earliest_completion_estimate, min: 0 %>
+      </td>
+      <td>
+        <%= number_field_tag "process_estimates[#{estimate.id}][latest_completion_estimate]", estimate.latest_completion_estimate, min: 0 %>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>ジャガード</h2>
+<table border="1" cellpadding="5" cellspacing="0">
+  <thead>
+    <tr>
+      <th>工程</th>
+      <th>最短の完了日数</th>
+      <th>最長の完了日数</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @jacquard_estimates.each do |estimate| %>
+    <tr>
+      <td><%= estimate.work_process_definition.name %></td>
+      <td>
+        <%= number_field_tag "process_estimates[#{estimate.id}][earliest_completion_estimate]", estimate.earliest_completion_estimate, min: 0 %>
+      </td>
+      <td>
+        <%= number_field_tag "process_estimates[#{estimate.id}][latest_completion_estimate]", estimate.latest_completion_estimate, min: 0 %>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<div>
+  <%= button_to "更新", update_all_admin_process_estimates_path, class: "update-button" %>
+  <%= link_to '戻る', admin_process_estimates_path, class: "btn btn-secondary" %>
+</div>
+<% end %>

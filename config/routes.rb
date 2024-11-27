@@ -18,6 +18,13 @@ Rails.application.routes.draw do
     end
     resources :users
     resources :products
+
+    resources :process_estimates, only: [:index, :new, :create] do
+      collection do
+        get :edit_all
+        patch :update_all
+      end
+    end
   end
 
   # 通常ユーザー用のリソース

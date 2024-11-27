@@ -1,0 +1,52 @@
+<h1>問屋側の製造見込み日数</h1>
+
+<h2>ドビー</h2>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <thead>
+    <tr>
+      <th>工程</th>
+      <th>最短の完了日時</th>
+      <th>最長の完了日時</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @dobbie_estimates.each do |estimate| %>
+    <tr>
+      <td><%= estimate&.work_process_definition.name || "N/A" %></td>
+
+      <td><%= estimate&.earliest_completion_estimate || "N/A" %></td>
+      <td><%= estimate&.latest_completion_estimate || "N/A" %></td>
+
+    </tr>
+    <% end %>
+  </tbody>
+</table>
+
+
+
+<h2>ジャガード</h2>
+<table border="1" cellpadding="5" cellspacing="0">
+  <thead>
+    <tr>
+      <th>工程</th>
+      <th>最短の完了日時</th>
+      <th>最長の完了日時</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @jacquard_estimates.each do |estimate| %>
+    <tr>
+      <td><%= estimate&.work_process_definition.name || "N/A" %></td>
+
+      <td><%= estimate&.earliest_completion_estimate || "N/A" %></td>
+      <td><%= estimate&.latest_completion_estimate || "N/A" %></td>
+
+    </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<td>
+  <%= link_to "編集", edit_all_admin_process_estimates_path, class: 'edit-process_estimates' %>
+</td>
