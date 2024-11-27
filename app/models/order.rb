@@ -2,7 +2,6 @@ class Order < ApplicationRecord
   belongs_to :company
   belongs_to :product_number
   belongs_to :color_number
-  has_many :work_processes
+  has_many :work_processes, -> { ordered }
 
-  # accepts_nested_attributes_for :work_processes
 end
