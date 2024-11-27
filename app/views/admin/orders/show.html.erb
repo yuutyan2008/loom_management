@@ -21,7 +21,7 @@
   <tbody>
     <%# 各工程を行単位で表示する %>
     <% @work_process.each do |process| %>
-    <% process.machine_assignments.each do |assignment| %>
+    <%# process.machine_assignments.each do |assignment| %>
     <tr>
       <td><%= process.order.company.name %></td>
 
@@ -30,7 +30,8 @@
       <td><%= process.order.roll_count %></td>
       <td><%= process.order.quantity %></td>
       <td><%= process&.work_process_definition&.name || "N/A" %></td>
-      <td><%= assignment&.machine_status.name || "N/A" %></td>
+      <td><%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
+      </td>
       <td><%= process&.work_process_status&.name || "N/A" %></td>
       <td><%= process&.start_date || "N/A" %></td>
       <td><%= process&.earliest_estimated_completion_date || "N/A" %></td>
@@ -43,7 +44,7 @@
         <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
       </td>
     </tr>
-    <% end %>
+    <%# end %>
     <% end %>
   </tbody>
 </table>

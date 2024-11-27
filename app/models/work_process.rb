@@ -7,39 +7,80 @@ class WorkProcess < ApplicationRecord
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :machines, through: :machine_assignments
 
-  accepts_nested_attributes_for :process_estimate
+  # accepts_nested_attributes_for :process_estimate
 
 
   # 発注登録時に一括作成するWorkProcessレコード定義
-  def self.initial_processes_list(start_date)
+  def self.dobby_initial_processes_list(start_date)
     [
       {
         work_process_definition_id: 1,
         work_process_status_id: 1,
-        start_date: start_date
+        start_date: start_date,
+        process_estimate_id: 1
       },
       {
         work_process_definition_id: 2,
         work_process_status_id: 1,
-        start_date: start_date
+        start_date: start_date,
+        process_estimate_id: 2
       },
       {
         work_process_definition_id: 3,
         work_process_status_id: 1,
-        start_date: start_date
+        start_date: start_date,
+        process_estimate_id: 3
       },
       {
         work_process_definition_id: 4,
         work_process_status_id: 1,
-        start_date: start_date
+        start_date: start_date,
+        process_estimate_id: 4
       },
       {
         work_process_definition_id: 5,
         work_process_status_id: 1,
-        start_date: start_date
+        start_date: start_date,
+        process_estimate_id: 5
       },
     ]
   end
+
+    # 発注登録時に一括作成するWorkProcessレコード定義
+    def self.jacquard_initial_processes_list(start_date)
+      [
+        {
+          work_process_definition_id: 1,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: 6
+        },
+        {
+          work_process_definition_id: 2,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: 7
+        },
+        {
+          work_process_definition_id: 3,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: 8
+        },
+        {
+          work_process_definition_id: 4,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: 9
+        },
+        {
+          work_process_definition_id: 5,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: 10
+        },
+      ]
+    end
 
   # 現在作業中の作業工程を取得するスコープ
   def self.current_work_process
