@@ -7,6 +7,9 @@ class WorkProcess < ApplicationRecord
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :machines, through: :machine_assignments
 
+  accepts_nested_attributes_for :process_estimate
+
+
   # 発注登録時に一括作成するWorkProcessレコード定義
   def self.initial_processes_list(start_date)
     [
