@@ -41,6 +41,7 @@
       <li><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index" %></li>
       <li><%= link_to "発注一覧", admin_orders_path %></li>
       <li><%= link_to "発注する", new_admin_order_path %></li>
+      <li><%= link_to "納期の予想", admin_process_estimates_path %></li>
       <% else %>
       <%# 一般ユーザー用ナビゲーション %>
       <li><%= link_to "ホーム", root_path %></li>
