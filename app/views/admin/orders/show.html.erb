@@ -21,16 +21,14 @@
   <tbody>
     <%# 各工程を行単位で表示する %>
     <% @work_process.each do |process| %>
-    <!-- 5 -->
-    <%# process.machine_assignments.each do |assignment| 0 %>
     <tr>
       <td><%= process.order.company.name %></td>
-
       <td><%= process.order.product_number.number %></td>
       <td><%= process.order.color_number.color_code %></td>
       <td><%= process.order.roll_count %></td>
       <td><%= process.order.quantity %></td>
       <td><%= process&.work_process_definition&.name || "N/A" %></td>
+      <%# 織機割り当てがまだの場合は非表示 %>
       <td><%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
       </td>
       <td><%= process&.work_process_status&.name || "N/A" %></td>
