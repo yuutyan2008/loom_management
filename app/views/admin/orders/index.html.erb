@@ -23,9 +23,7 @@
         <%= current_process.work_process_definition&.name.presence || "未設定" %>
       </td>
       <td><%= current_process.start_date %></td>
-      <td><%= current_process.factory_estimated_completion_date %></td>
-
-
+      <td><%= current_process.factory_estimated_completion_date || "未設定" %></td>
 
       <td>
         <%= link_to '詳細', admin_order_path(order), class: 'show-order' %> |

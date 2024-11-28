@@ -9,6 +9,73 @@ class WorkProcess < ApplicationRecord
 
   scope :ordered, -> { joins(:work_process_definition).order('work_process_definitions.sequence') }
 
+
+  # ドビー
+  def self.update_dobby_deadline(dobby_workprocesses, machine_type_id, start_date)
+
+    # データを配列で取得
+    processes = WorkProcess.where(work_process_definition_id: 1..5).to_a
+
+    processes.each do |process|
+
+      # ハッシュ初期化
+      dobby_workprocess = {}
+      dobby_workprocess[:earliest_estimated_completion_date] = start_date.to_date +  process.process_estimate.earliest_completion_estimate.to_i
+
+      dobby_workprocess[:latest_estimated_completion_date] = start_date.to_date + process.process_estimate.latest_completion_estimate.to_i
+      # 1レコード更新
+      dobby_workprocesses << dobby_workprocess
+
+      # start_dateを更新
+      # new_start_dateが空でなければlatest_estimated_completion_dateで置き換える
+      new_start_date = dobby_workprocess[:latest_estimated_completion_date]
+      if new_start_date
+        start_date = new_start_date
+      end
+
+      # 各工程完了時、機屋がactual_completion_dateを入力した場合
+      if dobby_workprocess[:actual_completion_date].present?
+        start_date = dobby_workprocess[:actual_completion_date].to_date
+      end
+    end
+    binding.irb
+  end
+
+
+  # ジャカード
+  def self.update_jacquard_deadline(jacquard_workprocesses, machine_type_id, start_date)
+
+    # process_estimateデータを配列で取得
+    estimates = ProcessEstimate.where(id: 6..10, machine_type_id: machine_type_id).to_a
+
+    estimates.each do |estimate|
+
+      # ハッシュ初期化
+      jacquard_workprocess = {}
+      jacquard_workprocess[:earliest_estimated_completion_date] = start_date.to_date +  estimate.earliest_completion_estimate.to_i
+
+      jacquard_workprocess[:latest_estimated_completion_date] = start_date.to_date + estimate.latest_completion_estimate.to_i
+      # 1レコード更新
+      jacquard_workprocesses << jacquard_workprocess
+
+      # start_dateを更新
+      # new_start_dateが空でなければlatest_estimated_completion_dateで置き換える
+      new_start_date = jacquard_workprocess[:latest_estimated_completion_date]
+      if new_start_date
+        start_date = new_start_date
+      end
+
+      # 各工程完了時、機屋がactual_completion_dateを入力した場合
+      if jacquard_workprocess[:actual_completion_date].present?
+        start_date = jacquard_workprocess[:actual_completion_date]
+      end
+    end
+
+    jacquard_workprocesses
+  end
+
+
+
   # 発注登録時に一括作成するWorkProcessレコード定義
   def self.dobby_initial_processes_list(start_date)
     [
@@ -16,31 +83,46 @@ class WorkProcess < ApplicationRecord
         work_process_definition_id: 1,
         work_process_status_id: 1,
         start_date: start_date,
-        process_estimate_id: 1
+        process_estimate_id: 1,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
       },
       {
         work_process_definition_id: 2,
         work_process_status_id: 1,
         start_date: start_date,
-        process_estimate_id: 2
+        process_estimate_id: 2,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
       },
       {
         work_process_definition_id: 3,
         work_process_status_id: 1,
         start_date: start_date,
-        process_estimate_id: 3
+        process_estimate_id: 3,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
       },
       {
         work_process_definition_id: 4,
         work_process_status_id: 1,
         start_date: start_date,
-        process_estimate_id: 4
+        process_estimate_id: 4,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
       },
       {
         work_process_definition_id: 5,
         work_process_status_id: 1,
         start_date: start_date,
-        process_estimate_id: 5
+        process_estimate_id: 5,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
       },
     ]
   end
@@ -52,31 +134,46 @@ class WorkProcess < ApplicationRecord
           work_process_definition_id: 1,
           work_process_status_id: 1,
           start_date: start_date,
-          process_estimate_id: 6
+          process_estimate_id: 6,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
         },
         {
           work_process_definition_id: 2,
           work_process_status_id: 1,
           start_date: start_date,
-          process_estimate_id: 7
+          process_estimate_id: 7,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
         },
         {
           work_process_definition_id: 3,
           work_process_status_id: 1,
           start_date: start_date,
-          process_estimate_id: 8
+          process_estimate_id: 8,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
         },
         {
           work_process_definition_id: 4,
           work_process_status_id: 1,
           start_date: start_date,
-          process_estimate_id: 9
+          process_estimate_id: 9,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
         },
         {
           work_process_definition_id: 5,
           work_process_status_id: 1,
           start_date: start_date,
-          process_estimate_id: 10
+          process_estimate_id: 10,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
         },
       ]
     end

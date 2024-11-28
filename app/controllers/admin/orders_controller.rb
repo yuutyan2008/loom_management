@@ -25,23 +25,39 @@ before_action :admin_user
 
   def create
     # orderテーブル以外を除外してorderインスタンス作成
-    # @order = Order.new(order_params.except(work_processes: :start_date, process_estimate: [:id, :machine_type]))
     @order = Order.new(order_params)
-    # unless @order.save
-    #   redirect_to admin_orders_path, alert: "注文の保存に失敗しました" and return
-    # end
 
     start_date = work_process_params[:start_date]
     machine_type_id = work_process_params[:process_estimate][:machine_type_id].to_i
-    # 5個のwork_process配列を作成
-    # orderの子オブジェクトのworkProcess関連付け
+
+
     if machine_type_id == 1
-      @order.work_processes.build(
-        WorkProcess.dobby_initial_processes_list(start_date))
+      # earliest_estimated_completion_dateの値を定義
+      # earliest_estimated_completion_date = start_date + "日数を返す関数"
+
+      # 5個のwork_processインスタンスを作成
+      dobby_workprocesses = WorkProcess.dobby_initial_processes_list(start_date)
+
+      updated_dobby_workprocesses = WorkProcess.update_dobby_deadline(dobby_workprocesses, machine_type_id, start_date)
+      # 関連付け
+      @order.work_processes.build(updated_dobby_workprocesses)
+      # binding.irb
+      @order.save
+
+
+      redirect_to admin_orders_path, notice: "注文が作成されました"
 
     elsif machine_type_id == 2
-      @order.work_processes.build(
-        WorkProcess.jacquard_initial_processes_list(start_date))
+
+      jacquard_workprocesses = WorkProcess.jacquard_initial_processes_list(start_date)
+
+      updated_jacquard_workprocesses = WorkProcess.update_jacquard_deadline(jacquard_workprocesses, machine_type_id, start_date)
+
+      # 関連付け
+      @order.work_processes.build(updated_jacquard_workprocesses)
+      @order.save
+
+      redirect_to admin_orders_path, notice: "注文が作成されました"
     end
 
     # machine_type_idをナレッジに保存
@@ -51,20 +67,15 @@ before_action :admin_user
     #   unless work_process.save
     #     redirect_to admin_orders_path, alert: "作業工程の保存に失敗しました" and return
     #   end
-
-    # end
-
+    # binding.irb
     # ナレッジが計算される(初回はそのまま表示)
-#binding.irb
-    @order.save
-    redirect_to admin_orders_path, notice: "注文が作成されました"
-
+    # @order.save
+    # redirect_to admin_orders_path, notice: "注文が作成されました"
 
     # # orderの子オブジェクトのworkProcessインスタンス作成
     # @order.work_processes.build(
     #   WorkProcess.initial_processes_list(order_params[:start_date]).map {|process| {**process, process_estimates_id: 1}}
     # )
-
   end
 
   def show
@@ -167,14 +178,12 @@ before_action :admin_user
       :color_number_id,
       :roll_count,
       :quantity,
-    # ).merge(process_estimates_id: [:id, :machine_type], machine_assignments: [:id, :machine_id, :machine_status_id, :work_process_id]),
-    # {:process_estimates=> [] } # machine_typeの取得
-
     )
   end
 
   def work_process_params
-    params.require(:work_process).permit(:start_date, process_estimate: [:machine_type_id])
+    params.require(:work_process).permit(
+      :start_date, process_estimate: [:machine_type_id])
   end
 
   def set_order
