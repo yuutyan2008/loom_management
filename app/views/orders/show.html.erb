@@ -6,23 +6,23 @@
             <tbody>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700">品番</th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.product_number.number %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.product_number&.number %></td>
                 </tr>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700">色番</th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.color_number.color_code %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.color_number&.color_code %></td>
                 </tr>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700">ロール数</th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.roll_count %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.roll_count %></td>
                 </tr>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.quantity %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.quantity %></td>
                 </tr>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700">開始日</th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.start_date.strftime('%Y-%m-%d') %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date.strftime('%Y-%m-%d') %></td>
                 </tr>
             </tbody>
         </table>
@@ -44,7 +44,7 @@
             <tbody>
                 <% @machines.each do |machine| %>
                 <tr class="hover:bg-gray-100">
-                    <td class="px-4 py-2 border-b text-gray-900"><%= machine.name %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= machine&.name %></td>
                     <td class="px-4 py-2 border-b text-gray-900"><%= machine_statuses(machine) %></td>
                 </tr>
                 <% end %>
@@ -73,11 +73,11 @@
             <tbody>
             <% @work_processes.each do |current_wp| %>
                 <tr class="hover:bg-gray-100">
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.work_process_definition.name %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.start_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.factory_estimated_completion_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.actual_completion_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.work_process_status.name %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_definition&.name %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.start_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.actual_completion_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_status&.name %></td>
                 </tr>
             <% end %>
             </tbody>
