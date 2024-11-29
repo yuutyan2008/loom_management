@@ -1,21 +1,42 @@
-<h1>ユーザー情報</h1>
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">ユーザー情報</h1>
+<section>
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+        <table class="min-w-full border border-gray-300 bg-gray-50">
+            <tbody>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">名前</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @user.name %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">メール</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @user.email %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">電話番号</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @user.phone_number %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社名</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @user.company.name %></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 
-<p>
-    <strong>名前:</strong>
-    <%= @user.name %>
-</p>
-<p>
-    <strong>メール:</strong>
-    <%= @user.email %>
-</p>
-<p>
-    <strong>電話番号:</strong>
-    <%= @user.phone_number %>
-</p>
-<p>
-    <strong>会社名:</strong>
-    <%= @user.company.name %>
-</p>
-
-<%= link_to '編集', edit_user_path(@user) %>
-<%= link_to '戻る', root_path %>
+<section class="mb-12">
+    <div class="flex justify-center space-x-2">
+        <div class="px-2 py-2">
+            <%= link_to '編集', edit_user_path(@user), class: "inline-block px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600" %>
+        </div>
+        <% if @user.admin? %>
+        <div class="px-2 py-2">
+            <%= link_to '戻る', admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+        </div>
+        <% else %>
+        <div class="px-2 py-2">
+            <%= link_to '戻る', root_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+        </div>
+        <% end %>
+    </div>
+</section>

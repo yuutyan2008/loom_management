@@ -1,65 +1,98 @@
-<h1>受注詳細</h1>
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">受注詳細</h1>
+<section class="mb-12">
+    <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">基本情報</h2>
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+        <table class="min-w-full border border-gray-300 bg-gray-50">
+            <tbody>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">品番</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.product_number.number %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">色番</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.color_number.color_code %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">ロール数</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.roll_count %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.quantity %></td>
+                </tr>
+                <tr class="bg-gray-100 border-b">
+                    <th class="w-1/3 px-4 py-2 text-center text-gray-700">開始日</th>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order.start_date.strftime('%Y-%m-%d') %></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
 
-<p>
-    <strong>品番:</strong>
-    <%= @order.product_number.number %>
-</p>
-<p>
-    <strong>色番:</strong>
-    <%= @order.color_number.color_code %>
-</p>
-<p>
-    <strong>ロール数:</strong>
-    <%= @order.roll_count %>
-</p>
-<p>
-    <strong>数量:</strong>
-    <%= @order.quantity %>
-</p>
-<p>
-    <strong>開始日:</strong>
-    <%= @order.start_date %>
-</p>
+<!-- 織機詳細セクション -->
+<section class="mb-12">
+    <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">織機詳細</h2>
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+        <table class="min-w-full border text-left border-gray-300">
+            <% if @machines.any? %>
+            <thead class="bg-gray-200">
+                <tr class="bg-gray-100">
+                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機名</th>
+                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">稼働状況</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% @machines.each do |machine| %>
+                <tr class="hover:bg-gray-100">
+                    <td class="px-4 py-2 border-b text-gray-900"><%= machine.name %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= machine_statuses(machine) %></td>
+                </tr>
+                <% end %>
+            <% else %>
+                <p class="text-center text-rose-500">現在割り当て中の織機はありません。</p>
+            <% end %>
+            </tbody>
+        </table>
+    </div>
+</section>
 
-<h2>織機詳細</h2>
-<% if @machines.any? %>
-    <% @machines.each do |machine| %>
-        <p>
-            <strong>織機名:</strong>
-            <%= machine.name %>
-        </p>
-        <p>
-            <strong>稼働状況:</strong>
-            <%= machine_statuses(machine) %>
-        </p>
-    <% end %>
-<% else %>
-    <p>現在割り当て中の織機はありません。</p>
-<% end %>
+<!-- 作業工程セクション -->
+<section class="mb-12">
+    <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">作業工程</h2>
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+        <table class="w-full border text-left border-gray-300">
+            <thead class="bg-gray-950">
+                <tr class="bg-gray-100">
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">作業工程定義</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">開始日</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">予定納期</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">完了日</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">ステータス</th>
+                </tr>
+            </thead>
+            <tbody>
+            <% @work_processes.each do |current_wp| %>
+                <tr class="hover:bg-gray-100">
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.work_process_definition.name %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.start_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.factory_estimated_completion_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.actual_completion_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp.work_process_status.name %></td>
+                </tr>
+            <% end %>
+            </tbody>
+        </table>
+    </div>
+</section>
 
-<h2>作業工程</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>作業工程定義</th>
-            <th>開始日</th>
-            <th>予定納期</th>
-            <th>完了日</th>
-            <th>ステータス</th>
-        </tr>
-    </thead>
-    <tbody>
-        <% @work_processes.each do |current_wp| %>
-        <tr>
-            <td><%= current_wp.work_process_definition.name %></td>
-            <td><%= current_wp.start_date %></td>
-            <td><%= current_wp.factory_estimated_completion_date %></td>
-            <td><%= current_wp.actual_completion_date %></td>
-            <td><%= current_wp.work_process_status.name %></td>
-        </tr>
-        <% end %>
-    </tbody>
-</table>
-
-<%= link_to '編集', edit_order_path(@order), class: "btn btn-warning" %>
-<%= link_to '戻る', orders_path, class: "btn btn-primary" %>
+<!-- アクションボタンセクション -->
+<section class="mb-12">
+    <div class="flex justify-center space-x-2">
+        <div class="px-2 py-2">
+            <%= link_to '編集', edit_order_path(@order), class: "inline-block px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600" %>
+        </div>
+        <div class="px-2 py-2">
+            <%= link_to '戻る', orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+        </div>
+    </div>
+</section>
