@@ -38,7 +38,7 @@ class WorkProcess < ApplicationRecord
         start_date = dobby_workprocess[:actual_completion_date].to_date
       end
     end
-    binding.irb
+    # binding.irb
   end
 
 
