@@ -19,7 +19,7 @@
             <tbody>
                 <% @orders.each do |order| %>
                 <tr class="hover:bg-gray-50">
-                    <td scope="row" class="py-2 px-4 border-b"><%= order.product_number.number %></td>
+                    <td scope="row" class="py-2 px-4 border-b"><%= order&.product_number&.number %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_name(order) %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_status(order) %></td>
                     <td class="py-2 px-4 border-b"><%= machine_names(order) %></td>
