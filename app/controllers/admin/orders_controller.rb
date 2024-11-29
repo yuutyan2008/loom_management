@@ -31,50 +31,25 @@ before_action :admin_user
     machine_type_id = work_process_params[:process_estimate][:machine_type_id].to_i
 
 
-    if machine_type_id == 1
       # earliest_estimated_completion_dateの値を定義
       # earliest_estimated_completion_date = start_date + "日数を返す関数"
 
       # 5個のwork_processインスタンスを作成
-      dobby_workprocesses = WorkProcess.dobby_initial_processes_list(start_date)
+      workprocesses = WorkProcess.initial_processes_list(start_date)
 
-      updated_dobby_workprocesses = WorkProcess.update_dobby_deadline(dobby_workprocesses, machine_type_id, start_date)
+      # インスタンスの更新
+      # process_estimate_idを入れる
+
+      # インスタンスの更新
+      # 完了見込日時を入れる
+      updated_workprocesses = WorkProcess.update_deadline(workprocesses, machine_type_id, start_date)
       # 関連付け
-      @order.work_processes.build(updated_dobby_workprocesses)
+      @order.work_processes.build(updated_workprocesses)
       # binding.irb
       @order.save
 
       redirect_to admin_orders_path, notice: "注文が作成されました"
 
-    elsif machine_type_id == 2
-
-      jacquard_workprocesses = WorkProcess.jacquard_initial_processes_list(start_date)
-
-      updated_jacquard_workprocesses = WorkProcess.update_jacquard_deadline(jacquard_workprocesses, machine_type_id, start_date)
-
-      # 関連付け
-      @order.work_processes.build(updated_jacquard_workprocesses)
-      @order.save
-
-      redirect_to admin_orders_path, notice: "注文が作成されました"
-    end
-
-    # machine_type_idをナレッジに保存
-    # @order.work_processes.each do |work_process|
-    #   work_process.earliest_estimated_completion_date = Date.today
-    #   work_process.latest_estimated_completion_date = Date.today
-    #   unless work_process.save
-    #     redirect_to admin_orders_path, alert: "作業工程の保存に失敗しました" and return
-    #   end
-    # binding.irb
-    # ナレッジが計算される(初回はそのまま表示)
-    # @order.save
-    # redirect_to admin_orders_path, notice: "注文が作成されました"
-
-    # # orderの子オブジェクトのworkProcessインスタンス作成
-    # @order.work_processes.build(
-    #   WorkProcess.initial_processes_list(order_params[:start_date]).map {|process| {**process, process_estimates_id: 1}}
-    # )
   end
 
   def show
