@@ -40,8 +40,9 @@ before_action :admin_user
 
       updated_dobby_workprocesses = WorkProcess.update_dobby_deadline(dobby_workprocesses, machine_type_id, start_date)
       # 関連付け
-      @order.work_processes.build(updated_dobby_workprocesses)
       # binding.irb
+      @order.work_processes.build(updated_dobby_workprocesses)
+      binding.irb
       @order.save
 
 
