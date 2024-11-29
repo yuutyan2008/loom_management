@@ -9,15 +9,35 @@ class WorkProcess < ApplicationRecord
 
   scope :ordered, -> { joins(:work_process_definition).order('work_process_definitions.sequence') }
 
-
+  def self.update_deadline(workprocesses, process_estimate, start_date)
+    # 処理
+  end
   # ドビー
+
   def self.update_dobby_deadline(dobby_workprocesses, machine_type_id, start_date)
 
     # データを配列で取得
-    processes = WorkProcess.where(work_process_definition_id: 1..5).to_a
+    # processes = WorkProcess.where(work_process_definition_id: 1..5).to_a
+    processe_estimates = ProcessEstimate.where(id: 1..5)
+
+    short = 0
+    long = 0
+
+    return dobby_workprocesses.map do |process|
+      target_estimate = processe_estimates.find_by(
+        work_process_definition_id:  process[:work_process_definition_id]
+      )
+      short += target_estimate.earliest_completion_estimate
+      long += target_estimate.latest_completion_estimate
+
+      process[:earliest_estimated_completion_date] = start_date.to_date + short
+      process[:latest_estimated_completion_date] = start_date.to_date + long
+      process
+    end
 
     processes.each do |process|
 
+      dobby_workprocess = []
       # ハッシュ初期化
       dobby_workprocess = {}
       dobby_workprocess[:earliest_estimated_completion_date] = start_date.to_date +  process.process_estimate.earliest_completion_estimate.to_i
