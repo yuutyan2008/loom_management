@@ -36,13 +36,13 @@ before_action :admin_user
 
       # インスタンスの更新
       # process_estimate_idを入れる
-      estimated_workprocesses = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
-      # binding.irb
+      estimate_workprocesses = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
+
       # インスタンスの更新
       # 完了見込日時を入れる
-      updated_workprocesses = WorkProcess.update_deadline(estimated_workprocesses, start_date)
+      update_workprocesses = WorkProcess.update_deadline(estimate_workprocesses, start_date)
       # 関連付け
-      @order.work_processes.build(updated_workprocesses)
+      @order.work_processes.build(update_workprocesses)
 
       @order.save
 

@@ -23,23 +23,20 @@ class WorkProcess < ApplicationRecord
     end
   end
 
-
-  def self.update_deadline(estimated_workprocesses, start_date)
-
-    # データを配列で取得
-    # processes = WorkProcess.where(work_process_definition_id: 1..5).to_a
-    processe_estimates = ProcessEstimate.where(id: 1..5)
+  def self.update_deadline(estimate_workprocesses, start_date)
 
     short = 0
     long = 0
 
     # 配列を一個ずつ取り出す
-    estimated_workprocesses.map do |process|
-      # 計算対象のナレッジレコードを取得
-      target_estimate = processe_estimates.find_by(
-        work_process_definition_id:  process[:work_process_definition_id]
+    estimate_workprocesses.each do |process|
+
+      # 計算されるレコードを取得
+      target_estimate = ProcessEstimate.find_by(
+        id:  process[:process_estimate_id]
       )
-      # ナレッジの値を取得
+
+      # 取得したレコードの値(足す値)を取得
       short += target_estimate.earliest_completion_estimate
       long += target_estimate.latest_completion_estimate
 
