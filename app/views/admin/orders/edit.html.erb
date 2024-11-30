@@ -1,4 +1,4 @@
-<h1>発注編集</h1>
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注編集</h1>
 
 <h2>商品</h2>
 <%= form_with model: @order, url: admin_order_path(@order), local: true do |f| %>
@@ -77,25 +77,7 @@
   </tbody>
 </table>
 
-<h2>機械の稼働状況</h2>
-
-<% @order.work_processes.each do |process| %>
-<% if process.machine_assignments.present? %>
-<% process.machine_assignments.each do |assignment| %>
-<%# 織機割り当てがまだの場合は非表示 %>
-<td><%= f.collection_select "work_processes[#{process.id}][machine_assignments][#{assignment.id}][machine_status_id]",
-          MachineStatus.all, :id, :name,
-          selected: assignment.machine_status_id,
-          include_blank: "選択してください" %></td><br>
-<% end %>
-<% else %>
-<td>N/A</td><br>
-<% end %>
-<% end %>
-<td>
-  <%= link_to '更新', admin_orders_path, class: "update-order" %> |
-  <%# link_to '作業工程の編集', edit_work_processes_admin_order_path(@order), class: "edit_work_processes_admin_order" %>
-  <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
-  <%= link_to "戻る", admin_orders_path, id: 'back' %>
-</td>
+<!-- 提出ボタン -->
+<%= f.submit t('helpers.submit.update'), id: 'update-order' %>
+<%= link_to t('common.back'), admin_orders_path, id: 'back' %>
 <% end %>
