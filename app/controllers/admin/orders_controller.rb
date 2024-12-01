@@ -30,24 +30,18 @@ before_action :admin_user
     start_date = work_process_params[:start_date]
     machine_type_id = work_process_params[:process_estimate][:machine_type_id].to_i
 
-
       # 5個のwork_processインスタンスを作成
       workprocesses = WorkProcess.initial_processes_list(start_date)
-
       # インスタンスの更新
       # process_estimate_idを入れる
       estimate_workprocesses = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
-
       # インスタンスの更新
       # 完了見込日時を入れる
       update_workprocesses = WorkProcess.update_deadline(estimate_workprocesses, start_date)
       # 関連付け
       @order.work_processes.build(update_workprocesses)
-
       @order.save
-
       redirect_to admin_orders_path, notice: "注文が作成されました"
-
   end
 
   def show
