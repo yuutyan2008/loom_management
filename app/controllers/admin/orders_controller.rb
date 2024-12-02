@@ -1,9 +1,7 @@
 class Admin::OrdersController < ApplicationController
 before_action :order_params, only: [:create,  :update]
 before_action :set_order, only: [:edit, :show, :update, :destroy]
-before_action :set_order, only: [:edit, :show, :update, :destroy]
 before_action :work_process_params, only: [:create, :update]
-# before_action :process_estimate_params, only: [:create, :update]
 before_action :admin_user
 
   def index
@@ -33,28 +31,16 @@ before_action :admin_user
 
       # 5個のwork_processインスタンスを作成
       workprocesses = WorkProcess.initial_processes_list(start_date)
-<<<<<<< HEAD
       # インスタンスの更新
       # process_estimate_idを入れる
       estimate_workprocesses = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
       # インスタンスの更新
       # 完了見込日時を入れる
       update_workprocesses = WorkProcess.update_deadline(estimate_workprocesses, start_date)
-=======
-
-      # インスタンスの更新
-      # process_estimate_idを入れる
-
-      # インスタンスの更新
-      # 完了見込日時を入れる
-      updated_workprocesses = WorkProcess.update_deadline(workprocesses, machine_type_id, start_date)
->>>>>>> feature-26
       # 関連付け
       @order.work_processes.build(update_workprocesses)
       @order.save
-
       redirect_to admin_orders_path, notice: "注文が作成されました"
-
   end
 
   def show
@@ -70,8 +56,6 @@ before_action :admin_user
     @work_processes = @order.work_processes.joins(:work_process_definition).order("work_process_definitions.sequence ASC")
   end
 
-  def update
-    @order.update(order_params)
   def update
     @order.update(order_params)
     # strongparameterで許可されたフォームのname属性値を取得
@@ -143,15 +127,6 @@ before_action :admin_user
 
   def work_process_params
     params.require(:work_process).permit(
-      :process_estimate_id,
-      :work_process_definition_id ,
-      :work_process_status_id,
-      :factory_estimated_completion_date,
-      :actual_completion_date,
-      :start_date,
-      process_estimate: [:machine_type_id],
-      machine_assignments: [:id, :machine_status_id]
-    )
       :process_estimate_id,
       :work_process_definition_id ,
       :work_process_status_id,
