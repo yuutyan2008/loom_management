@@ -26,6 +26,16 @@
 </table>
 
 
+<h2>機械の稼働状況</h2>
+
+<% @work_process.each do |process| %>
+<%# 織機割り当てがまだの場合は非表示 %>
+<td>
+  <%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
+</td><br>
+<% end %>
+
+
 <h2>作業工程</h2>
 <table border="1" cellpadding="5" cellspacing="0">
   <thead>
@@ -54,14 +64,6 @@
   </tbody>
 </table>
 
-<h2>機械の稼働状況</h2>
-
-<% @work_process.each do |process| %>
-<%# 織機割り当てがまだの場合は非表示 %>
-<td>
-  <%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
-</td><br>
-<% end %>
 
 <td>
   <%= link_to '編集', edit_admin_order_path(@order), class: "edit-order" %> |
