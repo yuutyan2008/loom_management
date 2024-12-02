@@ -1,5 +1,6 @@
-<h1>発注済み商品の詳細</h1>
+<h1>発注詳細</h1>
 
+<h2>商品</h2>
 <table border="1" cellpadding="5" cellspacing="0">
   <thead>
     <tr>
@@ -8,14 +9,6 @@
       <th>色番</th>
       <th>反数</th>
       <th>数量</th>
-      <th>現在の工程</th>
-      <th>機械の稼働状況</th>
-      <th>現在の工程の状況</th>
-      <th>開始日</th>
-      <th>完了見込み(最短)</th>
-      <th>完了見込み(最長)</th>
-      <th>機屋の完了予定日</th>
-      <th>機屋の完了日</th>
     </tr>
   </thead>
   <tbody>
@@ -27,25 +20,52 @@
       <td><%= process.order.color_number.color_code %></td>
       <td><%= process.order.roll_count %></td>
       <td><%= process.order.quantity %></td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>
+
+
+<h2>作業工程</h2>
+<table border="1" cellpadding="5" cellspacing="0">
+  <thead>
+    <tr>
+      <th>現在の工程</th>
+      <th>現在の工程の状況</th>
+      <th>開始日</th>
+      <th>完了見込み(最短)</th>
+      <th>完了見込み(最長)</th>
+      <th>機屋の完了予定日</th>
+      <th>機屋の完了日</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @work_process.each do |process| %>
+    <tr>
       <td><%= process&.work_process_definition&.name || "N/A" %></td>
-      <%# 織機割り当てがまだの場合は非表示 %>
-      <td><%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
-      </td>
       <td><%= process&.work_process_status&.name || "N/A" %></td>
       <td><%= process&.start_date || "N/A" %></td>
       <td><%= process&.earliest_estimated_completion_date || "N/A" %></td>
       <td><%= process&.latest_estimated_completion_date || "N/A" %></td>
       <td><%= process&.factory_estimated_completion_date || "N/A" %></td>
       <td><%= process&.actual_completion_date || "N/A" %></td>
-      <td>
-        <%= link_to '発注の編集', edit_admin_order_path(@order), class: "edit-order" %> |
-        <%= link_to '作業工程の編集', edit_work_processes_admin_order_path(@order), class: "edit_work_processes_admin_order" %>|
-        <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
-      </td>
     </tr>
-    <%# end %>
     <% end %>
   </tbody>
 </table>
 
-<%= link_to "戻る", admin_orders_path, id: 'back' %>
+<h2>機械の稼働状況</h2>
+
+<% @work_process.each do |process| %>
+<%# 織機割り当てがまだの場合は非表示 %>
+<td>
+  <%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
+</td><br>
+<% end %>
+
+<td>
+  <%= link_to '編集', edit_admin_order_path(@order), class: "edit-order" %> |
+  <%# link_to '作業工程の編集', edit_work_processes_admin_order_path(@order), class: "edit_work_processes_admin_order" %>
+  <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
+  <%= link_to "戻る", admin_orders_path, id: 'back' %>
+</td>
