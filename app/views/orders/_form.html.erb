@@ -34,7 +34,7 @@
                 </tr>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :start_date, "開始日" %></th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= form.date_field :start_date, class: "form-control" %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date %></td>
                 </tr>
             </tbody>
         </table>
@@ -101,11 +101,11 @@
         <table class="min-w-full border text-left border-gray-300">
             <thead>
                 <tr class="bg-gray-100">
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">作業工程定義</th>
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">開始日</th>
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">予定納期</th>
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">完了日</th>
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">ステータス</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">作業工程定義</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">開始日</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">予定納期</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">完了日</th>
+                    <th class="w-1/5 px-4 py-2 text-gray-700 border-b">ステータス</th>
                 </tr>
             </thead>
             <tbody>
@@ -118,13 +118,13 @@
                         <%= hidden_field_tag "work_processes[][work_process_definition_id]", wp.work_process_definition_id %>
                     </td>
                     <td class="px-4 py-2 border-b text-gray-900">
-                        <%= date_field_tag "work_processes[][start_date]", wp.start_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                        <%= date_field_tag "work_processes[][start_date]", wp.start_date&.strftime('%Y-%m-%d'), class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
                     </td>
                     <td class="px-4 py-2 border-b text-gray-900">
-                        <%= date_field_tag "work_processes[][factory_estimated_completion_date]", wp.factory_estimated_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                        <%= date_field_tag "work_processes[][factory_estimated_completion_date]", wp.factory_estimated_completion_date&.strftime('%Y-%m-%d'), class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
                     </td>
                     <td class="px-4 py-2 border-b text-gray-900">
-                        <%= date_field_tag "work_processes[][actual_completion_date]", wp.actual_completion_date&.strftime('%Y-%m-%d'), class: "form-control" %>
+                        <%= date_field_tag "work_processes[][actual_completion_date]", wp.actual_completion_date&.strftime('%Y-%m-%d'), class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
                     </td>
                     <td class="px-4 py-2 border-b text-gray-900">
                         <%= select_tag "work_processes[][work_process_status_id]", options_from_collection_for_select(WorkProcessStatus.all, :id, :name, wp.work_process_status_id), { prompt: "選択してください", class: "form-control" } %>

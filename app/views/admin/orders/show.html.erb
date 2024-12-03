@@ -60,46 +60,94 @@
   </div>
 </section>
 
-<h2>作業工程</h2>
-<table border="1" cellpadding="5" cellspacing="0">
-  <thead>
-    <tr>
-      <th>現在の工程</th>
-      <th>現在の工程の状況</th>
-      <th>開始日</th>
-      <th>完了見込み(最短)</th>
-      <th>完了見込み(最長)</th>
-      <th>機屋の完了予定日</th>
-      <th>機屋の完了日</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @work_process.each do |process| %>
-    <tr>
-      <td><%= process&.work_process_definition&.name || "N/A" %></td>
-      <td><%= process&.work_process_status&.name || "N/A" %></td>
-      <td><%= process&.start_date || "N/A" %></td>
-      <td><%= process&.earliest_estimated_completion_date || "N/A" %></td>
-      <td><%= process&.latest_estimated_completion_date || "N/A" %></td>
-      <td><%= process&.factory_estimated_completion_date || "N/A" %></td>
-      <td><%= process&.actual_completion_date || "N/A" %></td>
-    </tr>
-    <% end %>
-  </tbody>
-</table>
+<section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">作業工程</h2>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="w-full border text-left border-gray-300">
+      <thead class="bg-gray-200">
+        <tr class="bg-gray-100">
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の工程</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の工程の状況</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">開始日</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">完了見込み(最短)</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">完了見込み(最長)</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">機屋の完了予定日</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">機屋の完了日</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @work_process.each do |process| %>
+        <tr class="hover:bg-gray-100">
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.work_process_definition&.name || "N/A" %></td>
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.work_process_status&.name || "N/A" %></td>
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.start_date || "N/A" %></td>
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.earliest_estimated_completion_date || "N/A" %></td>
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.latest_estimated_completion_date || "N/A" %></td>
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.factory_estimated_completion_date || "N/A" %></td>
+          <td class="px-4 py-2 border-b text-gray-900"><%= process&.actual_completion_date || "N/A" %></td>
+        </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>
 
-<h2>機械の稼働状況</h2>
+<%
+=begin
+%>
+
+<h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">機械の稼働状況</h2>
 
 <% @work_process.each do |process| %>
-<%# 織機割り当てがまだの場合は非表示 %>
-<td>
+<% 織機割り当てがまだの場合は非表示 %>
+<td class="px-4 py-2 border-b text-gray-900">
   <%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
 </td><br>
 <% end %>
 
-<td>
-  <%= link_to '編集', edit_admin_order_path(@order), class: "edit-order" %> |
-  <%# link_to '作業工程の編集', edit_work_processes_admin_order_path(@order), class: "edit_work_processes_admin_order" %>
-  <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
-  <%= link_to "戻る", admin_orders_path, id: 'back' %>
-</td>
+<%
+=end
+%>
+
+
+<section class="mb-12">
+    <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">織機詳細</h2>
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+        <table class="min-w-full border text-left border-gray-300">
+            <% if @machines.any? %>
+            <thead class="bg-gray-200">
+                <tr class="bg-gray-100">
+                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機名</th>
+                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">稼働状況</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% @machines.each do |machine| %>
+                <tr class="hover:bg-gray-100">
+                    <td class="px-4 py-2 border-b text-gray-900"><%= machine&.name %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= machine.latest_machine_status&.name || "ステータス情報なし" %></td>
+                </tr>
+                <% end %>
+            <% else %>
+                <p class="text-center text-rose-500">現在割り当て中の織機はありません。</p>
+            <% end %>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- アクションボタンセクション -->
+<section class="mb-12">
+    <div class="flex justify-center space-x-2">
+        <div class="px-2 py-2">
+            <%= link_to '編集', edit_admin_order_path(@order), class: "inline-block px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600" %>
+        </div>
+        <%# link_to '作業工程の編集', edit_work_processes_admin_order_path(@order), class: "edit_work_processes_admin_order" %>
+        <div class="px-2 py-2">
+            <%= link_to '削除', admin_order_path(@order), data: { turbo_method: :delete, turbo_confirm: '本当に削除しますか？' }, class: "inline-block px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600" %>
+        </div>
+        <div class="px-2 py-2">
+            <%= link_to '戻る', admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+        </div>
+    </div>
+</section>
