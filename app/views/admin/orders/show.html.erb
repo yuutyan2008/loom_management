@@ -30,11 +30,14 @@
 
 <% @work_process.each do |process| %>
 <%# 織機割り当てがまだの場合は非表示 %>
+<% if process.machine_assignments.present? %>
 <td>
-  <%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
+  <%= process.machine_assignments.first.machine_status.name %>
 </td><br>
+<% else %>
+<p>織機が割り当てられていません</p>
 <% end %>
-
+<% end %>
 
 <h2>作業工程</h2>
 <table border="1" cellpadding="5" cellspacing="0">
