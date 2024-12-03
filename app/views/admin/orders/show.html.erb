@@ -92,24 +92,6 @@
   </div>
 </section>
 
-<%
-=begin
-%>
-
-<h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">機械の稼働状況</h2>
-
-<% @work_process.each do |process| %>
-<% 織機割り当てがまだの場合は非表示 %>
-<td class="px-4 py-2 border-b text-gray-900">
-  <%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
-</td><br>
-<% end %>
-
-<%
-=end
-%>
-
-
 <section class="mb-12">
     <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">織機詳細</h2>
     <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
