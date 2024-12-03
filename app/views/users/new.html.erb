@@ -1,37 +1,62 @@
-<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">ユーザー登録</h1>
-
 <%= form_with(model: @user, url: signin_path, local: true) do |form| %>
-    <div>
-        <%= form.label :name, "名前" %>
-        <%= form.text_field :name, required: true %>
+<section class="px-4 sm:px-8 lg:px-24">
+    <div class="flex min-h-full flex-col justify-center sm:py-12">
+        <div class="mx-auto w-full max-w-md bg-white rounded-lg p-6 sm:p-8 lg:max-w-lg">
+            <h1 class="text-center text-2xl font-bold text-gray-800 sm:text-3xl mt-6 mb-6">ユーザー登録</h1>
+            <div class="space-y-6">
+                <div>
+                    <label for="name" class="block text-md font-semibold text-gray-900">
+                        <%= form.label :name, "名前" %>
+                    </label>
+                    <div class="mt-2">
+                        <%= form.text_field :name, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                    </div>
+                </div>
+                <div>
+                    <label for="email" class="block text-md font-semibold text-gray-900">
+                        <%= form.label :email, "メールアドレス" %>
+                    </label>
+                    <div class="mt-2">
+                        <%= form.email_field :email, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                    </div>
+                </div>
+                <div>
+                    <label for="phone_number" class="block text-md font-semibold text-gray-900">
+                        <%= form.label :phone_number, "電話番号" %>
+                    </label>
+                    <div class="mt-2">
+                        <%= form.text_field :phone_number, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                    </div>
+                </div>
+                <div>
+                    <label for="company_id" class="block text-md font-semibold text-gray-900">
+                        <%= form.label :company_id, "所属会社" %>
+                    </label>
+                    <div class="mt-2">
+                        <%= form.collection_select :company_id, @companies, :id, :name, prompt: "会社を選択してください", required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+                    </div>
+                </div>
+                <div>
+                    <label for="password" class="block text-md font-semibold text-gray-900">
+                        <%= form.label :password, "パスワード" %>
+                    </label>
+                    <div class="mt-2">
+                        <%= form.password_field :password, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                    </div>
+                </div>
+                <div>
+                    <label for="password_confirmation" class="block text-md font-semibold text-gray-900">
+                        <%= form.label :password_confirmation, "パスワード確認" %>
+                    </label>
+                    <div class="mt-2">
+                        <%= form.password_field :password_confirmation, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <%= form.submit "登録", class: "w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+            </div>
+        </div>
     </div>
-
-    <div>
-        <%= form.label :email, "メールアドレス" %>
-        <%= form.email_field :email, required: true %>
-    </div>
-
-    <div>
-        <%= form.label :phone_number, "電話番号" %>
-        <%= form.text_field :phone_number, required: true %>
-    </div>
-
-    <div>
-        <%= form.label :company_id, "所属会社" %>
-        <%= form.collection_select :company_id, @companies, :id, :name, prompt: "会社を選択してください", required: true %>
-    </div>
-
-    <div>
-        <%= form.label :password, "パスワード" %>
-        <%= form.password_field :password, required: true %>
-    </div>
-
-    <div>
-        <%= form.label :password_confirmation, "パスワード確認" %>
-        <%= form.password_field :password_confirmation, required: true %>
-    </div>
-
-    <div>
-        <%= form.submit "登録" %>
-    </div>
+</section>
 <% end %>

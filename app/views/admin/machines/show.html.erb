@@ -1,9 +1,3 @@
-<%# 発注済み商品の詳細 %>
-<h1></h1>
-
-
-
-
 <table>
   <thead>
     <tr>
@@ -14,41 +8,71 @@
       <th>現在の工程</th>
       <th>現在の工程の状況</th>
       <th>完成予定日</th>
+      <th>操作</th>
     </tr>
   </thead>
   <tbody>
-    <%# <% @order.tasks.each do |order| %>
-    <tr>
-      <td><%= @machine.company.name %></td>
-      <td><%= @machine.name %></td>
-      <td><%= @machine.machine_type.name %></td>
-      <td>
-        <%# machine.work_processesが複数存在するため全てを表示する %>
-        <% @machine.work_processes.each do |process| %>
-        <p><%= process.order.product_number_id %></p>
-        <% end %>
-      </td>
-
-      <td>
-        <% @machine.work_processes.each do |process| %>
-        <p><%= process.work_process_definition.name %></p>
-        <% end %>
-      </td>
-      <td>
-        <% @machine.work_processes.each do |process| %>
-        <p><%= process.work_process_status.name %></p>
-        <% end %>
-      <td class="order-finished_at">
-        <% @machine.work_processes.each do |process| %>
-        <p><%= process.factory_estimated_completion_date %></p>
-        <% end %>
-      </td>
-      <td>
-        <%= link_to t('common.edit'), edit_admin_machine_path(@machine), class: 'edit-machine' %>
-      </td>
-    </tr>
-    <%# <% end %>
+    <% if @machine.present? && @machine.work_processes.present? %>
+      <% @machine.work_processes.each do |process| %>
+        <tr>
+          <td>
+            <% if @machine&.company&.name.present? %>
+              <%= @machine.company.name %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td>
+            <% if @machine&.name.present? %>
+              <%= @machine.name %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td>
+            <% if @machine&.machine_type&.name.present? %>
+              <%= @machine.machine_type.name %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td>
+            <% if process.order&.product_number_id.present? %>
+              <%= process.order.product_number_id %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td>
+            <% if process.work_process_definition&.name.present? %>
+              <%= process.work_process_definition.name %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td>
+            <% if process.work_process_status&.name.present? %>
+              <%= process.work_process_status.name %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td class="order-finished_at">
+            <% if process.factory_estimated_completion_date.present? %>
+              <%= process.factory_estimated_completion_date %>
+            <% else %>
+              <span>情報なし</span>
+            <% end %>
+          </td>
+          <td>
+            <%= link_to t('common.edit'), edit_admin_machine_path(@machine), class: 'edit-machine' %>
+          </td>
+        </tr>
+      <% end %>
+    <% else %>
+      <tr>
+        <td colspan="8">データがありません</td>
+      </tr>
+    <% end %>
   </tbody>
 </table>
-
-<%= link_to t('common.back'), admin_machines_path, id: 'back' %>
