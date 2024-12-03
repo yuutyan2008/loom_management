@@ -1,28 +1,34 @@
-<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">発注済み商品の製造状況</h1>
-<table border="1" cellpadding="5" cellspacing="0">
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機一覧</h1>
+<table>
   <thead>
     <tr>
-      <th>企業名</th>
-      <th>商品番号</th>
-      <th>機械の稼働状況</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b">企業名</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b">織機名</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b">機械の稼働状況</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b">商品番号</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の作業工程</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b">作業状況</th>
+      <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
     </tr>
   </thead>
   <tbody>
     <% @machines.each do |machine| %>
-    <% machine.work_processes&.each do |process| %>
-    <tr>
-      <td><%= machine&.company&.name || "N/A" %></td>
-      <td><%= process&.order.product_number&.number || "N/A" %></td>
-      <td><%= process&.work_process_status&.name || "N/A" %></td>
-      <td>
-        <%= link_to t('common.show'), admin_machine_path(machine), class: 'show-machine' %> |
-        <%= link_to '削除', admin_machine_path(machine), method: :delete,
-  data: {
-    turbo_method: :delete,
-    turbo_confirm: "本当に削除してよろしいですか？"} %>
-      </td>
-    </tr>
-    <% end %>
+      <tr>
+        <td class="py-2 px-4 text-gray-700 border-b"><%= machine&.company&.name %></td>
+        <td class="py-2 px-4 text-gray-700 border-b"><%= machine&.name %></td>
+        <td class="py-2 px-4 text-gray-700 border-b"><%= machine_statuses(machine) %></td>
+        <td class="py-2 px-4 text-gray-700 border-b"><%= product_number(machine) %></td>
+        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_name(machine) %></td>
+        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_status(machine) %></td>
+        <td class="py-2 px-4 text-gray-700 border-b">
+          <%= link_to t('common.show'), admin_machine_path(machine), class: 'show-machine' %> |
+          <%= link_to '削除', admin_machine_path(machine), method: :delete,
+            data: {
+              turbo_method: :delete,
+              turbo_confirm: "本当に削除してよろしいですか？"
+            } %>
+        </td>
+      </tr>
     <% end %>
   </tbody>
 </table>
