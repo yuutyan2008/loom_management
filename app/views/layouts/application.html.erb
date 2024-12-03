@@ -14,51 +14,119 @@
   <link rel="icon" href="/icon.png" type="image/png">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon.png">
+  <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
   <%= javascript_importmap_tags %>
   <%# turboで削除機能追加 %>
   <%= javascript_include_tag "turbo", type: "module" %>
 </head>
 
-<body>
-  <%# Flashメッセージのデザインをカスタムクラスで適用 %>
-  <% flash.each do |key, value| %>
-  <div class="flash-message <%= key %>">
-    <%= value %>
-    <button class="close-button" onclick="this.parentElement.style.display='none'">×</button>
-  </div>
-  <% end %>
+<body class="flex flex-col items-center bg-gray-100 min-h-screen">
+  <header class="w-full bg-white shadow">
+    <%# グローバルナビゲーションの作成 %>
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <!-- ロゴまたはアプリケーション名 -->
+        <div class="flex items-center">
+          <%= link_to 'Loom Management', root_path, class: "text-xl font-bold text-gray-700" %>
+        </div>
+        <!-- デスクトップメニュー -->
+        <div class="hidden md:flex items-center space-x-4" id="navbarMenu">
+          <% if logged_in? %>
+            <% if current_user.admin? %>
+              <%# 管理者用ナビゲーション %>
+              <p><%= link_to "機械一覧", admin_machines_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "発注一覧", admin_orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "発注する", new_admin_order_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <% else %>
+              <%# 一般ユーザー用ナビゲーション %>
+              <p><%= link_to "ホーム", root_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "織機一覧", machines_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "受注一覧", orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <% end %>
+          <p><%= link_to "ユーザー情報", user_path(current_user), class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+          <p><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-3 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></p>
+          <% else %>
+            <%# 未ログイン時のナビゲーション %>
+            <p><%= link_to "ログイン", login_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <p><%= link_to "ユーザー登録", signin_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+          <% end %>
+        </div>
 
-  <%# グローバルナビゲーションの作成 %>
-  <nav class="navbar">
-    <div class="navbar-brand">Loom Management</div>
-    <div class="navbar-toggle" onclick="toggleMenu()">☰</div>
-    <ul class="navbar-menu" id="navbarMenu">
-      <% if logged_in? %>
-      <% if current_user.admin? %>
-      <%# 管理者用ナビゲーション %>
-      <li><%= link_to "機械一覧", admin_machines_path, id: "admin-machines-index" %></li>
-      <li><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index" %></li>
-      <li><%= link_to "発注一覧", admin_orders_path %></li>
-      <li><%= link_to "発注する", new_admin_order_path %></li>
-      <li><%= link_to "納期の予想", admin_process_estimates_path %></li>
-      <% else %>
-      <%# 一般ユーザー用ナビゲーション %>
-      <li><%= link_to "ホーム", root_path %></li>
-      <li><%= link_to "織機一覧", machines_path %></li>
-      <li><%= link_to "受注一覧", orders_path %></li>
-      <% end %>
-      <li><%= link_to "ユーザー情報", user_path(current_user) %></li>
-      <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete } %></li>
-      <% else %>
-      <%# 未ログイン時のナビゲーション %>
-      <li><%= link_to "ログイン", login_path %></li>
-      <li><%= link_to "ユーザー登録", signin_path %></li>
-      <% end %>
-    </ul>
-  </nav>
+        <!-- モバイルメニューのボタン -->
+        <div class="flex md:hidden">
+          <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
+            <span class="sr-only">メニューを開く</span>
+            <!-- ハンバーガーアイコン -->
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </nav>
 
-  <%= yield %>
+    <!-- モバイルメニュー -->
+    <div id="mobile-menu" class="hidden md:hidden">
+      <ul class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <% if logged_in? %>
+          <% if current_user.admin? %>
+            <%# 管理者用ナビゲーション %>
+            <li><%= link_to "機械一覧", admin_machines_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "発注一覧", admin_orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "発注する", new_admin_order_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+          <% else %>
+            <%# 一般ユーザー用ナビゲーション %>
+            <li><%= link_to "ホーム", root_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <li><%= link_to "織機一覧", machines_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "受注一覧", orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+          <% end %>
+        <li><%= link_to "ユーザー情報", user_path(current_user), class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+        <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-3 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></li>
+        <% else %>
+          <%# 未ログイン時のナビゲーション %>
+          <li><%= link_to "ログイン", login_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+          <li><%= link_to "ユーザー登録", signin_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+        <% end %>
+      </ul>
+    </div>
+  </header>
+
+  <main class="flex-grow container py-6">
+    <div class="px-4 py-6 mx-auto shadow-md bg-white">
+      <%# Flashメッセージのデザインをカスタムクラスで適用 %>
+      <% flash.each do |key, value| %>
+        <div class="flash-message <%= key %> flex items-center justify-between px-4 py-3 rounded-md shadow-md mb-4
+          <% if key == 'notice' %>
+            bg-green-100 text-green-800
+          <% elsif key == 'alert' %>
+            bg-red-100 text-red-800
+          <% else %>
+            bg-gray-100 text-gray-800
+          <% end %>">
+          <span><%= value %></span>
+          <button class="close-button text-gray-500 hover:text-gray-800 font-bold text-lg" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+      <% end %>
+      <%= yield %>
+    </div>
+  </main>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const button = document.getElementById('mobile-menu-button');
+      const menu = document.getElementById('mobile-menu');
+
+      button.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+      });
+    });
+  </script>
 </body>
 
 </html>
