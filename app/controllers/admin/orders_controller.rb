@@ -25,36 +25,42 @@ before_action :admin_user
 
   def create
     # orderテーブル以外を除外してorderインスタンス作成
+    # マージしてOrderに保存
+    # start_date = params[:work_process][:start_date]
+    # @order = Order.new(order_params.merge(start_date: start_date))
     @order = Order.new(order_params)
 
     start_date = work_process_params[:start_date]
     machine_type_id = work_process_params[:process_estimate][:machine_type_id].to_i
 
 
-      # earliest_estimated_completion_dateの値を定義
-      # earliest_estimated_completion_date = start_date + "日数を返す関数"
+    # earliest_estimated_completion_dateの値を定義
+    # earliest_estimated_completion_date = start_date + "日数を返す関数"
 
-      # 5個のwork_processインスタンスを作成
-      workprocesses = WorkProcess.initial_processes_list(start_date)
+    # 5個のwork_processインスタンスを作成
+    workprocesses = WorkProcess.initial_processes_list(start_date)
 
-      # インスタンスの更新
-      # process_estimate_idを入れる
+    # インスタンスの更新
+    # process_estimate_idを入れる
 
-      # インスタンスの更新
-      # 完了見込日時を入れる
-      updated_workprocesses = WorkProcess.update_deadline(workprocesses, machine_type_id, start_date)
-      # 関連付け
-      @order.work_processes.build(updated_workprocesses)
-      # binding.irb
-      @order.save
+    # インスタンスの更新
+    # 完了見込日時を入れる
+    updated_workprocesses = WorkProcess.update_deadline(workprocesses, machine_type_id, start_date)
+    # 関連付け
+    @order.work_processes.build(updated_workprocesses)
+    # binding.irb
+    @order.save
 
-      redirect_to admin_orders_path, notice: "注文が作成されました"
-
+    redirect_to admin_orders_path, notice: "注文が作成されました"
   end
 
   def show
     @work_process = @order.work_processes.joins(:work_process_definition)
     .order("work_process_definitions.sequence ASC")
+    # 織機データを取得
+    @machines = Machine.joins(work_processes: :order)
+                       .where(work_processes: { order_id: @order.id })
+                       .distinct
   end
 
   def edit
@@ -99,7 +105,6 @@ before_action :admin_user
         flash.now[:alert] = "作業工程の更新に失敗しました。"
         render :edit_work_processes and return
       end
-
     end
     # 更新後に並び替えを行う
     @work_processes = @work_processes.joins(:work_process_definition)

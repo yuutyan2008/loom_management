@@ -4,13 +4,13 @@
 <section class="px-24">
     <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
         <% if @machine.errors.any? %>
-            <div class="alert alert-danger">
-            <h4><%= pluralize(@machine.errors.count, "error") %> prohibited this machine from being saved:</h4>
-            <ul>
-                <% @machine.errors.full_messages.each do |message| %>
-                <li><%= message %></li>
-                <% end %>
-            </ul>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                <h4 class="font-bold mb-2"><%= pluralize(@machine.errors.count, "error") %>が発生しました:</h4>
+                <ul class="list-disc pl-5">
+                    <% @machine.errors.full_messages.each do |message| %>
+                        <li><%= message %></li>
+                    <% end %>
+                </ul>
             </div>
         <% end %>
         <table class="w-full max-w-sm">
@@ -21,7 +21,7 @@
                     </label>
                 </div>
                 <div class="md:w-2/3">
-                    <%= form.text_field :name, class: "bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500" %>
+                    <%= form.text_field :name, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
                 </div>
             </div>
             <div class="md:flex md:items-center mb-6">
@@ -31,7 +31,9 @@
                     </label>
                 </div>
                 <div class="md:w-2/3">
-                    <%= form.collection_select :machine_type_id, MachineType.all, :id, :name, { prompt: "織機のタイプを選択してください" }, { class: "bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500" } %>
+                    <%= form.collection_select :machine_type_id, MachineType.all, :id, :name,
+                        { prompt: "織機のタイプを選択してください" },
+                        { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
                 </div>
             </div>
             <div class="md:flex md:items-center mb-6">
@@ -41,7 +43,9 @@
                     </label>
                 </div>
                 <div class="md:w-2/3">
-                    <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name, { prompt: "稼働状況を選択してください" }, { class: "bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500" } %>
+                    <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name,
+                        { prompt: "稼働状況を選択してください" },
+                        { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
                 </div>
             </div>
         </table>
