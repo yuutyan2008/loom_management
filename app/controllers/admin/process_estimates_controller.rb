@@ -51,5 +51,4 @@ class Admin::ProcessEstimatesController < ApplicationController
       :update_date
       )
   end
-
 end

@@ -86,17 +86,13 @@ class Admin::MachinesController < ApplicationController
   end
 
   # Machineモデル、関連するモデルのデータを事前に取得
-  # def set_machine
-  #   Machine.includes(
-  #     :machine_assignments,
-  #     machine_assignments: [:machine_status], # MachineAssignment関連のステータス
-  #     work_processes: {
-  #       work_process_status: {},              # WorkProcess関連のステータス
-  #       work_process_definition: {},         # 作業工程定義
-  #       order: [:company, :product_number, :color_number] # Orderに紐づくデータ
-  #     }
-  #   )
-  # end
+  def set_machine
+    @machine = Machine.find_with_associations(params[:id])
+
+    unless @machine
+      redirect_to admin_machines_path, alert: "該当する機械が見つかりません。"
+    end
+  end
 
   # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
   def admin_user

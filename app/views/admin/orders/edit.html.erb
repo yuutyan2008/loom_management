@@ -1,7 +1,8 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注編集</h1>
 
+<%= form_with model: @order, url: admin_order_path(@order), method: :patch, local: true do |f| %>
+
 <h2>商品</h2>
-<%= form_with model: @order, url: admin_order_path(@order), local: true do |f| %>
 <table border="1" cellpadding="5" cellspacing="0">
   <thead>
     <tr>
@@ -14,28 +15,30 @@
   </thead>
   <tbody>
     <tr>
-      <td><%= f.collection_select :company_id,
-                                Company.all,
-                                :id,
-                                :name,
-                                prompt: "新しい企業を選択" %></td>
-      <td><%= f.collection_select :product_number_id,
-                                ProductNumber.all,
-                                :id,
-                                :number,
-                                prompt: "新しい品番を選択" %></td>
-      <td><%= f.collection_select :color_number_id,
-                                ColorNumber.all,
-                                :id,
-                                :color_code,
-                                prompt: "新しい色番号を選択" %></td>
+      <td><%= f.collection_select :company_id, Company.all, :id, :name, prompt: "新しい企業を選択" %></td>
+      <td><%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, prompt: "新しい品番を選択" %></td>
+      <td><%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, prompt: "新しい色番号を選択" %></td>
       <td><%= f.number_field :roll_count, placeholder: "新しいロール数を入力" %></td>
       <td><%= f.number_field :quantity, placeholder: "新しいロール数を入力" %></td>
     </tr>
-
   </tbody>
 </table>
 
+<h2>機械の稼働状況</h2>
+<% @order.work_processes.each do |process| %>
+<% if process.machine_assignments.present? %>
+<% process.machine_assignments.each do |assignment| %>
+<div>
+  <label>織機割り当て: <%= assignment.machine&.name || "N/A" %></label>
+  <%= f.fields_for "work_processes[#{process.id}][machine_assignments][#{assignment.id}]", assignment do |ma_form| %>
+  <%= ma_form.collection_select :machine_status_id, MachineStatus.all, :id, :name, prompt: "選択してください" %>
+  <% end %>
+</div>
+<% end %>
+<% else %>
+<p>N/A</p>
+<% end %>
+<% end %>
 
 <h2>作業工程</h2>
 <table border="1" cellpadding="5" cellspacing="0">
@@ -51,33 +54,37 @@
     </tr>
   </thead>
   <tbody>
+
     <% @order.work_processes.each do |process| %>
+    <%= f.fields_for :work_processes, process do |wp_form| %>
     <tr>
       <td><%= process&.work_process_definition&.name || "N/A" %></td>
-
-      <td><%= f.collection_select "work_processes[#{process.id}][work_process_status_id]",
-          WorkProcessStatus.all, :id, :name,
-          selected: process.work_process_status_id,
-          include_blank: "選択してください" %></td>
-      <td><%= f.date_field "work_processes[#{process.id}][start_date]",
-        value: process&.start_date,
-        placeholder: "作業開始日を選択してください" %></td>
+      <td><%= wp_form.collection_select :work_process_status_id,
+        WorkProcessStatus.all, :id, :name,
+        selected: process.work_process_status_id,
+        include_blank: "選択してください" %></td>
+      <td>
+        <%= wp_form.date_field :start_date, value: process.start_date, placeholder: "作業開始日を選択してください" %>
+      </td>
       <td><%= process&.earliest_estimated_completion_date || "N/A" %></td>
       <td><%= process&.latest_estimated_completion_date || "N/A" %></td>
-      <td><%= f.date_field "work_processes[#{process.id}][factory_estimated_completion_date]",
-        value: process&.factory_estimated_completion_date,
-        placeholder: "機屋の完了予定日を選択してください" %></td>
       <td>
-        <%= f.date_field "work_processes[#{process.id}][actual_completion_date]",
-        value: process&.actual_completion_date,
-        placeholder: "機屋の完了日を選択してください" %>
+        <%= wp_form.date_field :factory_estimated_completion_date, value: process.factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください" %>
       </td>
+      <td>
+        <%= wp_form.date_field :actual_completion_date, value: process.actual_completion_date, placeholder: "機屋の完了日を選択してください" %>
     </tr>
     <% end %>
+    <% end %>
+
   </tbody>
 </table>
 
-<!-- 提出ボタン -->
-<%= f.submit t('helpers.submit.update'), id: 'update-order' %>
-<%= link_to t('common.back'), admin_orders_path, id: 'back' %>
+<td>
+  <%= f.submit '更新', class: "update-order" %> |
+  <%= link_to '削除', admin_order_path(@order), method: :delete, data: { turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
+  |
+  <%= link_to "戻る", admin_order_path(@order), id: 'back' %>
+</td>
+
 <% end %>

@@ -100,14 +100,22 @@
     <div class="px-4 py-6 mx-auto shadow-md bg-white">
       <%# Flashメッセージのデザインをカスタムクラスで適用 %>
       <% flash.each do |key, value| %>
-        <div class="flash-message <%= key %>">
-          <%= value %>
-          <button class="close-button" onclick="this.parentElement.style.display='none'">×</button>
+        <div class="flash-message <%= key %> flex items-center justify-between px-4 py-3 rounded-md shadow-md mb-4
+          <% if key == 'notice' %>
+            bg-green-100 text-green-800
+          <% elsif key == 'alert' %>
+            bg-red-100 text-red-800
+          <% else %>
+            bg-gray-100 text-gray-800
+          <% end %>">
+          <span><%= value %></span>
+          <button class="close-button text-gray-500 hover:text-gray-800 font-bold text-lg" onclick="this.parentElement.style.display='none'">×</button>
         </div>
       <% end %>
       <%= yield %>
     </div>
   </main>
+
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
