@@ -9,156 +9,141 @@ class WorkProcess < ApplicationRecord
 
   scope :ordered, -> { joins(:work_process_definition).order('work_process_definitions.sequence') }
 
-  before_save :recalculate_deadlines
+    # 発注登録時に一括作成するWorkProcess配列を定義
+    def self.initial_processes_list(start_date)
+      [
+        {
+          work_process_definition_id: 1,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: nil,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
+        },
+        {
+          work_process_definition_id: 2,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: nil,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
+        },
+        {
+          work_process_definition_id: 3,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: nil,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
+        },
+        {
+          work_process_definition_id: 4,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: nil,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
+        },
+        {
+          work_process_definition_id: 5,
+          work_process_status_id: 1,
+          start_date: start_date,
+          process_estimate_id: nil,
+          earliest_estimated_completion_date: nil,
+          latest_estimated_completion_date: nil,
+          actual_completion_date: nil
+        },
+      ]
+    end
 
-  private
 
-  # def self.machine_type_process_estimate(machine_type_id)
-  #   if machine_type_id == 1
-  #     process_estimate = ProcessEstimate.where(id: 1..5)
-  #   elsif machine_type_id == 2
-  #     process_estimate = ProcessEstimate.where(id: 6..10)
-  #   end
-  #   binding.irb
-  # end
+  def self.decide_machine_type(workprocesses, machine_type_id)
+    if machine_type_id == 1
+      # 初期のWorkProcess配列のprocess_estimate_idを更新
+      workprocesses.each do |process|
+        process[:process_estimate_id] = process[:work_process_definition_id]
+      end
+    elsif machine_type_id == 2
+      workprocesses.each do |process|
+        process[:process_estimate_id] = process[:work_process_definition_id] + 5
+      end
+    end
+  end
 
-  # def self.update_deadline(workprocesses, machine_type_id, start_date)
+  def self.update_deadline(estimate_workprocesses, start_date)
+    short = 0
+    long = 0
+    update = true
+    # 配列を一個ずつ取り出す
+    estimate_workprocesses.each do |process|
+      unless update == true
+        # 開始日の更新が必要
+        process[:start_date] = start_date
+      end
+      # 納期の見込み日数のレコードを取得
+      target_estimate_record = ProcessEstimate.find_by(
+        id: process[:process_estimate_id]
+      )
+      # ナレッジの値を計算して更新
+      process[:earliest_estimated_completion_date] = start_date.to_date + target_estimate_record.earliest_completion_estimate
+      process[:latest_estimated_completion_date] = start_date.to_date + target_estimate_record.latest_completion_estimate
+      # 次の工程のstart_dateを決定
+      if process[:work_process_definition_id] == 4
+        # 日曜日なら翌々週の月曜が作業開始日
+          if process[:latest_estimated_completion_date].wday == 0
+          start_date = process[:latest_estimated_completion_date] + 8
+          else
+          # 次の月曜日が開始日
+          start_date = process[:latest_estimated_completion_date].next_week
+          end
+      else
+        start_date = process[:latest_estimated_completion_date]
+      end
+      update = false
+      #
+      process
+    end
+  end
+
+
+  # def self.update_deadline(estimate_workprocesses, start_date)
   #   short = 0
   #   long = 0
-
-  #   workprocesses.map do |process|
-  #     # 計算対象のナレッジレコードを取得
-  #     target_estimate = ProcessEstimate.machine_type_process_estimate(machine_type_id).find_by(
-  #       work_process_definition_id: process[:work_process_definition_id]
+  #   update = true
+  #   # 配列を一個ずつ取り出す
+  #   estimate_workprocesses.each do |process|
+  #     unless update == true
+  #       # 開始日の更新が必要
+  #       process[:start_date] = start_date
+  #     end
+  #     # 納期の見込み日数のレコードを取得
+  #     target_estimate_record = ProcessEstimate.find_by(
+  #       id: process[:process_estimate_id]
   #     )
-
-  #     next unless target_estimate # 該当ナレッジがなければスキップ
-
-  #     # ナレッジの値を取得
-  #     short += target_estimate.earliest_completion_estimate
-  #     long += target_estimate.latest_completion_estimate
-
   #     # ナレッジの値を計算して更新
-  #     process[:earliest_estimated_completion_date] = start_date.to_date + short
-  #     process[:latest_estimated_completion_date] = start_date.to_date + long
-  #     process[:start_date] ||= start_date # 上書きされる場合は既存値を優先
-
-  #     start_date = process[:earliest_estimated_completion_date] # 次の工程の開始日を更新
-
+  #     process[:earliest_estimated_completion_date] = start_date.to_date + target_estimate_record.earliest_completion_estimate
+  #     process[:latest_estimated_completion_date] = start_date.to_date + target_estimate_record.latest_completion_estimate
+  #     # 次の工程のstart_dateを決定
+  #     if process[:work_process_definition_id] == 4
+  #       # 日曜日なら翌々週の月曜が作業開始日
+  #         if process[:latest_estimated_completion_date].wday == 0
+  #         start_date = process[:latest_estimated_completion_date] + 8
+  #         else
+  #         # 次の月曜日が開始日
+  #         start_date = process[:latest_estimated_completion_date].next_week
+  #         end
+  #     else
+  #       start_date = process[:latest_estimated_completion_date]
+  #     end
+  #     update = false
+  #     #
   #     process
   #   end
   # end
-
-  # 完了見込みに関するスコープ
-  def self.update_deadline(workprocesses, machine_type_id, initial_start_date)
-    # 初期の開始日を設定
-    current_start_date = initial_start_date.to_date
-
-    workprocesses.each_with_index do |process, index|
-      # 対応する ProcessEstimate を取得
-      target_estimate = ProcessEstimate.machine_type_process_estimate(machine_type_id).find_by(
-        work_process_definition_id: process[:work_process_definition_id]
-      )
-
-      next unless target_estimate # 該当するデータがない場合はスキップ
-
-      if index == 0
-        # 最初の工程の場合
-        process[:start_date] = current_start_date
-        process[:earliest_estimated_completion_date] = current_start_date + target_estimate.earliest_completion_estimate
-        process[:latest_estimated_completion_date] = current_start_date + target_estimate.latest_completion_estimate
-      else
-        # 他の工程の場合、前の工程の完了日時を基に計算
-        previous_process = workprocesses[index - 1]
-        process[:start_date] = previous_process[:earliest_estimated_completion_date]
-        process[:earliest_estimated_completion_date] = previous_process[:earliest_estimated_completion_date] + target_estimate.earliest_completion_estimate
-        process[:latest_estimated_completion_date] = previous_process[:latest_estimated_completion_date] + target_estimate.latest_completion_estimate
-      end
-    end
-
-    workprocesses
-  end
-
-  def recalculate_deadlines
-    return unless self.process_estimate || self.order
-
-    # 対応する ProcessEstimate を取得
-    target_estimate = ProcessEstimate.machine_type_process_estimate(self.process_estimate&.machine_type_id).find_by(
-      work_process_definition_id: self.work_process_definition_id
-    )
-
-    return unless target_estimate
-
-    # 再計算
-    if self.work_process_definition_id == 1
-      # 最初の工程の場合、オーダーの開始日を基に計算
-      self.start_date ||= self.order&.start_date
-    else
-      # 他の工程の場合、前の工程の最短完了日時を開始日に設定
-      previous_process = self.order.work_processes.find_by(
-        work_process_definition_id: self.work_process_definition_id - 1
-      )
-
-      self.start_date = previous_process&.earliest_estimated_completion_date
-    end
-
-    # 完了予定日を計算
-    self.earliest_estimated_completion_date = self.start_date + target_estimate.earliest_completion_estimate
-    self.latest_estimated_completion_date = self.start_date + target_estimate.latest_completion_estimate
-
-    self.save!
-  end
-
-  # 発注登録時に一括作成するWorkProcessレコード定義
-  def self.initial_processes_list(start_date)
-    [
-      {
-        work_process_definition_id: 1,
-        work_process_status_id: 1,
-        start_date: start_date,
-        process_estimate_id: nil,
-        earliest_estimated_completion_date: nil,
-        latest_estimated_completion_date: nil,
-        actual_completion_date: nil
-      },
-      {
-        work_process_definition_id: 2,
-        work_process_status_id: 1,
-        start_date: start_date,
-        process_estimate_id: nil,
-        earliest_estimated_completion_date: nil,
-        latest_estimated_completion_date: nil,
-        actual_completion_date: nil
-      },
-      {
-        work_process_definition_id: 3,
-        work_process_status_id: 1,
-        start_date: start_date,
-        process_estimate_id: nil,
-        earliest_estimated_completion_date: nil,
-        latest_estimated_completion_date: nil,
-        actual_completion_date: nil
-      },
-      {
-        work_process_definition_id: 4,
-        work_process_status_id: 1,
-        start_date: start_date,
-        process_estimate_id: nil,
-        earliest_estimated_completion_date: nil,
-        latest_estimated_completion_date: nil,
-        actual_completion_date: nil
-      },
-      {
-        work_process_definition_id: 5,
-        work_process_status_id: 1,
-        start_date: start_date,
-        process_estimate_id: nil,
-        earliest_estimated_completion_date: nil,
-        latest_estimated_completion_date: nil,
-        actual_completion_date: nil
-      },
-    ]
-  end
 
 
   # 現在作業中の作業工程を取得するスコープ
