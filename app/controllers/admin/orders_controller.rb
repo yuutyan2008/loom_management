@@ -1,7 +1,7 @@
 class Admin::OrdersController < ApplicationController
 before_action :order_params, only: [:create,  :update]
 before_action :set_order, only: [:edit, :show, :update, :destroy]
-before_action :work_process_params, only: [:create, :update]
+# before_action :work_process_params, only: [:create, :update]
 before_action :admin_user
 
   def index
@@ -24,12 +24,17 @@ before_action :admin_user
 
   def create
     # orderテーブル以外を除外してorderインスタンス作成
-    @order = Order.new(order_params)
+    @order = Order.new(order_params.except(:work_processes))
 
-    start_date = work_process_params[:start_date]
-    machine_type_id = work_process_params[:process_estimate][:machine_type_id].to_i
+    # work_processesのパラメータ取得
+    # ハッシュの値部分のみを配列として取得
+    work_processes = order_params[:work_processes].values.first
 
-      # 5個のwork_processインスタンスを作成
+    # ハッシュのキー"start_date"を引数にパラメータを取得
+    start_date = work_processes["start_date"]
+    machine_type_id = work_processes["process_estimate"]["machine_type_id"].to_i
+
+      # 5個のwork_processハッシュからなる配列を作成
       workprocesses = WorkProcess.initial_processes_list(start_date)
       # インスタンスの更新
       # process_estimate_idを入れる
@@ -37,8 +42,10 @@ before_action :admin_user
       # インスタンスの更新
       # 完了見込日時を入れる
       update_workprocesses = WorkProcess.update_deadline(estimate_workprocesses, start_date)
-      # 関連付け
-      @order.work_processes.build(update_workprocesses)
+      # ５個のハッシュとorderの関連付け
+      update_workprocesses.each do |work_process_data|
+        @order.work_processes.build(work_process_data)
+      end
       @order.save
       redirect_to admin_orders_path, notice: "注文が作成されました"
   end
@@ -57,41 +64,37 @@ before_action :admin_user
   end
 
   def update
-    @order.update(order_params)
+    @order.update(order_params.except(:work_processes))
     # strongparameterで許可されたフォームのname属性値を取得
-    permitted_params = work_processes_params.to_h
-    # フォームデータからIDを取得
-    work_process_ids = permitted_params.keys
-    # IDを指定してDBからデータ取得
-    @work_processes = WorkProcess.where(id: work_process_ids)
+    work_processes_params = order_params[:work_processes].values
+    work_processes_params.each do |work_process_params|
+      binding.irb
+    # フォームから取得したIDでDBからデータ取得
+      work_process = WorkProcess.find(work_process_params[:id])
+    binding.irb
 
-    @work_processes.each do |work_process|
-      # フォームデータからこのレコードに対応するパラメータを取得、idを文字列に変換
-      update_record = permitted_params[work_process.id.to_s]
-
-      # machine_assignments の更新処理
-      if update_record.key?('machine_assignments')
-        update_record['machine_assignments'].each do |assignment_id, assignment_params|
-          assignment = work_process.machine_assignments.find(assignment_id)
-
-          if assignment.update(assignment_params)
-            flash.now[:alert] = "機械割り当ての更新に成功しました。"
-          else
-            flash.now[:alert] = "機械割り当ての更新に失敗しました。"
-            render :edit_work_processes and return
+      # machine_assignments の処理
+      if work_process_params[:machine_assignments].present?
+        work_process_params[:machine_assignments].each do |assignment_params|
+          assignment = work_process.machine_assignments.find(assignment_params[:id])
+          unless assignment.update(machine_status_id: assignment_params[:machine_status_id])
+            flash[:alert] = "機械割り当ての更新に失敗しました"
+            redirect_to edit_admin_order_path(@order) and return
           end
         end
-        update_record.delete('machine_assignments')
+        # machine_assignmentsを削除して残りのWorkProcess属性を更新
+        work_process_params.delete(:machine_assignments)
+        binding.irb
       end
 
-      # 更新処理を実行
-      unless work_process.update(update_record)
-
-        flash.now[:alert] = "作業工程の更新に失敗しました。"
-        render :edit_work_processes and return
+      # WorkProcessの更新
+      unless work_process.update(work_process_params.except(:machine_assignments))
+        flash[:alert] = "作業工程の更新に失敗しました"
+        binding.irb
+        redirect_to edit_admin_order_path(@order) and return
       end
-
     end
+
     # 更新後に並び替えを行う
     @work_processes = @work_processes.joins(:work_process_definition)
     .order("work_process_definitions.sequence ASC")
@@ -114,7 +117,7 @@ before_action :admin_user
   end
 
   private
-  # フォームの入力値のみ許可
+
   def order_params
     params.require(:order).permit(
       :company_id,
@@ -122,21 +125,35 @@ before_action :admin_user
       :color_number_id,
       :roll_count,
       :quantity,
+      work_processes: [
+        :id,
+        :process_estimate_id,
+        :work_process_definition_id,
+        :work_process_status_id,
+        :factory_estimated_completion_date,
+        :actual_completion_date,
+        :start_date,
+        process_estimate: [:machine_type_id],
+        machine_assignments: [:id, :machine_status_id]
+      ]
     )
   end
 
-  def work_process_params
-    params.require(:work_process).permit(
-      :process_estimate_id,
-      :work_process_definition_id ,
-      :work_process_status_id,
-      :factory_estimated_completion_date,
-      :actual_completion_date,
-      :start_date,
-      process_estimate: [:machine_type_id],
-      machine_assignments: [:id, :machine_status_id]
-    )
-  end
+
+  # def update_work_processes
+  #   # パラメータから work_processes を取得
+  #   work_processes_params = params[:work_processes] || {}
+
+  #   work_processes_params.each do |id, attributes|
+  #     work_process = WorkProcess.find(id)
+
+  #     # 子モデルを更新
+  #     work_process.update(
+  #       status_id: attributes[:status_id],
+  #       start_date: attributes[:start_date]
+  #     )
+  #   end
+  # end
 
   def set_order
     @order = Order.find(params[:id])
