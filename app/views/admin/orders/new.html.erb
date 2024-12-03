@@ -16,7 +16,6 @@
 
 <%= form_with model: @order, url: admin_orders_path, local: true do |f| %>
 <table>
-
   <tbody>
     <tr>
       <td>会社名</td>
@@ -35,11 +34,7 @@
         <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, placeholder: "色番を入力してください" %>
       </td>
     </tr>
-    <tr>
-      <td>機械の種類</td>
-      <td>
-        <%= select_tag 'work_process[process_estimate][machine_type_id]', options_from_collection_for_select(MachineType.all, :id, :name), prompt: "機械の種類を選択してください" %>
-    </tr>
+
     <tr>
       <td>反数</td>
       <td>
@@ -52,12 +47,32 @@
         <%= f.number_field :quantity, min: 1, placeholder: "数量を入力してください" %>
       </td>
     </tr>
+    <%# f.fields_for :work_processes do |wp_form| %>
+    <tr>
+      <td>機械の種類</td>
+      <td>
+        <%# = wp_form.select :process_estimate_id,
+                     options_from_collection_for_select(MachineType.all, :id, :name),
+                     prompt: "機械の種類を選択してください" %>
+
+        <%# work_processesのidを取得 %>
+        <%= hidden_field_tag 'order[work_processes][0][id]', work_process.id if work_process.present? %>
+        <%= select_tag 'order[work_processes][0][process_estimate][machine_type_id]',
+                   options_from_collection_for_select(MachineType.all, :id, :name),
+                   prompt: "機械の種類を選択してください" %>
+      </td>
+    </tr>
     <tr>
       <td>作業開始日</td>
       <td>
-        <%= text_field_tag "work_process[start_date]", nil, placeholder: "作業開始日を選択してください", type: :date %>
+        <%#= wp_form.date_field :start_date, placeholder: "作業開始日を選択してください" %>
+        <%= text_field_tag 'order[work_processes][0][start_date]',
+                       nil,
+                       placeholder: "作業開始日を選択してください",
+                       type: :date %>
       </td>
     </tr>
+
   </tbody>
 </table>
 
