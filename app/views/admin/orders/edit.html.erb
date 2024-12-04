@@ -2,7 +2,7 @@
 
 <%= form_with model: @order, url: admin_order_path(@order), method: :patch, local: true do |f| %>
 
-
+<h2>商品</h2>
 <table border="1" cellpadding="5" cellspacing="0">
   <thead>
     <tr>
@@ -24,76 +24,65 @@
   </tbody>
 </table>
 
-
-
-
-<table border="1" cellpadding="5" cellspacing="0">
-  <thead>
-    <tr>
-      <th>現在の工程</th>
-      <th>現在の工程の状況</th>
-      <th>開始日</th>
-      <th>完了見込み(最短)</th>
-      <th>完了見込み(最長)</th>
-      <th>機屋の完了予定日</th>
-      <th>機屋の完了日</th>
-    </tr>
-  </thead>
-  <tbody>
-
-    <%# @order.work_processes.each do |process| %>
-    <%= f.fields_for :work_processes do |wp_form| %>
-    <tr>
-      <td><%= wp_form&.object&.work_process_definition&.name || "N/A" %></td>
-      <td><%= wp_form&.collection_select :work_process_status_id,
-        WorkProcessStatus.all, :id, :name,
-        selected: wp_form.object&.work_process_status_id,
-        include_blank: "選択してください" %></td>
-      <td>
-        <%= wp_form.date_field :start_date, placeholder: "作業開始日を選択してください" %>
-      </td>
-      <td><%= wp_form&.object&.earliest_estimated_completion_date || "N/A" %></td>
-      <td><%= wp_form&.object&.latest_estimated_completion_date || "N/A" %></td>
-      <td>
-        <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください" %>
-      </td>
-      <td>
-        <%= wp_form.date_field :actual_completion_date,  placeholder: "機屋の完了日を選択してください" %>
-        <%# hidden_field を追加して work_process.id を送信 %>
-        <%#= wp_form.hidden_field :id %>
-      </td>
-    </tr>
-    <%# end %>
-    <% end %>
-
-  </tbody>
-</table>
-
-
-<%# @order.work_processes.each do |process| %>
-
-<%# if process.machine_assignments.present? %>
-<%# process.machine_assignments.each do |assignment| %>
-<%= f.fields_for :work_processes do |wp_form| %>
-<!-- WorkProcessのフィールド -->
-<%= wp_form.fields_for :machine_assignments do |ma_form| %>
-<!-- MachineAssignmentのフィールド -->
-<%#= f.fields_for :machine_assignments do |ma_form| %>
-<div>
-  <label>機械の稼働状況: <%#= machine_statuses_for_order(@order) || "N/A" %></label>
-  <%#= f.fields_for "work_processes[#{process.id}][machine_assignments][#{assignment.id}]", assignment do |ma_form| %>
-  <%= ma_form&.collection_select :machine_status_id, MachineStatus.all, :id, :name, selected: ma_form.object.machine_status_id, include_blank: "選択してください" %>
-  <%# end %>
-</div>
-<% end %>
+<h2>機械の稼働状況</h2>
+<% if @machines.any? %>
+  <% @machines.each do |machine, i| %>
+    <div>
+      <label>織機割り当て: <%= machine&.name || "N/A" %></label>
+      <%#= ma_form.collection_select :machine_status_id, MachineStatus.all, :id, :name, prompt: "選択してください", selected: machine.latest_machine_status&.id %>
+      <%# binding.irb %>
+      <%= collection_select(:order, :machine_status_id, MachineStatus.all, :id, :name, prompt: "選択してください", selected: machine.latest_machine_status&.id)  %>
+    </div>
+  <% end %>
+<% else %>
+  <p> 現在割り当て中の織機はありません。</p>
 <% end %>
 
 
-<td>
-  <%= f.submit '更新', class: "update-order" %> |
-  <%= link_to '削除', admin_order_path(@order), method: :delete, data: { turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
-  |
-  <%= link_to "戻る", admin_order_path(@order), id: 'back' %>
-</td>
+<h2>作業工程</h2>
+  <%= f.fields_for :work_processes do |wp_form| %>
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>現在の工程</th>
+          <th>現在の工程の状況</th>
+          <th>開始日</th>
+          <th>完了見込み(最短)</th>
+          <th>完了見込み(最長)</th>
+          <th>機屋の完了予定日</th>
+          <th>機屋の完了日</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%#= f.fields_for :work_processes, process do |wp_form| %>
+        <tr>
+          <td><%= wp_form.object&.work_process_definition&.name || "N/A" %></td>
+          <td><%= wp_form.collection_select :work_process_status_id,
+            WorkProcessStatus.all, :id, :name,
+            selected: wp_form.object&.work_process_status_id,
+            include_blank: "選択してください" %></td>
+          <td>
+            <%= wp_form.date_field :start_date, placeholder: "作業開始日を選択してください" %>
+          </td>
+          <td><%= wp_form.object&.earliest_estimated_completion_date || "N/A" %></td>
+          <td><%= wp_form.object&.latest_estimated_completion_date || "N/A" %></td>
+          <td>
+            <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください" %>
+          </td>
+          <td>
+            <%= wp_form.date_field :actual_completion_date, placeholder: "機屋の完了日を選択してください" %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  <% end %>
+
+
+  <td>
+    <%= f.submit '更新', class: "update-order" %> |
+    <%= link_to '削除', admin_order_path(@order), method: :delete, data: { turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" } %>
+    |
+    <%= link_to "戻る", admin_order_path(@order), id: 'back' %>
+  </td>
 
 <% end %>

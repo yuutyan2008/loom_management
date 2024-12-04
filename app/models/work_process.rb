@@ -15,7 +15,8 @@ class WorkProcess < ApplicationRecord
       machine_assignments: :machine_status,
       order: [:company, :product_number, :color_number]
     )
-    joins(:work_process_definition).order('work_process_definitions.sequence') }
+    .joins(:work_process_definition)
+    .order('work_process_definitions.sequence') }
 
 
     # 発注登録時に一括作成するWorkProcess配列を定義
@@ -165,7 +166,7 @@ class WorkProcess < ApplicationRecord
 
     if latest_completed_wp
       # 最新の「作業完了」より後の作業工程を取得
-      where('start_date > ?', latest_completed_wp.start_date).order(:start_date).first
+      where('work_processes.start_date > ?', latest_completed_wp.start_date).order(:start_date).first
     else
       # 「作業完了」がない場合、最も古い作業工程を取得
       order(:start_date).first
@@ -173,16 +174,18 @@ class WorkProcess < ApplicationRecord
   end
 
   # 発注の更新処理
-  def self.update_work_process(work_processes_attributes)
-    ActiveRecord::Base.transaction(requires_new: true) do
-      # WorkProcessの直接的な更新
-      self.update!(
-        work_process_status_id: params["work_process_status_id"],
-        factory_estimated_completion_date: params["factory_estimated_completion_date"],
-        actual_completion_date: params["actual_completion_date"],
-        start_date: params["start_date"]
-      )
-    end
-  end
+  # def self.update_work_process(work_processes_attributes)
+  #   ActiveRecord::Base.transaction(requires_new: true) do
+  #     # WorkProcessの直接的な更新
+  #     self.update!(
+  #       work_process_status_id: params["work_process_status_id"],
+  #       factory_estimated_completion_date: params["factory_estimated_completion_date"],
+  #       actual_completion_date: params["actual_completion_date"],
+  #       start_date: params["start_date"]
+  #     )
+  #   end
+  # end
 
+  #
+  #
 end
