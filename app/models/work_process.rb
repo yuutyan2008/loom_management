@@ -4,10 +4,19 @@ class WorkProcess < ApplicationRecord
   belongs_to :work_process_definition
   belongs_to :work_process_status
   has_many :machine_assignments
+  accepts_nested_attributes_for :machine_assignments
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :machines, through: :machine_assignments
 
-  scope :ordered, -> { joins(:work_process_definition).order('work_process_definitions.sequence') }
+  scope :ordered, -> {
+    # ネストされた全ての発注関連データを取得
+    includes(
+      :work_process_definition,
+      machine_assignments: :machine_status,
+      order: [:company, :product_number, :color_number]
+    )
+    joins(:work_process_definition).order('work_process_definitions.sequence') }
+
 
     # 発注登録時に一括作成するWorkProcess配列を定義
     def self.initial_processes_list(start_date)
@@ -162,4 +171,18 @@ class WorkProcess < ApplicationRecord
       order(:start_date).first
     end
   end
+
+  # 発注の更新処理
+  def self.update_work_process(work_processes_attributes)
+    ActiveRecord::Base.transaction(requires_new: true) do
+      # WorkProcessの直接的な更新
+      self.update!(
+        work_process_status_id: params["work_process_status_id"],
+        factory_estimated_completion_date: params["factory_estimated_completion_date"],
+        actual_completion_date: params["actual_completion_date"],
+        start_date: params["start_date"]
+      )
+    end
+  end
+
 end
