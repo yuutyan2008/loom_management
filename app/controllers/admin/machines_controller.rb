@@ -27,7 +27,6 @@ class Admin::MachinesController < ApplicationController
     @latest_work_process = @machine.latest_work_process
     @latest_work_process_status = @machine.latest_work_process_status
     @latest_factory_estimated_completion_date = @machine.latest_factory_estimated_completion_date
-
     # modelで定義したlatest_machine_assignmentで最新の機械の割り当てを取得して表示
     @latest_machine_assignment = @machine.latest_machine_assignment
   end
