@@ -9,10 +9,12 @@ class MachinesController < ApplicationController
     @machines = @company.machines
     @no_machines_message = "現在保有している織機はありません" if @machines.empty?
     @work_processes = WorkProcess.ordered
+    check_machine_status_index(@machines) # 追加: MachineStatus のチェック
   end
 
   def show
     @work_processes = @machine.work_processes.ordered
+    check_machine_status_show(@machine) # 追加: MachineStatus のチェック
   end
 
   def new
