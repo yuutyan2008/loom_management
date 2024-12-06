@@ -98,33 +98,33 @@ before_action :admin_user
     order_work_processes = order_params.except(:machine_status_id)
 
     # 完了日の取得
-    workprocesses = order_work_processes[:work_processes_attributes].values
-    workprocesses.each_with_index do |workprocess, index|
-      # 見込み完了日、作業開始日更新
-      start_date = workprocess["start_date"]
-      actual_completion_date = workprocess["actual_completion_date"]
-      # binding.irb
+    # workprocesses = order_work_processes[:work_processes_attributes].values
+    # workprocesses.each_with_index do |workprocess, index|
+    #   # 見込み完了日、作業開始日更新
+    #   start_date = workprocess["start_date"]
+    #   actual_completion_date = workprocess["actual_completion_date"]
+    #   # binding.irb
 
-      # 次の工程を取得
-      next_process = workprocesses[index + 1]
+    #   # 次の工程を取得
+    #   next_process = workprocesses[index + 1]
 
-      if actual_completion_date.present?
+    #   if actual_completion_date.present?
 
-        # 開始日、見込み完了日置き換え、
-        updated_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date, index, next_process)
-        binding.irb
-        if next_process.present?
-          next_start_date = WorkProcess.determine_next_start_date(next_process)
-          next_process["start_date"] = next_start_date
-          # binding.irb
+    #     # 開始日、見込み完了日置き換え、
+    #     updated_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date, index, next_process)
+    #     binding.irb
+    #     if next_process.present?
+    #       next_start_date = WorkProcess.determine_next_start_date(next_process)
+    #       next_process["start_date"] = next_start_date
+    #       # binding.irb
 
-        end
-        workprocess["start_date"] = updated_date
-        workprocess["latest_estimated_completion_date"] = updated_date
-        # binding.irb
-      end
+    #     end
+    #     workprocess["start_date"] = updated_date
+    #     workprocess["latest_estimated_completion_date"] = updated_date
+    #     # binding.irb
+    #   end
 
-    end
+    # end
 
     # binding.irb
     @order.update(order_params.except(:machine_status_id))
