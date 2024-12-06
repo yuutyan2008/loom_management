@@ -9,7 +9,9 @@ Rails.application.routes.draw do
   # 管理者用の名前空間
   namespace :admin do
     root to: 'home#index'
-    resources :machines
+    resources :machines do
+      get 'gant_index', on: :collection
+    end
     resources :orders
     resources :users
     resources :products

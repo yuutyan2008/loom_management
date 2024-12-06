@@ -1,0 +1,14 @@
+<div class='gantt-wrap'>
+  <svg id="gantt"></svg>
+</div>
+
+<script>
+
+  window.onload = function() {
+    const tasks = <%= raw @orders %>
+    console.log(tasks)
+    const gantt = new Gantt("#gantt", tasks, {
+      view_mode: 'Week',
+    });
+  };
+</script>
