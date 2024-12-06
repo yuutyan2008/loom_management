@@ -41,11 +41,11 @@ class OrdersController < ApplicationController
   end
 
   def update
-    binding.irb
+    # binding.irb
     ActiveRecord::Base.transaction do
       if @order.update(order_params)
         update_related_models
-        create_new_machine_assignments if params[:new_machine_assignments].present?
+        create_new_machine_assignments if params[:order][:new_machine_assignments].present?
         redirect_to @order, notice: '受注が正常に更新されました。'
       else
         render :edit
@@ -80,19 +80,7 @@ class OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      :start_date,
-      work_processes_attributes: [
-        :id,
-        :start_date,
-        :factory_estimated_completion_date,
-        :actual_completion_date,
-        :work_process_status_id,
-        :machine_id
-      ],
-      machine_assignments_attributes: [
-        :id,
-        :machine_status_id
-      ]
+      :start_date
     )
   end
 
@@ -108,13 +96,13 @@ class OrdersController < ApplicationController
   end
 
   def update_related_models
-    update_work_processes if params[:work_processes].present?
-    update_machine_assignments if params[:machine_assignments].present?
-    update_machine_statuses if params[:machine_statuses].present?
+    update_work_processes if params[:order][:work_processes].present?
+    update_machine_assignments if params[:order][:machine_assignments].present?
+    update_machine_statuses if params[:order][:machine_statuses].present?
   end
 
   def update_work_processes
-    params[:work_processes].each do |wp_param|
+    params[:order][:work_processes].each do |wp_param|
       wp = @order.work_processes.find(wp_param[:id])
       wp.update!(
         start_date: wp_param[:start_date],
@@ -126,14 +114,14 @@ class OrdersController < ApplicationController
   end
 
   def update_machine_assignments
-    params[:machine_assignments].each do |ma_param|
+    params[:order][:machine_assignments].each do |ma_param|
       ma = MachineAssignment.find(ma_param[:id])
       ma.update!(machine_status_id: ma_param[:machine_status_id])
     end
   end
 
   def update_machine_statuses
-    params[:machine_statuses].each do |ms_param|
+    params[:order][:machine_statuses].each do |ms_param|
       MachineAssignment
         .where(machine_id: ms_param[:machine_id], work_process: @order.work_processes)
         .update_all(machine_status_id: ms_param[:machine_status_id])
@@ -141,7 +129,7 @@ class OrdersController < ApplicationController
   end
 
   def create_new_machine_assignments
-    params[:new_machine_assignments].each do |ma_param|
+    params[:order][:new_machine_assignments].each do |ma_param|
       work_process_ids = determine_work_process_ids_for_new_assignment
       work_process_ids.each do |wp_id|
         # 各作業工程に対して MachineAssignment を作成
@@ -169,7 +157,6 @@ class OrdersController < ApplicationController
   def check_overdue_work_processes_index(orders)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
-
     # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
     overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
                                         .where(order_id: orders.ids)
@@ -181,7 +168,6 @@ class OrdersController < ApplicationController
       grouped = overdue_work_processes.group_by(&:order)
       # 件数の取得
       total_overdue_orders = grouped.keys.size
-
       # メッセージリストを作成
       message = grouped.map do |order, work_processes|
         wp_links = work_processes.each_with_index.map do |wp, index|
@@ -193,7 +179,6 @@ class OrdersController < ApplicationController
             "作業工程: #{wp.work_process_definition.name}"
           end
         end.join(", ")
-
         # 受注IDごとにリンクを生成
         link = view_context.link_to wp_links, order_path(order), class: "underline"
         "<li>#{link}</li>"
@@ -213,14 +198,13 @@ class OrdersController < ApplicationController
   def check_overdue_work_processes_show(work_processes)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
-
     # 遅延しているWorkProcessを取得
     overdue_work_processes = work_processes.where("earliest_estimated_completion_date < ?", Date.today)
                                            .where.not(work_process_status_id: completed_status.id)
 
     if overdue_work_processes.exists?
       # 同一Orderなのでグループ化は不要
-      wp_links = overdue_work_processes.each_with_index.map do |wp, index|
+      message = overdue_work_processes.each_with_index.map do |wp, index|
         if index == 0
           # 最初のWorkProcessには受注IDを含める
           "受注 ID:#{@order.id} 作業工程: #{wp.work_process_definition.name}"
@@ -230,14 +214,11 @@ class OrdersController < ApplicationController
         end
       end.join(", ")
 
-      # リンクを生成
-      link = view_context.link_to wp_links, order_path(@order)
-
       # フラッシュメッセージをHTMLとして生成
       flash.now[:alert] = <<-HTML.html_safe
         <strong>以下の作業工程が予定完了日を過ぎており、まだ完了していません。</strong>
         <ul class="text-red-700 list-disc ml-4 px-4 py-2">
-          <li>#{link}</li>
+          <li>#{message}</li>
         </ul>
       HTML
     end

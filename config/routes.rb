@@ -24,9 +24,7 @@ Rails.application.routes.draw do
 
   # 通常ユーザー用のリソース
   resources :machines, only: [:index, :show, :new, :create, :edit, :update, :destroy]
-  resources :orders do
-    resources :work_processes, only: [:show, :edit, :update, :destroy]
-  end
+  resources :orders, only: [:index, :show, :new, :create, :edit, :update, :destroy]
   resources :users, only: [:new, :create, :show, :edit, :update]
   root to: 'home#index'
 end
