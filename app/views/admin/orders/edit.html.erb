@@ -66,6 +66,7 @@
           </td>
           <td><%= wp_form.object&.earliest_estimated_completion_date || "N/A" %></td>
           <td><%= wp_form.object&.latest_estimated_completion_date || "N/A" %></td>
+          <%= wp_form.hidden_field :latest_estimated_completion_date, value: wp_form.object&.latest_estimated_completion_date %>
           <td>
             <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください" %>
           </td>
