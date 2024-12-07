@@ -24,7 +24,7 @@ class SessionsController < ApplicationController
 
   def completed_login(user)
     if user.admin?
-      redirect_to admin_orders_path
+      redirect_to admin_root_path
     else
       redirect_to root_path
     end
