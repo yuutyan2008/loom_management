@@ -30,37 +30,39 @@
 <section class="mb-12">
     <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">作業工程</h2>
     <% if @work_processes.any? %>
-    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
-        <table class="min-w-full border text-left border-gray-300">
-            <thead class="bg-gray-200">
-                <tr class="bg-gray-100">
-                    <th class="w-1/6 px-4 py-2 text-gray-700 border-b">品番</th>
-                    <th class="w-1/6 px-4 py-2 text-gray-700 border-b">作業工程</th>
-                    <th class="w-1/6 px-4 py-2 text-gray-700 border-b">ステータス</th>
-                    <th class="w-1/6 px-4 py-2 text-gray-700 border-b">開始日</th>
-                    <th class="w-1/6 px-4 py-2 text-gray-700 border-b">予定納期</th>
-                    <th class="w-1/6 px-4 py-2 text-gray-700 border-b">受注状況</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% @work_processes.each do |current_wp| %>
-                <tr class="hover:bg-gray-100">
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.order&.product_number&.number %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_definition&.name %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_status&.name %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.start_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date %></td>
-                    <td class="px-4 py-2 border-b text-indigo-500 underline">
-                        <%= link_to '受注を確認する', order_path(current_wp&.order), class: 'btn btn-info btn-sm' %>
-                    </td>
-                </tr>
-                <% end %>
-            </tbody>
-        </table>
+        <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+            <table class="min-w-full border text-left border-gray-300">
+                <thead class="bg-gray-200">
+                    <tr class="bg-gray-100">
+                        <th class="w-1/6 px-4 py-2 text-gray-700 border-b">品番</th>
+                        <th class="w-1/6 px-4 py-2 text-gray-700 border-b">作業工程</th>
+                        <th class="w-1/6 px-4 py-2 text-gray-700 border-b">ステータス</th>
+                        <th class="w-1/6 px-4 py-2 text-gray-700 border-b">開始日</th>
+                        <th class="w-1/6 px-4 py-2 text-gray-700 border-b">予定納期</th>
+                        <th class="w-1/6 px-4 py-2 text-gray-700 border-b">受注状況</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% @work_processes.each do |current_wp| %>
+                    <tr class="hover:bg-gray-100">
+                        <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.order&.product_number&.number %></td>
+                        <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_definition&.name %></td>
+                        <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_status&.name %></td>
+                        <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.start_date %></td>
+                        <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date %></td>
+                        <td class="px-4 py-2 border-b text-indigo-500 underline">
+                            <%= link_to '受注を確認する', order_path(current_wp&.order), class: 'btn btn-info btn-sm' %>
+                        </td>
+                    </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
     <% else %>
-        <p class="text-center text-rose-500">受注情報が見つかりませんでした。</p>
+        <div class="px-4 py-2 mb-6">
+            <p class="text-center text-rose-500">受注情報が見つかりませんでした。</p>
+        </div>
     <% end %>
-    </div>
 </section>
 
 <!-- アクションボタンセクション -->
