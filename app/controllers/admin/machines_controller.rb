@@ -5,19 +5,6 @@ class Admin::MachinesController < ApplicationController
   # 関連するモデルを事前に読み込む
   # Machineモデルごとの作業工程を表示するため、@machinesを中心にデータを取得
 
-  def new
-    @machine = Machine.new
-  end
-
-  def create
-    @machine = Machine.new(machine_params)
-    if @machine.save
-      redirect_to admin_machines_path, status: :unprocessable_entity, notice: "機械が登録されました。"
-    else
-      render :new
-    end
-  end
-
   def index
     @machines = Machine.machine_associations
   end
@@ -32,7 +19,21 @@ class Admin::MachinesController < ApplicationController
     @latest_machine_assignment = @machine.latest_machine_assignment
   end
 
-  def edit; end
+  def new
+    @machine = Machine.new
+  end
+
+  def create
+    @machine = Machine.new(machine_params)
+    if @machine.save
+      redirect_to admin_machines_path, status: :unprocessable_entity, notice: "機械が登録されました。"
+    else
+      render :new
+    end
+  end
+
+  def edit
+  end
 
   def update
     # paramsでフォームのデータを安全に受け取る

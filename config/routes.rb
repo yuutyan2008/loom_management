@@ -9,6 +9,8 @@ Rails.application.routes.draw do
   # 管理者用の名前空間
   namespace :admin do
     root to: 'home#index'
+    # Companyのshowアクションへのリソースフルなルートを追加
+    resources :companies, only: [:show], controller: 'home'
     resources :machines
     resources :orders
     resources :users
