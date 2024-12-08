@@ -26,7 +26,7 @@ class Admin::HomeController < ApplicationController
   end
 
   def show
-    @machines = @company.machines.includes(machine_assignments: :machine_status).uniq
+    @machines = @company.machines.includes(machine_assignments: :machine_status).order(:id).uniq
 
     # 最新の情報を各機械ごとに取得
     @latest_work_processes = @machines.map(&:latest_work_process)
