@@ -1,84 +1,86 @@
-<div class='gantt-wrap'>
-  <%# <svg id="gantt"></svg> %>
-</div>
-
-<div id="order-table">
   <h2>工程ごとの機屋一覧</h2>
-  <table>
-    <thead>
-      <tr>
+  <div class='gantt-wrap'>
+    <svg id="gantt"></svg>
+  </div>
 
-        <th>機屋名</th>
-        <th>ガントチャート</th>
-      </tr>
-    </thead>
-    <tbody id="table-body">
-      <!-- 動的に行を追加 -->
-    </tbody>
-  </table>
-</div>
+  <script>
+    window.onload = function () {
+      const orders = <%= raw @orders %>
+        console.log(orders)
 
-<script>
-  window.onload = function() {
-    const orders = <%= raw @orders %>
-    console.log(orders)
-    // const gantt = new Gantt("#gantt", orders, {
-    //   view_mode: 'Week',
-    // });
-
-//   const orders = [
-//     {
-//       id: "id1",
-//       name: "確定申告する",
-//       description: "必ずやる!!",
-//       start: "2021-01-01",
-//       end: "2021-01-7",
-//       progress: 100,
-//     },]
-// console.log(orders)
-
-
-    // テーブルの生成
-    const tableBody = document.getElementById("table-body");
-
-    orders.forEach((order) => {
-      // 行を作成
-      const row = document.createElement("tr");
-
-      // 機屋名を表示するセルの追加
-      const companyCell = document.createElement("td");
-      companyCell.textContent = order.company.name;
-      // machineCell.style.border = "1px solid #ccc";
-      // machineCell.style.padding = "8px";
-      row.appendChild(companyCell);
-
-      // ガントチャートを表示するセル
-      const ganttCell = document.createElement("td");
-
-      // ガントチャート描画用のSVGタグを生成
-      const ganttSvg = document.createElement("svg");
-      ganttSvg.id = `gantt-${order.id}`; // 各行に一意のIDを設定
-      // ガントが入ったセル要素にsvgタグを追加
-      ganttCell.appendChild(ganttSvg);
-      // 行にガントの入ったセルを追加
-      row.appendChild(ganttCell);
-
-      // 行をテーブルに追加
-      tableBody.appendChild(row);
-
-
-
-
-      // 各ガントチャートを初期化
-      const gantt = new Gantt(`#gantt-${order.id}`, orders,  {
-        view_mode: "Week"
-
-
+      const gantt = new Gantt("#gantt", orders, {
+        view_mode: 'Month'
       });
-      })
 
+      //
+      // 横軸の月ラベルを日本語に変更
+      setTimeout(function () {
+        console.log('timeout proc');
+        const labels = document.querySelectorAll(".lower-text");
+        const monthMapping = {
+          "January": "1月",
+          "February": "2月",
+          "March": "3月",
+          "April": "4月",
+          "May": "5月",
+          "June": "6月",
+          "July": "7月",
+          "August": "8月",
+          "September": "9月",
+          "October": "10月",
+          "November": "11月",
+          "December": "12月",
+        };
 
-  };
+        labels.forEach((label) => {
+          const text = label.textContent.trim();
+          if (monthMapping[text]) {
+            label.textContent = monthMapping[text];
+          }
+        });
+      }, 500); // 描画が完了するまで待機
 
+      const popups = document.querySelectorAll(".bar-wrapper");
+      // popups.addEventListener("click", setPopup);
 
-</script>
+      // popup内の月ラベルを日本語に変更
+      popups.forEach((popup) => {
+        popup.addEventListener("click", function () {
+          setTimeout(replacePopupDate, 100);
+        });
+      });
+
+      function replacePopupDate() {
+        console.log('timeout proc2');
+        const popupSubtitles = document.querySelectorAll(".subtitle");
+        console.log(popupSubtitles);
+        const monthMapping = {
+          "January": "1 /",
+          "February": "2 /",
+          "March": "3 /",
+          "April": "4/",
+          "May": "5/",
+          "June": "6/",
+          "July": "7/",
+          "August": "8/",
+          "September": "9/",
+          "October": "10 /",
+          "November": "11 /",
+          "December": "12 /",
+        };
+
+        popupSubtitles.forEach((subtitle) => {
+          let text = subtitle.textContent.trim(); // テキスト内容を取得
+          console.log("Before Translation:", text);
+
+          // 月名を日本語に置き換える
+          for (const [english, japanese] of Object.entries(monthMapping)) {
+            text = text.replace(new RegExp(english, "g"), japanese); // すべての一致箇所を置換
+          }
+
+          subtitle.textContent = text; // 翻訳後のテキストを設定
+          console.log("After Translation:", subtitle.textContent);
+        });
+      }
+    }
+  </script>
