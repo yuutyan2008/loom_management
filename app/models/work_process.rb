@@ -9,56 +9,56 @@ class WorkProcess < ApplicationRecord
 
   scope :ordered, -> { joins(:work_process_definition).order('work_process_definitions.sequence') }
 
-    # 発注登録時に一括作成するWorkProcess配列を定義
-    def self.initial_processes_list(start_date)
-      [
-        {
-          work_process_definition_id: 1,
-          work_process_status_id: 1,
-          start_date: start_date,
-          process_estimate_id: nil,
-          earliest_estimated_completion_date: nil,
-          latest_estimated_completion_date: nil,
-          actual_completion_date: nil
-        },
-        {
-          work_process_definition_id: 2,
-          work_process_status_id: 1,
-          start_date: start_date,
-          process_estimate_id: nil,
-          earliest_estimated_completion_date: nil,
-          latest_estimated_completion_date: nil,
-          actual_completion_date: nil
-        },
-        {
-          work_process_definition_id: 3,
-          work_process_status_id: 1,
-          start_date: start_date,
-          process_estimate_id: nil,
-          earliest_estimated_completion_date: nil,
-          latest_estimated_completion_date: nil,
-          actual_completion_date: nil
-        },
-        {
-          work_process_definition_id: 4,
-          work_process_status_id: 1,
-          start_date: start_date,
-          process_estimate_id: nil,
-          earliest_estimated_completion_date: nil,
-          latest_estimated_completion_date: nil,
-          actual_completion_date: nil
-        },
-        {
-          work_process_definition_id: 5,
-          work_process_status_id: 1,
-          start_date: start_date,
-          process_estimate_id: nil,
-          earliest_estimated_completion_date: nil,
-          latest_estimated_completion_date: nil,
-          actual_completion_date: nil
-        },
-      ]
-    end
+  # 発注登録時に一括作成するWorkProcess配列を定義
+  def self.initial_processes_list(start_date)
+    [
+      {
+        work_process_definition_id: 1,
+        work_process_status_id: 1,
+        start_date: start_date,
+        process_estimate_id: nil,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
+      },
+      {
+        work_process_definition_id: 2,
+        work_process_status_id: 1,
+        start_date: start_date,
+        process_estimate_id: nil,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
+      },
+      {
+        work_process_definition_id: 3,
+        work_process_status_id: 1,
+        start_date: start_date,
+        process_estimate_id: nil,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
+      },
+      {
+        work_process_definition_id: 4,
+        work_process_status_id: 1,
+        start_date: start_date,
+        process_estimate_id: nil,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
+      },
+      {
+        work_process_definition_id: 5,
+        work_process_status_id: 1,
+        start_date: start_date,
+        process_estimate_id: nil,
+        earliest_estimated_completion_date: nil,
+        latest_estimated_completion_date: nil,
+        actual_completion_date: nil
+      },
+    ]
+  end
 
 
   def self.decide_machine_type(workprocesses, machine_type_id)
