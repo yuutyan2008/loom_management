@@ -22,21 +22,6 @@
   window.onload = function() {
     const orders = <%= raw @orders %>
     console.log(orders)
-    // const gantt = new Gantt("#gantt", orders, {
-    //   view_mode: 'Week',
-    // });
-
-//   const orders = [
-//     {
-//       id: "id1",
-//       name: "確定申告する",
-//       description: "必ずやる!!",
-//       start: "2021-01-01",
-//       end: "2021-01-7",
-//       progress: 100,
-//     },]
-// console.log(orders)
-
 
     // テーブルの生成
     const tableBody = document.getElementById("table-body");
@@ -47,7 +32,7 @@
 
       // 機屋名を表示するセルの追加
       const companyCell = document.createElement("td");
-      companyCell.textContent = order.company.name;
+      companyCell.textContent = "機屋";
       // machineCell.style.border = "1px solid #ccc";
       // machineCell.style.padding = "8px";
       row.appendChild(companyCell);
@@ -66,17 +51,14 @@
       // 行をテーブルに追加
       tableBody.appendChild(row);
 
-
-
-
       // 各ガントチャートを初期化
-      const gantt = new Gantt(`#gantt-${order.id}`, orders,  {
-        view_mode: "Week"
-
-
+      const gantt = new Gantt(`#gantt-${order.id}`, order.work_processes, {
+        view_mode: "Week",
+        on_click: (task) => {
+          console.log(`Task clicked: ${task.name}`);
+        },
       });
-      })
-
+    });
 
   };
 
