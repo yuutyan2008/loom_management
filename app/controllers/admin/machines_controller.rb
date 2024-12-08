@@ -75,55 +75,13 @@ class Admin::MachinesController < ApplicationController
   end
 
   def gant_index
-    @tasks = [
-      {
-        id: 'id1',
-        name: '確定申告する rails  desuyo',
-        description: '必ずやる!!',
-        start: '2021-01-01',
-        end: '2021-01-7',
-        progress: 100,
-      },
-      {
-        id: 'id2',
-        name: 'クライアントに挨拶',
-        description: '年賀状も確認した上で連絡する',
-        start: '2021-01-4',
-        end: '2021-01-8',
-        progress: 100,
-      },
-      {
-        id: 'id3',
-        name: '請求書作成',
-        description: 'みんなに稼働時間を記録してもらった上で請求を出す',
-        start: '2021-01-5',
-        end: '2021-01-6',
-        progress: 40,
-      },
-      {
-        id: 'id4',
-        name: '案件A を開発',
-        description: 'まずはフレームワークのアップデートやる!',
-        start: '2021-01-5',
-        end: '2021-01-11',
-        progress: 50,
-      },
-      {
-        id: 'id5',
-        name: 'フィードバック面談',
-        description: '各メンバーシートを記入してもらった上で 1on1',
-        start: '2021-01-12',
-        end: '2021-01-16',
-        progress: 20,
-      },
-    ].to_json
-
-    @orders = Order.includes(:work_processes)
+    @orders = Order.includes(:work_processes, :company)
     @orders = @orders.map do |order|
       order.work_processes.map { |process|
         # tmp = order.work_processes[0..order.work_processes.find_index(process)].map(&:id)
         # tmp.delete(process.id)
         {
+          company: order.company.name,
           custom_index: order.id,
           id: process.id.to_s,
           name: process.work_process_definition.name,
@@ -137,6 +95,7 @@ class Admin::MachinesController < ApplicationController
         }
       }
     end.flatten.to_json
+    # binding.irb
   end
 
   def orders
@@ -161,7 +120,6 @@ class Admin::MachinesController < ApplicationController
           start_date: process.start_date.strftime('%Y-%m-%d'),
           actual_completion_date: process.actual_completion_date.strftime('%Y-%m-%d'),
         }
-
       }
     }
   }
