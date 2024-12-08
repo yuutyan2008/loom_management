@@ -25,10 +25,10 @@
                         <% latest_assignment = machine.latest_machine_assignment %>
                         <tr class="hover:bg-gray-100">
                             <td class="px-4 py-2 border-b text-gray-900">
-                                <%= machine.company&.name.present? ? machine.company.name : "N/A" %>
+                                <%= machine&.company&.name %>
                             </td>
                             <td class="px-4 py-2 border-b text-gray-900">
-                                <%= machine.name.present? ? machine.name : "N/A" %>
+                                <%= machine&.name %>
                             </td>
                             <td class="px-4 py-2 border-b text-gray-900">
                                 <%= machine_statuses(machine) %>
@@ -64,8 +64,8 @@
                         </tr>
                     <% end %>
                 <% else %>
-                    <tr>
-                        <td colspan="8" class="py-2 px-4 text-gray-700 border-b">データがありません</td>
+                    <tr class="px-4 py-2 mb-6">
+                        <td colspan="10" class="px-4 py-4 text-center text-rose-500">データがありません</td>
                     </tr>
                 <% end %>
             </tbody>
