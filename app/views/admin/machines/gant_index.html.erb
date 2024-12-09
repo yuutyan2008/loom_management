@@ -1,6 +1,35 @@
   <h2>工程ごとの機屋一覧</h2>
-  <div class='gantt-wrap'>
-    <svg id="gantt"></svg>
+
+    <style>
+        /* クラスに応じたスタイルを設定 */
+      g.bar-wrapper.class-a rect.bar-progress {
+        fill: #3498db !important; /* 青 */
+      }
+
+      g.bar-wrapper.class-b rect.bar-progress {
+        fill: #2ecc71 !important; /* 緑 */
+      }
+    </style>
+
+  <div class='gantt-wrap flex'>
+    <table class='flex-none w-14'>
+      <thead>
+        <tr>
+          <th>商品コード</th>
+          <th>企業名</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% JSON.parse(@orders).each do |order| %>
+          <tr>
+            <td><%= order["product_number"]%></td>
+            <td><%= order["company"]%></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <svg id="gantt" class = "flex-initial w-64"></svg>
   </div>
 
   <script>
