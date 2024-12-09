@@ -56,8 +56,8 @@
                      prompt: "機械の種類を選択してください" %>
 
         <%# work_processesのidを取得 %>
-        <%= hidden_field_tag "order[work_processes][0][id]", @work_process.id %>
-        <%= select_tag "order[work_processes][0][process_estimate][machine_type_id]",
+        <%#= hidden_field_tag "order[work_processes][id]", @order.work_process.id %>
+        <%= select_tag "order[work_processes][process_estimate][machine_type_id]",
                        options_from_collection_for_select(MachineType.all, :id, :name),
                        prompt: "機械の種類を選択してください" %>
       </td>
@@ -66,7 +66,7 @@
       <td>作業開始日</td>
       <td>
         <%#= wp_form.date_field :start_date, placeholder: "作業開始日を選択してください" %>
-        <%= text_field_tag 'order[work_processes][0][start_date]',
+        <%= text_field_tag 'order[work_processes][start_date]',
                        nil,
                        placeholder: "作業開始日を選択してください",
                        type: :date %>
