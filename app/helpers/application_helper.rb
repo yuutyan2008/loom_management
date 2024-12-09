@@ -47,7 +47,7 @@ module ApplicationHelper
   def machine_statuses_for_order(order)
     current_wp = find_current_work_process(order.work_processes)
     assignments = current_wp&.machine_assignments&.includes(:machine_status)
-    statuses = assignments.map { |assignment| assignment.machine_status&.name }
+    statuses = assignments.map { |assignment| assignment&.machine_status&.name }
     ms_name = statuses.uniq.join(', ')
     not_machine_status(ms_name)
   end

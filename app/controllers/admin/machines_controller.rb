@@ -80,6 +80,62 @@ class Admin::MachinesController < ApplicationController
     redirect_to admin_machines_path
   end
 
+  def gant_index
+    @orders = Order.includes(:work_processes, :company)
+    colors = ["class-a", "class-b"]
+    @orders = @orders.map.with_index do |order, order_index|
+      # custom_classにクラスを指定して代入
+      custom_class = colors[order_index % 2]
+      order.work_processes.map { |process|
+        # tmp = order.work_processes[0..order.work_processes.find_index(process)].map(&:id)
+        # tmp.delete(process.id)
+        {
+          product_number: order.product_number.number,
+          company: order.company.name,
+          id: process.id.to_s,
+          name: process.work_process_definition.name,
+          work_process_status: process.work_process_status.name,
+          end: process&.earliest_estimated_completion_date&.strftime('%Y-%m-%d'),
+          # end: process&.factory_estimated_completion_date&.strftime('%Y-%m-%d'),
+          start: process&.start_date&.strftime('%Y-%m-%d'),
+          # actual_completion_date: process&.actual_completion_date&.strftime('%Y-%m-%d'),
+          progress: 100,
+          # dependencies: tmp.join(",")
+          custom_index: order.id,
+          custom_class: custom_class
+        }
+      }
+    end.flatten.to_json
+    # binding.irb
+  end
+
+  def orders
+    # DBからデータを取得
+    @orders = Order.includes(:work_processes)
+
+    # ガントチャート用のフォーマットに変換
+    render json: @orders.map { |order|
+      {
+        machine_name: machine_names(order),
+        id: order.id,
+        name: order.company.name,
+        product_number: order.product_number.number,
+        machine_status: machine_statuses_for_order(order),
+
+        work_processes: order.work_processes.map { |process|
+        {
+          name: process.work_process_definition.name,
+          work_process_status: process.work_process_status.name,
+          start: process.earliest_estimated_completion_date.strftime('%Y-%m-%d'),
+          end: process.factory_estimated_completion_date.strftime('%Y-%m-%d'),
+          start_date: process.start_date.strftime('%Y-%m-%d'),
+          actual_completion_date: process.actual_completion_date.strftime('%Y-%m-%d'),
+        }
+      }
+    }
+  }
+  end
+
   private
 
   # 登録、更新フォームの情報をparams

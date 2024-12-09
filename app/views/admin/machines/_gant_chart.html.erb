@@ -1,0 +1,10 @@
+<div class='gantt-wrap'>
+  <svg id="gantt"></svg>
+</div>
+
+<script>
+  window.onload = function() {
+    const work_processes = <%= raw work_processes %>
+    const gantt = new Gantt("#gantt", work_processes);
+  };
+</script>

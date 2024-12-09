@@ -1,14 +1,12 @@
 ActiveRecord::Base.transaction do
   # 企業データを作成
-  Company.find_or_create_by!(name: 'エルトップ') { |c| c.name = 'エルトップ' }
-  Company.find_or_create_by!(name: '機屋A') { |c| c.name = '機屋A' }
-  Company.find_or_create_by!(name: '機屋B') { |c| c.name = '機屋B' }
-  Company.find_or_create_by!(name: '機屋C') { |c| c.name = '機屋C' }
-  # === 追加の企業データ ===
-  Company.find_or_create_by!(name: '機屋D') { |c| c.name = '機屋D' }
+  Company.find_or_create_by!(id: 1) { |c| c.name = 'エルトップ' }
+  Company.find_or_create_by!(id: 2) { |c| c.name = '機屋A' }
+  Company.find_or_create_by!(id: 3) { |c| c.name = '機屋B' }
+  Company.find_or_create_by!(id: 4) { |c| c.name = '機屋C' }
 
   # ユーザーデータを作成
-  User.find_or_create_by!(name: '山田太郎') do |u|
+  User.find_or_create_by!(id: 1) do |u|
     u.name = '山田太郎'
     u.email = 'aaa@example.com'
     u.phone_number = '000-0000-0000'
@@ -18,7 +16,7 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  User.find_or_create_by!(name: '佐藤花子') do |u|
+  User.find_or_create_by!(id: 2) do |u|
     u.name = '佐藤花子'
     u.email = 'bbb@example.com'
     u.phone_number = '000-0000-0001'
@@ -28,7 +26,7 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  User.find_or_create_by!(name: '鈴木一郎') do |u|
+  User.find_or_create_by!(id: 3) do |u|
     u.name = '鈴木一郎'
     u.email = 'ccc@example.com'
     u.phone_number = '000-0000-0002'
@@ -38,7 +36,7 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  User.find_or_create_by!(name: '大谷翔平') do |u|
+  User.find_or_create_by!(id: 4) do |u|
     u.name = '大谷翔平'
     u.email = 'ddd@example.com'
     u.phone_number = '000-0000-0004'
@@ -48,31 +46,16 @@ ActiveRecord::Base.transaction do
     u.password_confirmation = 'password'
   end
 
-  # === 追加のユーザーデータ ===
-  User.find_or_create_by!(name: '田中一郎') do |u|
-    u.name = '田中一郎'
-    u.email = 'eee@example.com'
-    u.phone_number = '000-0000-0005'
-    u.company = Company.find_by(name: '機屋D')
-    u.admin = false
-    u.password = 'password'
-    u.password_confirmation = 'password'
-  end
-
   # 品番データを作成
-  ProductNumber.find_or_create_by!(number: 'PN-10') { |pn| pn.number = 'PN-10' }
-  ProductNumber.find_or_create_by!(number: 'PN-20') { |pn| pn.number = 'PN-20' }
-  ProductNumber.find_or_create_by!(number: 'PN-30') { |pn| pn.number = 'PN-30' }
-  # === 追加の品番データ ===
-  ProductNumber.find_or_create_by!(number: 'PN-40') { |pn| pn.number = 'PN-40' }
+  ProductNumber.find_or_create_by!(id: 1) { |pn| pn.number = 'PN-10' }
+  ProductNumber.find_or_create_by!(id: 2) { |pn| pn.number = 'PN-20' }
+  ProductNumber.find_or_create_by!(id: 3) { |pn| pn.number = 'PN-30' }
 
   # 色番データを作成
-  ColorNumber.find_or_create_by!(color_code: 'C-001') { |cn| cn.color_code = 'C-001' }
-  ColorNumber.find_or_create_by!(color_code: 'C-002') { |cn| cn.color_code = 'C-002' }
-  ColorNumber.find_or_create_by!(color_code: 'C-003') { |cn| cn.color_code = 'C-003' }
-  ColorNumber.find_or_create_by!(color_code: 'C-004') { |cn| cn.color_code = 'C-004' }
-  # === 追加の色番データ ===
-  ColorNumber.find_or_create_by!(color_code: 'C-005') { |cn| cn.color_code = 'C-005' }
+  ColorNumber.find_or_create_by!(id: 1) { |cn| cn.color_code = 'C-001' }
+  ColorNumber.find_or_create_by!(id: 2) { |cn| cn.color_code = 'C-002' }
+  ColorNumber.find_or_create_by!(id: 3) { |cn| cn.color_code = 'C-003' }
+  ColorNumber.find_or_create_by!(id: 4) { |cn| cn.color_code = 'C-004' }
 
   # 発注データを作成
   Order.find_or_create_by!(id: 1) do |o|
@@ -91,16 +74,6 @@ ActiveRecord::Base.transaction do
     o.roll_count = 50
     o.quantity = 500
     o.start_date = '2023-10-05'
-  end
-
-  # === 追加の発注データ（織機と稼働状況がnilの場合） ===
-  Order.find_or_create_by!(id: 3) do |o|
-    o.company = Company.find_by(name: '機屋D')
-    o.product_number = ProductNumber.find_by(number: 'PN-40')
-    o.color_number = ColorNumber.find_by(color_code: 'C-005')
-    o.roll_count = 80
-    o.quantity = 800
-    o.start_date = '2023-10-10'
   end
 
   # 織機の種類データを作成
@@ -359,32 +332,6 @@ ActiveRecord::Base.transaction do
     wp.actual_completion_date = '2023-10-10'
   end
 
-  # === 追加の作業工程データ（織機割り当てがない場合） ===
-  WorkProcess.find_or_create_by!(id: 11) do |wp|
-    wp.order = Order.find_by(id: 3)
-    wp.process_estimate = ProcessEstimate.find_by(work_process_definition_id: 1, machine_type_id: 1)
-    wp.work_process_definition = WorkProcessDefinition.find_by(id: 1)
-    wp.work_process_status = WorkProcessStatus.find_by(name: '作業前')
-    wp.start_date = '2023-10-10'
-    wp.earliest_estimated_completion_date = '2023-12-30'
-    wp.latest_estimated_completion_date = '2023-12-30'
-    wp.factory_estimated_completion_date = '2023-10-15'
-    wp.actual_completion_date = nil
-  end
-
-  # === 追加の作業工程データ（稼働状況がnilの場合） ===
-  WorkProcess.find_or_create_by!(id: 12) do |wp|
-    wp.order = Order.find_by(id: 3)
-    wp.process_estimate = ProcessEstimate.find_by(work_process_definition_id: 2, machine_type_id: 1)
-    wp.work_process_definition = WorkProcessDefinition.find_by(id: 2)
-    wp.work_process_status = WorkProcessStatus.find_by(name: '作業中')
-    wp.start_date = '2023-10-12'
-    wp.earliest_estimated_completion_date = '2023-10-26'
-    wp.latest_estimated_completion_date = '2023-10-26'
-    wp.factory_estimated_completion_date = '2023-10-20'
-    wp.actual_completion_date = nil
-  end
-
   # 織機割り当てデータを作成（全作業工程を1つの織機に割り当て）
   MachineAssignment.find_or_create_by!(id: 1) do |ma|
     ma.work_process_id = 1
@@ -444,12 +391,5 @@ ActiveRecord::Base.transaction do
     ma.work_process_id = 10
     ma.machine_id = 4
     ma.machine_status_id = 1 # 未稼働
-  end
-
-  # === 追加の織機割り当てデータ（稼働状況がnilの場合） ===
-  MachineAssignment.find_or_create_by!(id: 11) do |ma|
-    ma.work_process = WorkProcess.find_by(id: 12)
-    ma.machine = Machine.find_by(id: 1) # 他社の織機を参照して不整合を再現
-    ma.machine_status = nil # 稼働状況がnil
   end
 end
