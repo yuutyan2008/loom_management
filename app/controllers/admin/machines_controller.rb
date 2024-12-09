@@ -76,22 +76,27 @@ class Admin::MachinesController < ApplicationController
 
   def gant_index
     @orders = Order.includes(:work_processes, :company)
-    @orders = @orders.map do |order|
+    colors = ["class-a", "class-b"]
+    @orders = @orders.map.with_index do |order, order_index|
+      # custom_classにクラスを指定して代入
+      custom_class = colors[order_index % 2]
       order.work_processes.map { |process|
         # tmp = order.work_processes[0..order.work_processes.find_index(process)].map(&:id)
         # tmp.delete(process.id)
         {
+          product_number: order.product_number.number,
           company: order.company.name,
-          custom_index: order.id,
           id: process.id.to_s,
           name: process.work_process_definition.name,
-          # work_process_status: process.work_process_status.name,
+          work_process_status: process.work_process_status.name,
           end: process&.earliest_estimated_completion_date&.strftime('%Y-%m-%d'),
-          #end: process&.factory_estimated_completion_date&.strftime('%Y-%m-%d'),
+          # end: process&.factory_estimated_completion_date&.strftime('%Y-%m-%d'),
           start: process&.start_date&.strftime('%Y-%m-%d'),
           # actual_completion_date: process&.actual_completion_date&.strftime('%Y-%m-%d'),
           progress: 100,
           # dependencies: tmp.join(",")
+          custom_index: order.id,
+          custom_class: custom_class
         }
       }
     end.flatten.to_json
