@@ -25,6 +25,7 @@ class Admin::MachinesController < ApplicationController
 
   def new
     @machine = Machine.new
+    @companies = Company.where.not(id: 1)
   end
 
   def create
