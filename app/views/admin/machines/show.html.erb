@@ -1,4 +1,34 @@
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機詳細</h1>
+<!-- 受注詳細セクション -->
 <section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">基本情報</h2>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="min-w-full border border-gray-300 bg-gray-100">
+      <tbody>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機名</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @machine&.name %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機のタイプ</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @machine&.machine_type&.name %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社名</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @machine&.company&.name %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">稼働状況</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= machine_statuses(@machine) %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 作業工程の詳細セクション -->
+<section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">受注情報</h2>
   <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
     <table class="min-w-full text-left border border-gray-300">
       <thead class="bg-gray-200">
@@ -11,13 +41,12 @@
           <th scope="col" class="px-4 py-2 text-gray-700 border-b">現在の工程の状況</th>
           <th scope="col" class="px-4 py-2 text-gray-700 border-b">完成予定日</th>
           <th scope="col" class="px-4 py-2 text-gray-700 border-b"></th>
-          <th scope="col" class="px-4 py-2 text-gray-700 border-b"></th>
         </tr>
       </thead>
       <tbody>
         <% if @machine.present? && @machine.work_processes.present? %>
           <% @ordered_work_processes.each do |process| %>
-            <tr class="hover:bg-gray-100">
+            <tr class="hover:bg-gray-100 border-b">
               <td class="px-4 py-2 border-b text-gray-700">
                 <% if @machine&.company&.name.present? %>
                   <%= @machine.company.name %>
@@ -60,18 +89,15 @@
                   <span>情報なし</span>
                 <% end %>
               </td>
-              <td class="order-finished_at">
+              <td class="px-4 py-2 border-b text-gray-700">
                 <% if process.factory_estimated_completion_date.present? %>
                   <%= process.factory_estimated_completion_date %>
                 <% else %>
                   <span>情報なし</span>
                 <% end %>
               </td>
-              <td class="px-4 py-2 border-b text-gray-700">
-                <%= link_to t('common.edit'), edit_admin_machine_path(@machine), class: "inline-block px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600" %>
-              </td>
-              <td class="px-4 py-2 border-b text-gray-700">
-                <%= link_to '戻る', machines_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+              <td class="px-4 py-2 border-b text-indigo-500 underline">
+                <%= link_to '受注を確認する', admin_order_path(process&.order), class: 'btn btn-info btn-sm' %>
               </td>
             </tr>
           <% end %>
@@ -83,4 +109,16 @@
       </tbody>
     </table>
   </div>
+</section>
+
+<!-- アクションボタンセクション -->
+<section class="mb-12">
+    <div class="flex justify-center space-x-2">
+        <div class="px-2 py-2">
+          <%= link_to t('common.edit'), edit_admin_machine_path(@machine), class: "inline-block px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600" %>
+        </div>
+        <div class="px-2 py-2">
+          <%= link_to '戻る', admin_machines_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+        </div>
+    </div>
 </section>
