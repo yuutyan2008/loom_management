@@ -85,41 +85,41 @@ class WorkProcess < ApplicationRecord
   end
 
 
-  # def self.update_deadline(process, start_date)
-  #   short = 0
-  #   long = 0
-  #   update = true
-  #   # 配列を一個ずつ取り出す
-  #   # workprocess.each do |process|
-  #     unless update == true
-  #       # 開始日の更新が必要
-  #       binding.irb
-  #       process[:start_date] = start_date
-  #     end
+  def self.update_deadline(process, start_date)
+    short = 0
+    long = 0
+    update = true
+    # 配列を一個ずつ取り出す
+    # workprocess.each do |process|
+      unless update == true
+        # 開始日の更新が必要
+        binding.irb
+        process[:start_date] = start_date
+      end
 
-  #     # 納期の見込み日数のレコードを取得
-  #     process = self.arrange_estimate_record(process, start_date)
+      # 納期の見込み日数のレコードを取得
+      process = self.arrange_estimate_record(process, start_date)
 
-  #     if process[:work_process_definition_id] == 4
-  #       # 日曜日なら翌々週の月曜が作業開始日
-  #         if process[:latest_estimated_completion_date].wday == 0
-  #           start_date = process[:latest_estimated_completion_date] + 8
-  #         else
-  #           # 次の月曜日が開始日
-  #           start_date = process[:latest_estimated_completion_date].next_week
-  #         end
-  #     else
-  #       start_date = process[:latest_estimated_completion_date]
-  #     end
-  #     # binding.irb
+      if process[:work_process_definition_id] == 4
+        # 日曜日なら翌々週の月曜が作業開始日
+          if process[:latest_estimated_completion_date].wday == 0
+            start_date = process[:latest_estimated_completion_date] + 8
+          else
+            # 次の月曜日が開始日
+            start_date = process[:latest_estimated_completion_date].next_week
+          end
+      else
+        start_date = process[:latest_estimated_completion_date]
+      end
+      # binding.irb
 
-  #     update = false
-  #     #
-  #     process[:start_date] = start_date
-  #     # binding.irb
-  #     process
-  #   # end
-  # end
+      update = false
+      #
+      process[:start_date] = start_date
+      # binding.irb
+      process
+    # end
+  end
 
 
   # 納期の見込み日数のレコードを取得
