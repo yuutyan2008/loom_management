@@ -38,13 +38,13 @@ before_action :admin_user
 
     # work_processesのパラメータ取得
     # ハッシュの値部分のみを配列として取得
-    work_processes = create_order_params[:work_processes].values
-
+    work_processes = create_order_params[:work_processes]
+binding.irb
     # ハッシュのキー"start_date"を引数にパラメータを取得
-    start_date = work_processes[0]["start_date"]
-    machine_type_id = work_processes[0]["process_estimate"]["machine_type_id"].to_i
+    start_date = work_processes["start_date"]
+    machine_type_id = work_processes["process_estimate"]["machine_type_id"].to_i
 
-
+    binding.irb
     # # earliest_estimated_completion_dateの値を定義
     # # earliest_estimated_completion_date = start_date + "日数を返す関数"
 
