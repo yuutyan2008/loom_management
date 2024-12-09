@@ -6,7 +6,7 @@ class MachinesController < ApplicationController
   before_action :authorize_machine, only: [:show, :edit, :update, :destroy]
 
   def index
-    @machines = @company.machines.includes(machine_assignments: [:work_process, :machine_status])
+    @machines = @company.machines.includes(machine_assignments: [:work_process, :machine_status]).order(:id)
     @no_machines_message = "現在保有している織機はありません" if @machines.empty?
     @work_processes = WorkProcess.ordered
     check_machine_status_index(@machines)
@@ -38,7 +38,7 @@ class MachinesController < ApplicationController
     machine_status_id = params[:machine].delete(:machine_status_id)
 
     ActiveRecord::Base.transaction do
-      # 織機が現在のユーザーの会社に所属しているか再確認（authorize_machineがあるなら不要）
+      # 織機が現在のユーザーの会社に所属しているか再確認
       if @machine.company_id != current_user.company_id
         raise ActiveRecord::RecordInvalid, "現在のユーザーの会社に属していない織機は更新できません"
       end
@@ -46,11 +46,11 @@ class MachinesController < ApplicationController
       # 織機自体の属性を更新
       @machine.update!(machine_params)
 
-      # machine_status_idがあれば、関連するMachineAssignmentを一括更新
+      # machine_status_idがあれば、関連するMachineAssignmentを個別に更新
       if machine_status_id.present?
-        # @machineに紐づくMachineAssignmentを一括更新
-        # ここではmachine_status_idのみ更新しているが、必要に応じて他のカラムもまとめて更新可能
-        @machine.machine_assignments.update_all(machine_status_id: machine_status_id, updated_at: Time.current)
+        @machine.machine_assignments.each do |assignment|
+          assignment.update!(machine_status_id: machine_status_id)
+        end
       end
     end
 

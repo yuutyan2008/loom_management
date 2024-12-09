@@ -41,7 +41,6 @@ class OrdersController < ApplicationController
   end
 
   def update
-    # binding.irb
     ActiveRecord::Base.transaction do
       if @order.update(order_params)
         update_related_models
@@ -122,9 +121,15 @@ class OrdersController < ApplicationController
 
   def update_machine_statuses
     params[:order][:machine_statuses].each do |ms_param|
-      MachineAssignment
-        .where(machine_id: ms_param[:machine_id], work_process: @order.work_processes)
-        .update_all(machine_status_id: ms_param[:machine_status_id])
+      machine_id = ms_param[:machine_id]
+      new_status_id = ms_param[:machine_status_id]
+
+      # 関連するMachineAssignmentを取得
+      assignments = MachineAssignment.where(machine_id: machine_id)
+
+      assignments.each do |assignment|
+        assignment.update!(machine_status_id: new_status_id)
+      end
     end
   end
 
