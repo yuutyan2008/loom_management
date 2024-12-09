@@ -5,6 +5,24 @@ class Admin::MachinesController < ApplicationController
   # 関連するモデルを事前に読み込む
   # Machineモデルごとの作業工程を表示するため、@machinesを中心にデータを取得
 
+  def index
+    @machines = Machine.machine_associations.order(:id)
+    check_machine_status_index(@machines)
+  end
+
+  def show
+    # modelで定義したlatest_work_processで最新の工程を取得して表示
+    @latest_work_process = @machine.latest_work_process
+    @latest_work_process_status = @machine.latest_work_process_status
+    @latest_factory_estimated_completion_date = @machine.latest_factory_estimated_completion_date
+    # modelで定義したlatest_machine_assignmentで最新の機械の割り当てを取得して表示
+    @latest_machine_assignment = @machine.latest_machine_assignment
+
+    # WorkProcessをsequence順に取得
+    @ordered_work_processes = @machine.work_processes.ordered
+    check_machine_status_show(@machine)
+  end
+
   def new
     @machine = Machine.new
   end
@@ -18,24 +36,8 @@ class Admin::MachinesController < ApplicationController
     end
   end
 
-  def index
-    @machines = Machine.machine_associations
-
-    check_machine_status_index(@machines)
+  def edit
   end
-
-  def show
-    # modelで定義したlatest_work_processで最新の工程を取得して表示
-    @latest_work_process = @machine.latest_work_process
-    @latest_work_process_status = @machine.latest_work_process_status
-    @latest_factory_estimated_completion_date = @machine.latest_factory_estimated_completion_date
-    # modelで定義したlatest_machine_assignmentで最新の機械の割り当てを取得して表示
-    @latest_machine_assignment = @machine.latest_machine_assignment
-
-    check_machine_status_show(@machine)
-  end
-
-  def edit; end
 
   def update
     # paramsでフォームのデータを安全に受け取る
