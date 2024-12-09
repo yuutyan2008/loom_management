@@ -1,4 +1,9 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">発注済み商品の詳細</h1>
+
+<%
+=begin
+%>
+
 <section>
   <div class="space-x-2">
     <div class="px-2 py-2">
@@ -17,8 +22,8 @@
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">反数</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">数量</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の工程</th>
-          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">機械の稼働状況</th>
-          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の工程の状況</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">織機の稼働状況</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の進捗</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">開始日</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">完了見込み(最短)</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">完了見込み(最長)</th>
@@ -32,25 +37,25 @@
       <tbody>
         <%# 各工程を行単位で表示する %>
         <% @work_process.each do |process| %>
-        <tr class="hover:bg-gray-100">
-          <td class="px-4 py-2 border-b text-gray-900"><%= process.order.company.name %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process.order.product_number.number %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process.order.color_number.color_code %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process.order.roll_count %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process.order.quantity %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.work_process_definition&.name || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
+        <tr class="bg-gray-100 border-b">
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process.order.company.name %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process.order.product_number.number %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process.order.color_number.color_code %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process.order.roll_count %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process.order.quantity %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.work_process_definition&.name || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process.machine_assignments.present? ? process.machine_assignments.first.machine_status.name : "N/A" %>
           </td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.work_process_status&.name || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.start_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.earliest_estimated_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.latest_estimated_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.factory_estimated_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.actual_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900">
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.work_process_status&.name || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.start_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.earliest_estimated_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.latest_estimated_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.factory_estimated_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.actual_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
             <%= link_to '編集', edit_admin_order_path(@order), class: "inline-block px-4 py-2 text-white bg-teal-500 rounded hover:bg-teal-600" %>
           </td>
-          <td class="px-4 py-2 border-b text-gray-900">
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
             <%= link_to '削除', admin_order_path(@order), method: :delete, data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？" }, class: "inline-block px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600" %>
           </td>
         </tr>
@@ -60,14 +65,79 @@
   </div>
 </section>
 
+<%
+=end
+%>
+
+<!-- 商品情報セクション -->
+<section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">商品情報</h2>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="min-w-full border border-gray-300 bg-gray-100">
+      <tbody>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">品番</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.product_number&.number %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">色番</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.color_number&.color_code %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">ロール数</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.roll_count %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.quantity %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 織機詳細セクション -->
+<section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">織機詳細</h2>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="min-w-full border border-gray-300 bg-gray-100">
+      <% if @machines.any? %>
+      <tbody>
+        <% @machines.each do |machine| %>
+          <tr class="bg-gray-100 border-b">
+            <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機名</th>
+            <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= machine&.name %></td>
+          </tr>
+          <tr class="bg-gray-100 border-b">
+            <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機のタイプ</th>
+            <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= machine&.machine_type&.name %></td>
+          </tr>
+          <tr class="bg-gray-100 border-b">
+            <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社名</th>
+            <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= machine&.company&.name %></td>
+          </tr>
+          <tr class="bg-gray-100 border-b">
+            <th class="w-1/3 px-4 py-2 text-center text-gray-700">稼働状況</th>
+            <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= machine.latest_machine_status&.name || "ステータス情報なし" %></td>
+          </tr>
+        <% end %>
+      <% else %>
+          <p class="text-center text-rose-500">現在割り当て中の織機はありません。</p>
+      <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 作業工程セクション -->
 <section class="mb-12">
   <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">作業工程</h2>
   <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
-    <table class="w-full border text-left border-gray-300">
-      <thead class="bg-gray-200">
-        <tr class="bg-gray-100">
+    <table class="w-full text-left border border-gray-300 bg-gray-100">
+      <thead class="bg-gray-200 border-b">
+        <tr class="bg-gray-100 border-b">
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の工程</th>
-          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の工程の状況</th>
+          <th class="w-1/6 px-4 py-2 text-gray-700 border-b">現在の進捗</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">開始日</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">完了見込み(最短)</th>
           <th class="w-1/6 px-4 py-2 text-gray-700 border-b">完了見込み(最長)</th>
@@ -77,45 +147,19 @@
       </thead>
       <tbody>
         <% @work_process.each do |process| %>
-        <tr class="hover:bg-gray-100">
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.work_process_definition&.name || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.work_process_status&.name || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.start_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.earliest_estimated_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.latest_estimated_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.factory_estimated_completion_date || "N/A" %></td>
-          <td class="px-4 py-2 border-b text-gray-900"><%= process&.actual_completion_date || "N/A" %></td>
+        <tr class="bg-gray-100 border-b">
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.work_process_definition&.name || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.work_process_status&.name || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.start_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.earliest_estimated_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.latest_estimated_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.factory_estimated_completion_date || "N/A" %></td>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= process&.actual_completion_date || "N/A" %></td>
         </tr>
         <% end %>
       </tbody>
     </table>
   </div>
-</section>
-
-<section class="mb-12">
-    <h2 class="px-4 text-2xl font-semibold text-gray-800 mb-6">織機詳細</h2>
-    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
-        <table class="min-w-full border text-left border-gray-300">
-            <% if @machines.any? %>
-            <thead class="bg-gray-200">
-                <tr class="bg-gray-100">
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機名</th>
-                    <th class="w-1/4 px-4 py-2 text-gray-700 border-b">稼働状況</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% @machines.each do |machine| %>
-                <tr class="hover:bg-gray-100">
-                    <td class="px-4 py-2 border-b text-gray-900"><%= machine&.name %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= machine.latest_machine_status&.name || "ステータス情報なし" %></td>
-                </tr>
-                <% end %>
-            <% else %>
-                <p class="text-center text-rose-500">現在割り当て中の織機はありません。</p>
-            <% end %>
-            </tbody>
-        </table>
-    </div>
 </section>
 
 <!-- アクションボタンセクション -->

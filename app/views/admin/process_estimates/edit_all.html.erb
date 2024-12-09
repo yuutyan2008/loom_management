@@ -1,57 +1,70 @@
+<%= form_with url: update_all_admin_process_estimates_path, method: :patch, local: true do %>
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">問屋側の製造見込み日数の編集</h1>
 
-<h2>ドビー</h2>
-<%= form_with url: update_all_admin_process_estimates_path, method: :patch, local: true do %>
-<h2>ドビー</h2>
-<table border="1" cellpadding="5" cellspacing="0">
-  <thead>
-    <tr>
-      <th>工程</th>
-      <th>最短の完了日数</th>
-      <th>最長の完了日数</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @dobbie_estimates.each do |estimate| %>
-    <tr>
-      <td><%= estimate.work_process_definition.name %></td>
-      <td>
-        <%= number_field_tag "process_estimates[#{estimate.id}][earliest_completion_estimate]", estimate.earliest_completion_estimate, min: 0 %>
-      </td>
-      <td>
-        <%= number_field_tag "process_estimates[#{estimate.id}][latest_completion_estimate]", estimate.latest_completion_estimate, min: 0 %>
-      </td>
-    </tr>
-    <% end %>
-  </tbody>
-</table>
+<section class="mb-12">
+  <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">ドビー</h2>
+  <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
+    <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
+      <thead>
+        <tr class="bg-gray-100">
+          <th scope="col" class="py-2 px-4 text-gray-700 border-b">工程</th>
+          <th scope="col" class="py-2 px-4 text-gray-700 border-b">最短の完了日数</th>
+          <th scope="col" class="py-2 px-4 text-gray-700 border-b">最長の完了日数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @dobbie_estimates.each do |estimate| %>
+        <tr class="hover:bg-gray-50">
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate.work_process_definition.name %></td>
+          <td class="py-2 px-4 text-gray-700 border-b">
+            <%= number_field_tag "process_estimates[#{estimate.id}][earliest_completion_estimate]", estimate.earliest_completion_estimate, min: 0, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </td>
+          <td class="py-2 px-4 text-gray-700 border-b">
+            <%= number_field_tag "process_estimates[#{estimate.id}][latest_completion_estimate]", estimate.latest_completion_estimate, min: 0, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </td>
+        </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>
 
-<h2>ジャガード</h2>
-<table border="1" cellpadding="5" cellspacing="0">
-  <thead>
-    <tr>
-      <th>工程</th>
-      <th>最短の完了日数</th>
-      <th>最長の完了日数</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @jacquard_estimates.each do |estimate| %>
-    <tr>
-      <td><%= estimate.work_process_definition.name %></td>
-      <td>
-        <%= number_field_tag "process_estimates[#{estimate.id}][earliest_completion_estimate]", estimate.earliest_completion_estimate, min: 0 %>
-      </td>
-      <td>
-        <%= number_field_tag "process_estimates[#{estimate.id}][latest_completion_estimate]", estimate.latest_completion_estimate, min: 0 %>
-      </td>
-    </tr>
-    <% end %>
-  </tbody>
-</table>
+<section class="mb-12">
+  <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">ジャガード</h2>
+  <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
+    <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
+      <thead>
+        <tr class="bg-gray-100">
+          <th scope="col" class="py-2 px-4 text-gray-700 border-b">工程</th>
+          <th scope="col" class="py-2 px-4 text-gray-700 border-b">最短の完了日数</th>
+          <th scope="col" class="py-2 px-4 text-gray-700 border-b">最長の完了日数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @jacquard_estimates.each do |estimate| %>
+        <tr class="hover:bg-gray-50">
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate.work_process_definition.name %></td>
+          <td class="py-2 px-4 text-gray-700 border-b">
+            <%= number_field_tag "process_estimates[#{estimate.id}][earliest_completion_estimate]", estimate.earliest_completion_estimate, min: 0, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </td>
+          <td class="py-2 px-4 text-gray-700 border-b">
+            <%= number_field_tag "process_estimates[#{estimate.id}][latest_completion_estimate]", estimate.latest_completion_estimate, min: 0, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </td>
+        </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>
 
-<div>
-  <%= button_to "更新", update_all_admin_process_estimates_path, class: "update-button" %>
-  <%= link_to '戻る', admin_process_estimates_path, class: "btn btn-secondary" %>
-</div>
+<section class="mb-12">
+  <div class="flex justify-center space-x-2">
+    <div class="px-2 py-2">
+      <%= button_to "更新", update_all_admin_process_estimates_path, class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
+    </div>
+    <div class="px-2 py-2">
+      <%= link_to '戻る', admin_process_estimates_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+    </div>
+  </div>
+</section>
 <% end %>
