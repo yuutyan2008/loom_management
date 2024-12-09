@@ -11,7 +11,6 @@ Rails.application.routes.draw do
     root to: 'home#index'
     # Companyのshowアクションへのリソースフルなルートを追加
     resources :companies, only: [:show], controller: 'home'
-    resources :machines
     # ガントチャートのルーティング
     resources :machines do
       get 'gant_index', on: :collection
