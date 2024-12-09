@@ -153,7 +153,6 @@ class WorkProcess < ApplicationRecord
   def self.check_current_work_process(process, start_date, actual_completion_date, index, next_process = nil)
     # short = 0
     # long = 0
-    binding.irb
     # 配列を一個ずつ取り出す
     # estimate_workprocesses.each do |process|
     if index != 0
