@@ -24,7 +24,7 @@
   </tbody>
 </table>
 
-<h2>機械の稼働状況</h2>
+<h2>織機の稼働状況</h2>
 <% @order.work_processes.each do |process| %>
 <% if process.machine_assignments.present? %>
 <% process.machine_assignments.each do |assignment| %>
@@ -45,7 +45,7 @@
   <thead>
     <tr>
       <th>現在の工程</th>
-      <th>現在の工程の状況</th>
+      <th>現在の進捗</th>
       <th>開始日</th>
       <th>完了見込み(最短)</th>
       <th>完了見込み(最長)</th>

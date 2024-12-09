@@ -1,43 +1,64 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機登録フォーム</h1>
 
-<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
-<% if @machine.errors.any? %>
-
-<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
-<div id="error_explanation">
-  <h2><%= "#{@machine.errors.count} 件のエラーが発生しました" %></h2>
-  <ul>
-    <% @machine.errors.full_messages.each do |message| %>
-    <li><%= message %></li>
-    <% end %>
-  </ul>
-</div>
-<% end %>
-
 <%= form_with model: @machine, url: admin_machines_path, local: true do |f| %>
-<table>
-  <tbody>
-    <tr>
-      <td>会社名</td>
-      <td>
-        <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "会社を選択" %>
-      </td>
-    </tr>
-    <tr>
-      <td>種類</td>
-      <td>
-        <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, placeholder: "種類を選択してください" %></td>
-    </tr>
-    <tr>
-      <td>番号</td>
-      <td>
-        <%= f.collection_select :name, Machine.all, :id, :name, placeholder: "番号を入力してください" %>
-      </td>
-    </tr>
-  </tbody>
-</table>
+<section class="px-24">
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+    <% if @machine.errors.any? %>
+      <%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+      <div id="error_explanation">
+        <h2><%= "#{@machine.errors.count} 件のエラーが発生しました" %></h2>
+        <ul>
+          <% @machine.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+    <table class="w-full max-w-sm">
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :name, "会社名" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :name, "織機のタイプ" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, { prompt: "種類を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :name, "織機名" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.text_field :name, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+        </div>
+      </div>
+    </table>
+  </div>
+</section>
 
 <!-- 提出ボタン -->
-<%= f.submit "登録する", id: 'update-machine' %>
-<%= link_to "戻る", admin_machines_path, id: 'back' %>
+<section class="mb-12">
+  <div class="flex justify-center space-x-2">
+    <div class="px-2 py-2">
+      <%= f.submit "登録する", class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
+    </div>
+    <div class="px-2 py-2">
+      <%= link_to "戻る", admin_machines_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+    </div>
+  </div>
+</section>
 <% end %>
