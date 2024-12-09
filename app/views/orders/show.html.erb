@@ -22,7 +22,7 @@
                 </tr>
                 <tr class="bg-gray-100 border-b">
                     <th class="w-1/3 px-4 py-2 text-center text-gray-700">開始日</th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date.strftime('%Y-%m-%d') %></td>
+                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date&.strftime('%Y-%m-%d') || 'N/A' %></td>
                 </tr>
             </tbody>
         </table>
@@ -75,8 +75,8 @@
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_definition&.name %></td>
                     <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.start_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.actual_completion_date %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date || 'N/A' %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.actual_completion_date || 'N/A' %></td>
                     <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_status&.name %></td>
                 </tr>
             <% end %>

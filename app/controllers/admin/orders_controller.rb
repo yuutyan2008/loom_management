@@ -20,11 +20,15 @@ before_action :admin_user
         @current_work_processes[order.id] = nil
       end
     end
+
+    # 追加: 遅延している作業工程のチェック
+    check_overdue_work_processes_index(@orders)
   end
 
   def new
     @order = Order.new
     @work_process = WorkProcess.new
+    @companies = Company.where.not(id: 1)
   end
 
   def create
@@ -79,8 +83,15 @@ before_action :admin_user
 
   def show
     @work_process = @order.work_processes.ordered
-
     @machines = @work_process.map(&:machines).flatten.uniq
+    # @work_process = @order.work_processes.joins(:work_process_definition)
+    # .order("work_process_definitions.sequence ASC")
+    # # 織機データを取得
+    # @machines = Machine.joins(work_processes: :order)
+    #                    .where(work_processes: { order_id: @order.id })
+    #                    .distinct
+    # 追加: 遅延している作業工程のチェック
+    check_overdue_work_processes_show(@order.work_processes)
   end
 
   def edit
@@ -216,6 +227,76 @@ before_action :admin_user
   def admin_user
     unless current_user&.admin?
       redirect_to orders_path, alert: "管理者以外アクセスできません"
+    end
+  end
+
+  # 追加: indexアクション用のWorkProcess遅延チェックメソッド
+  def check_overdue_work_processes_index(orders)
+    completed_status = WorkProcessStatus.find_by(name: '作業完了')
+    return unless completed_status
+
+    # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
+    overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
+                                        .where(order_id: orders.ids)
+                                        .where("earliest_estimated_completion_date < ?", Date.today)
+                                        .where.not(work_process_status_id: completed_status.id)
+
+    if overdue_work_processes.exists?
+      # Orderごとにグループ化
+      grouped = overdue_work_processes.group_by(&:order)
+      # 件数の取得
+      total_overdue_orders = grouped.keys.size
+
+      # メッセージリストを作成
+      message = grouped.map do |order, work_processes|
+        # 受注IDと会社名を表示し、リンクを生成
+        link_text = "受注 ID:#{order.id} 会社名:#{order.company.name}"
+        link = view_context.link_to link_text, admin_order_path(order), class: "underline"
+        "<li>#{link}</li>"
+      end.join("<br>").html_safe
+
+      # フラッシュメッセージにリンクを含めて設定
+      flash.now[:alert] = <<-HTML.html_safe
+        <strong>予定納期が過ぎている受注が #{total_overdue_orders} 件あります。</strong>
+        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
+          #{message}
+        </ul>
+      HTML
+    end
+  end
+
+  # 追加: showアクション用のWorkProcess遅延チェックメソッド
+  def check_overdue_work_processes_show(work_processes)
+    completed_status = WorkProcessStatus.find_by(name: '作業完了')
+    return unless completed_status
+
+    # 遅延しているWorkProcessを取得
+    overdue_work_processes = work_processes.where("earliest_estimated_completion_date < ?", Date.today)
+                                           .where.not(work_process_status_id: completed_status.id)
+
+    if overdue_work_processes.exists?
+      # 同一Orderなのでグループ化は不要
+      wp_links = overdue_work_processes.each_with_index.map do |wp, index|
+        if index == 0
+          # 最初のWorkProcessには受注IDを含める
+          order = wp.order
+          "受注 ID:#{order.id} 作業工程: #{wp.work_process_definition.name}"
+        else
+          # 以降のWorkProcessは受注IDを含めずに作業工程のみ
+          "作業工程: #{wp.work_process_definition.name}"
+        end
+      end.join(", ")
+
+      # リンクを生成
+      link = view_context.link_to wp_links, admin_order_path(overdue_work_processes.first.order), class: "underline"
+
+      # フラッシュメッセージをHTMLとして生成
+      flash.now[:alert] = <<-HTML.html_safe
+        <strong>以下の作業工程が予定完了日を過ぎており、まだ完了していません。</strong>
+        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
+          <li>#{link}</li>
+        </ul>
+      HTML
     end
   end
 end

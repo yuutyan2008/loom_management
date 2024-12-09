@@ -5,8 +5,27 @@ class Admin::MachinesController < ApplicationController
   # 関連するモデルを事前に読み込む
   # Machineモデルごとの作業工程を表示するため、@machinesを中心にデータを取得
 
+  def index
+    @machines = Machine.machine_associations.order(:id)
+    check_machine_status_index(@machines)
+  end
+
+  def show
+    # modelで定義したlatest_work_processで最新の工程を取得して表示
+    @latest_work_process = @machine.latest_work_process
+    @latest_work_process_status = @machine.latest_work_process_status
+    @latest_factory_estimated_completion_date = @machine.latest_factory_estimated_completion_date
+    # modelで定義したlatest_machine_assignmentで最新の機械の割り当てを取得して表示
+    @latest_machine_assignment = @machine.latest_machine_assignment
+
+    # WorkProcessをsequence順に取得
+    @ordered_work_processes = @machine.work_processes.ordered
+    check_machine_status_show(@machine)
+  end
+
   def new
     @machine = Machine.new
+    @companies = Company.where.not(id: 1)
   end
 
   def create
@@ -18,21 +37,8 @@ class Admin::MachinesController < ApplicationController
     end
   end
 
-  def index
-    @machines = Machine.machine_associations
+  def edit
   end
-
-  def show
-    # modelで定義したlatest_work_processで最新の工程を取得して表示
-    @latest_work_process = @machine.latest_work_process
-    @latest_work_process_status = @machine.latest_work_process_status
-    @latest_factory_estimated_completion_date = @machine.latest_factory_estimated_completion_date
-
-    # modelで定義したlatest_machine_assignmentで最新の機械の割り当てを取得して表示
-    @latest_machine_assignment = @machine.latest_machine_assignment
-  end
-
-  def edit; end
 
   def update
     # paramsでフォームのデータを安全に受け取る
@@ -154,6 +160,71 @@ class Admin::MachinesController < ApplicationController
   def admin_user
     unless current_user&.admin?
       redirect_to orders_path, alert: "管理者以外アクセスできません"
+    end
+  end
+
+  # 追加: indexアクション用のMachineStatusチェックメソッド
+  def check_machine_status_index(machines)
+    # WorkProcessDefinition id = 4 を取得
+    target_work_process_def = WorkProcessDefinition.find_by(id: 4)
+    return unless target_work_process_def
+    # WorkProcessDefinition id=4 に関連する WorkProcess を取得
+    relevant_work_processes = WorkProcess.where(work_process_definition_id: target_work_process_def.id)
+    # MachineAssignments を通じて MachineStatus が "稼働中" でないものを取得
+    problematic_machine_assignments = MachineAssignment.joins(:work_process)
+                                                       .where(work_processes: { work_process_definition_id: 4 })
+                                                       .where.not(machine_status_id: 3) # machine_status_id:3 が "稼働中"
+
+    # 対象のマシンに関連するものに絞る
+    problematic_machine_assignments = problematic_machine_assignments.where(machine: machines)
+    if problematic_machine_assignments.exists?
+      # マシンごとにグループ化
+      grouped = problematic_machine_assignments.includes(:machine, work_process: :order).group_by(&:machine)
+      # 件数の取得
+      total_problematic_machines = grouped.keys.size
+      # メッセージの設定
+      message = grouped.map do |machine, assignments|
+        assignment_messages = assignments.map do |ma|
+          "#{ma.machine_status.name}"
+        end.join(", ")
+        # マシンへのリンクを作成
+        link = view_context.link_to("会社名: #{machine.company.name}, 織機名: #{machine.name}, ステータス: #{assignment_messages}", admin_machine_path(machine), class: "underline")
+        "<li>#{link}</li>"
+      end.join("<br>").html_safe
+
+      flash.now[:alert] = <<-HTML.html_safe
+        <strong>予定納期を超えて '稼働中' ではない織機が #{total_problematic_machines} 台あります。</strong>
+        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
+          #{message}
+        </ul>
+      HTML
+    end
+  end
+
+  # 追加: showアクション用のMachineStatusチェックメソッド
+  def check_machine_status_show(machine)
+    # WorkProcessDefinition id = 4 を取得
+    target_work_process_def = WorkProcessDefinition.find_by(id: 4)
+    return unless target_work_process_def
+    # WorkProcessDefinition id=4 に関連する WorkProcess を取得
+    relevant_work_processes = WorkProcess.where(work_process_definition_id: target_work_process_def.id, order: machine.company.orders)
+    # MachineAssignments を通じて MachineStatus が "稼働中" でないものを取得
+    problematic_machine_assignments = machine.machine_assignments.joins(:work_process)
+                                                                 .where(work_processes: { work_process_definition_id: 4 })
+                                                                 .where.not(machine_status_id: 3) # machine_status_id:3 が "稼働中"
+
+    if problematic_machine_assignments.exists?
+      # 各MachineAssignmentごとにメッセージを生成
+      message = problematic_machine_assignments.map do |ma|
+        "会社名: #{machine.company.name}, 織機名: #{ma.machine.name}, ステータス: #{ma.machine_status.name}"
+      end.join("<br>").html_safe
+
+      flash.now[:alert] = <<-HTML.html_safe
+        <strong>予定納期を超えて織機が '稼働中' ではありません。</strong>
+        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
+          <li>#{message}</li>
+        </ul>
+      HTML
     end
   end
 end

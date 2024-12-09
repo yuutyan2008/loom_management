@@ -1,78 +1,92 @@
-<table>
-  <thead>
-    <tr>
-      <th>企業名</th>
-      <th>機械番号</th>
-      <th>機械の種類</th>
-      <th>商品番号</th>
-      <th>現在の工程</th>
-      <th>現在の工程の状況</th>
-      <th>完成予定日</th>
-      <th>操作</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% if @machine.present? && @machine.work_processes.present? %>
-      <% @machine.work_processes.each do |process| %>
-        <tr>
-          <td>
-            <% if @machine&.company&.name.present? %>
-              <%= @machine.company.name %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td>
-            <% if @machine&.name.present? %>
-              <%= @machine.name %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td>
-            <% if @machine&.machine_type&.name.present? %>
-              <%= @machine.machine_type.name %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td>
-            <% if process.order&.product_number_id.present? %>
-              <%= process.order.product_number_id %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td>
-            <% if process.work_process_definition&.name.present? %>
-              <%= process.work_process_definition.name %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td>
-            <% if process.work_process_status&.name.present? %>
-              <%= process.work_process_status.name %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td class="order-finished_at">
-            <% if process.factory_estimated_completion_date.present? %>
-              <%= process.factory_estimated_completion_date %>
-            <% else %>
-              <span>情報なし</span>
-            <% end %>
-          </td>
-          <td>
-            <%= link_to t('common.edit'), edit_admin_machine_path(@machine), class: 'edit-machine' %>
-          </td>
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機詳細</h1>
+<!-- 受注詳細セクション -->
+<section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">基本情報</h2>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="min-w-full border border-gray-300 bg-gray-100">
+      <tbody>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機名</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @machine&.name %></td>
         </tr>
-      <% end %>
-    <% else %>
-      <tr>
-        <td colspan="8">データがありません</td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機のタイプ</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @machine&.machine_type&.name %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社名</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @machine&.company&.name %></td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">稼働状況</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= machine_statuses(@machine) %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 作業工程の詳細セクション -->
+<section class="mb-12">
+  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">受注情報</h2>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="min-w-full text-left border border-gray-300">
+      <thead class="bg-gray-200">
+        <tr class="bg-gray-100">
+          <th scope="col" class="w-1/4 px-4 py-2 text-gray-700 border-b">現在の工程</th>
+          <th scope="col" class="w-1/4 px-4 py-2 text-gray-700 border-b">現在の進捗</th>
+          <th scope="col" class="w-1/4 px-4 py-2 text-gray-700 border-b">機屋の完成予定日</th>
+          <th scope="col" class="w-1/4 px-4 py-2 text-gray-700 border-b"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if @machine.present? && @machine.work_processes.present? %>
+          <% @ordered_work_processes.each do |process| %>
+            <tr class="hover:bg-gray-100 border-b">
+              <td class="w-1/4 px-4 py-2 border-b text-gray-700">
+                <% if process.work_process_definition&.name.present? %>
+                  <%= process.work_process_definition.name %>
+                <% else %>
+                  <span>情報なし</span>
+                <% end %>
+              </td>
+              <td class="w-1/4 px-4 py-2 border-b text-gray-700">
+                <% if process.work_process_status&.name.present? %>
+                  <%= process.work_process_status.name %>
+                <% else %>
+                  <span>情報なし</span>
+                <% end %>
+              </td>
+              <td class="w-1/4 px-4 py-2 border-b text-gray-700">
+                <% if process.factory_estimated_completion_date.present? %>
+                  <%= process.factory_estimated_completion_date %>
+                <% else %>
+                  <span>情報なし</span>
+                <% end %>
+              </td>
+              <td class="w-1/4 px-4 py-2 border-b text-indigo-500 underline">
+                <%= link_to '受注を確認する', admin_order_path(process&.order), class: 'btn btn-info btn-sm' %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="8" class="px-4 py-4 text-center text-rose-500">データがありません</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- アクションボタンセクション -->
+<section class="mb-12">
+    <div class="flex justify-center space-x-2">
+        <div class="px-2 py-2">
+          <%= link_to '編集', edit_admin_machine_path(@machine), class: "inline-block px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600" %>
+        </div>
+        <div class="px-2 py-2">
+          <%= link_to '戻る', admin_machines_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+        </div>
+    </div>
+</section>

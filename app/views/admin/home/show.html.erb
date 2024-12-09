@@ -1,0 +1,74 @@
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center"><%= @company.name %>の織機一覧</h1>
+<section class="mb-12">
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+        <table class="min-w-full border text-left border-gray-300">
+            <thead class="bg-gray-200">
+                <tr class="bg-gray-100">
+                    <th class="py-2 px-4 text-gray-700 border-b">企業名</th>
+                    <th class="py-2 px-4 text-gray-700 border-b">織機名</th>
+                    <th class="py-2 px-4 text-gray-700 border-b">織機の稼働状況</th>
+                    <th class="py-2 px-4 text-gray-700 border-b">品番</th>
+                    <th class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+                    <th class="py-2 px-4 text-gray-700 border-b">現在の進捗</th>
+                    <th class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+                    <th class="py-2 px-4 text-gray-700 border-b"></th>
+                    <th class="py-2 px-4 text-gray-700 border-b"></th>
+                    <th class="py-2 px-4 text-gray-700 border-b"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if @machines.present? && @machines.any? %>
+                    <% @machines.each do |machine| %>
+                        <% latest_process = machine.latest_work_process %>
+                        <% latest_status = machine.latest_work_process_status %>
+                        <% latest_completion_date = machine.latest_factory_estimated_completion_date %>
+                        <% latest_assignment = machine.latest_machine_assignment %>
+                        <tr class="hover:bg-gray-100">
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= machine&.company&.name %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= machine&.name %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= machine_statuses(machine) %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= product_number(machine) %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= work_process_name(machine) %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= work_process_status(machine) %>
+                            </td>
+                            <td class="py-2 px-4 text-gray-700 border-b order-finished_at">
+                                <%= latest_completion_date.present? ? latest_completion_date : "N/A" %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= link_to '詳細', admin_machine_path(machine),
+                                class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= link_to '削除', admin_machine_path(machine), method: :delete,
+                                data: {
+                                    turbo_method: :delete,
+                                    turbo_confirm: "本当に削除してよろしいですか？"
+                                },
+                                class: "inline-block px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600" %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= link_to '戻る', admin_root_path,
+                                class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+                            </td>
+                        </tr>
+                    <% end %>
+                <% else %>
+                    <tr class="px-4 py-2 mb-6">
+                        <td colspan="10" class="px-4 py-4 text-center text-rose-500">データがありません</td>
+                    </tr>
+                <% end %>
+            </tbody>
+        </table>
+    </div>
+</section>
