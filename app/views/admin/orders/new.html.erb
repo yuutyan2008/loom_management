@@ -2,7 +2,6 @@
 
 <%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
 <% if @order.errors.any? %>
-
 <%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
 <div id="error_explanation">
   <h2><%= "#{@order.errors.count} 件のエラーが発生しました" %></h2>
@@ -15,68 +14,98 @@
 <% end %>
 
 <%= form_with model: @order, url: admin_orders_path, local: true do |f| %>
-<table>
-  <tbody>
-    <tr>
-      <td>会社名</td>
-      <td>
-        <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "会社を選択" %>
-      </td>
-    </tr>
-    <tr>
-      <td>品番</td>
-      <td>
-        <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, placeholder: "品番を入力してください" %></td>
-    </tr>
-    <tr>
-      <td>色番</td>
-      <td>
-        <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, placeholder: "色番を入力してください" %>
-      </td>
-    </tr>
+<section class="px-24">
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="w-full max-w-sm">
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :name, "会社名" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :product_number_id, "品番" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "品番を入力してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :color_number_id, "色番" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "色番を入力してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :roll_count, "反数" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.number_field :roll_count, min: 1, placeholder: "反数を入力してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :quantity, "数量" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.number_field :quantity, min: 1, placeholder: "数量を入力してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :machine_type, "機械のタイプ" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= select_tag "order[work_processes][process_estimate][machine_type_id]",
+                          options_from_collection_for_select(MachineType.all, :id, :name),
+                          prompt: "機械の種類を選択してください" %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :start_date, "作業開始日" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= text_field_tag 'order[work_processes][start_date]',
+                          nil,
+                          placeholder: "作業開始日を選択してください",
+                          type: :date,
+                          class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+        </div>
+      </div>
+    </table>
+  </div>
+</section>
 
-    <tr>
-      <td>反数</td>
-      <td>
-        <%= f.number_field :roll_count, min: 1, placeholder: "反数を入力してください" %>
-      </td>
-    </tr>
-    <tr>
-      <td>数量</td>
-      <td>
-        <%= f.number_field :quantity, min: 1, placeholder: "数量を入力してください" %>
-      </td>
-    </tr>
-    <%# f.fields_for :work_processes do |wp_form| %>
-    <tr>
-      <td>機械の種類</td>
-      <td>
-        <%# = wp_form.select :process_estimate_id,
-                     options_from_collection_for_select(MachineType.all, :id, :name),
-                     prompt: "機械の種類を選択してください" %>
-
-        <%# work_processesのidを取得 %>
-        <%= hidden_field_tag 'order[work_processes][0][id]', work_process.id if work_process.present? %>
-        <%= select_tag 'order[work_processes][0][process_estimate][machine_type_id]',
-                   options_from_collection_for_select(MachineType.all, :id, :name),
-                   prompt: "機械の種類を選択してください" %>
-      </td>
-    </tr>
-    <tr>
-      <td>作業開始日</td>
-      <td>
-        <%#= wp_form.date_field :start_date, placeholder: "作業開始日を選択してください" %>
-        <%= text_field_tag 'order[work_processes][0][start_date]',
-                       nil,
-                       placeholder: "作業開始日を選択してください",
-                       type: :date %>
-      </td>
-    </tr>
-
-  </tbody>
-</table>
-
-<%= f.submit "発注する", id: 'update-order' %>
-<%= link_to "戻る", admin_orders_path, id: 'back' %>
-
+<!-- 提出ボタン -->
+<section class="mb-12">
+  <div class="flex justify-center space-x-2">
+    <div class="px-2 py-2">
+      <%= f.submit "発注", class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
+    </div>
+    <div class="px-2 py-2">
+      <%= link_to "戻る", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+    </div>
+  </div>
+</section>
 <% end %>
