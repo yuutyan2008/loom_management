@@ -19,6 +19,7 @@ class MachinesController < ApplicationController
 
   def new
     @machine = Machine.new
+    @company = current_user.company
   end
 
   def create
