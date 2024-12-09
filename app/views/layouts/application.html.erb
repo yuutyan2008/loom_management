@@ -28,7 +28,13 @@
       <div class="flex justify-between h-16">
         <!-- ロゴまたはアプリケーション名 -->
         <div class="flex items-center">
-          <%= link_to 'Loom Management', root_path, class: "text-xl font-bold text-gray-700" %>
+          <% if logged_in? %>
+            <% if current_user.admin? %>
+              <%= link_to 'Loom Management', admin_root_path, class: "text-xl font-bold text-gray-700" %>
+            <% else %>
+              <%= link_to 'Loom Management', root_path, class: "text-xl font-bold text-gray-700" %>
+            <% end %>
+          <% end %>
         </div>
         <!-- デスクトップメニュー -->
         <div class="hidden md:flex items-center space-x-4" id="navbarMenu">
@@ -42,7 +48,6 @@
               <p><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
             <% else %>
               <%# 一般ユーザー用ナビゲーション %>
-              <p><%= link_to "ホーム", root_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
               <p><%= link_to "織機一覧", machines_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
               <p><%= link_to "受注一覧", orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
             <% end %>
@@ -74,6 +79,7 @@
         <% if logged_in? %>
           <% if current_user.admin? %>
             <%# 管理者用ナビゲーション %>
+            <li><%= link_to "ホーム", admin_root_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
             <li><%= link_to "機械一覧", admin_machines_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
             <li><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
             <li><%= link_to "発注一覧", admin_orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
