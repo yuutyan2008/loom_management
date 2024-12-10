@@ -11,25 +11,30 @@
       }
     </style>
 
-  <div class='gantt-wrap flex'>
-    <table class='flex-none w-14'>
+  <div class='gantt-wrap flex min-w-[800px]'>
+    <table class="flex-none w-1/3 border border-gray-300 table-auto">
       <thead>
         <tr>
-          <th>商品コード</th>
-          <th>企業名</th>
+          <th>品番</th>
+          <th>企業</th>
+          <th>織機</th>
+          <th>ステータス</th>
         </tr>
       </thead>
       <tbody>
         <% JSON.parse(@orders).each do |order| %>
+
           <tr>
-            <td><%= order["product_number"]%></td>
-            <td><%= order["company"]%></td>
+            <td><%= order["product_number"] %></td>
+            <td><%= order["company"] %></td>
+            <td><%= order["machine"] %></td>
+            <td><%= order["work_process_status"] %></td>
           </tr>
         <% end %>
       </tbody>
     </table>
 
-    <svg id="gantt" class = "flex-initial w-64"></svg>
+    <svg id="gantt" class="flex-grow w-3/4"></svg>
   </div>
 
   <script>
