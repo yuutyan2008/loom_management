@@ -10,6 +10,7 @@ before_action :admin_user
 
   def index
     @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
+                   .order(id: "DESC")
 
     # 各注文に対して現在作業中の作業工程を取得
     @current_work_processes = {}
