@@ -1,40 +1,39 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">ホーム画面</h1>
-<section class="mb-12">
-    <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">受注管理</h2>
-    <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
-        <% if @orders.any? %>
-            <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
-                <thead class="uppercase">
-                    <tr class="bg-gray-100">
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">数量</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の作業工程</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">ステータス</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">完了予定日</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
-                    </tr>
+
+<section class="w-full px-4 py-6">
+    <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">織機の稼働状況を更新</h2>
+    <%= form_with url: update_home_path, method: :patch, local: true do %>
+        <div class="flex flex-wrap -mx-2">
+        <% @machine_assignments.each do |assignment| %>
+            <div class="w-full md:w-1/2 px-2 py-2">
+            <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                <thead>
+                <tr>
+                    <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                    <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= assignment.machine.name %></td>
+                </tr>
                 </thead>
                 <tbody>
-                    <% @orders.each do |order| %>
-                    <tr class="hover:bg-gray-50">
-                        <td scope="row" class="py-2 px-4 text-gray-700 border-b"><%= order&.product_number&.number %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order&.color_number&.color_code %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order&.quantity %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_name(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_status(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_start_date(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_factory_estimated_completion_date(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= link_to '詳細', order_path(order), class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= link_to '編集', edit_order_path(order), class: "inline-block px-4 py-2 text-white bg-teal-500 rounded hover:bg-teal-600" %></td>
-                    </tr>
-                    <% end %>
+                <tr>
+                    <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の稼働状況</th>
+                    <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= assignment&.machine&.latest_machine_status&.name %></td>
+                </tr>
+                <tr>
+                    <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況を更新</th>
+                    <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">
+                    <%= select_tag "machine_assignments[][machine_status_id]",
+                            options_from_collection_for_select(MachineStatus.all, :id, :name, assignment.machine_status_id),
+                            class: "w-full border rounded p-2" %>
+                    <%= hidden_field_tag "machine_assignments[][id]", assignment.id %>
+                    </td>
+                </tr>
                 </tbody>
             </table>
-        <% else %>
-            <p><%= @no_orders_message %></p>
+            </div>
         <% end %>
-    </div>
+        </div>
+        <div class="flex justify-center mt-4">
+        <%= submit_tag '更新', class: "rounded py-2 px-6 bg-blue-500 text-white text-xl font-semibold hover:bg-blue-600" %>
+        </div>
+    <% end %>
 </section>
