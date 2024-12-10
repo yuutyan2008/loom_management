@@ -33,11 +33,6 @@ before_action :admin_user
 
   def create
     # orderテーブル以外を除外してorderインスタンス作成
-    # マージしてOrderに保存
-    # start_date = params[:work_process][:start_date]
-    # @order = Order.new(order_params.merge(start_date: start_date))
-    # @order = Order.new(order_params)
-
     @order = Order.new(create_order_params.except(:work_processes))
 
     # work_processesのパラメータ取得
@@ -47,38 +42,20 @@ before_action :admin_user
     start_date = work_processes["start_date"]
     machine_type_id = work_processes["process_estimate"]["machine_type_id"].to_i
 
-    # # earliest_estimated_completion_dateの値を定義
-    # # earliest_estimated_completion_date = start_date + "日数を返す関数"
-
-    # # 5個のwork_processインスタンスを作成
-    # workprocesses = WorkProcess.initial_processes_list(start_date)
-
-    # # インスタンスの更新
-    # # process_estimate_idを入れる
-
-    # # インスタンスの更新
-    # # 完了見込日時を入れる
-    # updated_workprocesses = WorkProcess.update_deadline(workprocesses, machine_type_id, start_date)
-    # # 関連付け
-    # @order.work_processes.build(updated_workprocesses)
-    # # binding.irb
-    # @order.save
-
-    # redirect_to admin_orders_path, notice: "注文が作成されました"
-      # 5個のwork_processハッシュからなる配列を作成
-      workprocess = WorkProcess.initial_processes_list(start_date)
-      # インスタンスの更新
-      # process_estimate_idを入れる
-      estimate_workprocess = WorkProcess.decide_machine_type(workprocess, machine_type_id)
-      # インスタンスの更新
-      # 完了見込日時を入れる
-      update_workprocess = WorkProcess.update_deadline(estimate_workprocess, start_date)
-      # ５個のハッシュとorderの関連付け
-      update_workprocess.each do |work_process_data|
-        @order.work_processes.build(work_process_data)
-      end
-      @order.save
-      redirect_to admin_orders_path, notice: "注文が作成されました"
+    # 5個のwork_processハッシュからなる配列を作成
+    workprocess = WorkProcess.initial_processes_list(start_date)
+    # インスタンスの更新
+    # process_estimate_idを入れる
+    estimate_workprocess = WorkProcess.decide_machine_type(workprocess, machine_type_id)
+    # インスタンスの更新
+    # 完了見込日時を入れる
+    update_workprocess = WorkProcess.update_deadline(estimate_workprocess, start_date)
+    # ５個のハッシュとorderの関連付け
+    update_workprocess.each do |work_process_data|
+      @order.work_processes.build(work_process_data)
+    end
+    @order.save
+    redirect_to admin_orders_path, notice: "注文が作成されました"
   end
 
   def show
@@ -107,33 +84,33 @@ before_action :admin_user
     order_work_processes = order_params.except(:machine_status_id)
 
     # 完了日の取得
-    # workprocesses = order_work_processes[:work_processes_attributes].values
-    # workprocesses.each_with_index do |workprocess, index|
-    #   # 見込み完了日、作業開始日更新
-    #   start_date = workprocess["start_date"]
-    #   actual_completion_date = workprocess["actual_completion_date"]
-    #   # binding.irb
+    workprocesses = order_work_processes[:work_processes_attributes].values
+    workprocesses.each_with_index do |workprocess, index|
+      # 見込み完了日、作業開始日更新
+      start_date = workprocess["start_date"]
+      actual_completion_date = workprocess["actual_completion_date"]
+      # binding.irb
 
-    #   # 次の工程を取得
-    #   next_process = workprocesses[index + 1]
+      # 次の工程を取得
+      next_process = workprocesses[index + 1]
 
-    #   if actual_completion_date.present?
+      if actual_completion_date.present?
 
-    #     # 開始日、見込み完了日置き換え、
-    #     updated_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date, index, next_process)
-    #     binding.irb
-    #     if next_process.present?
-    #       next_start_date = WorkProcess.determine_next_start_date(next_process)
-    #       next_process["start_date"] = next_start_date
-    #       # binding.irb
+        # 開始日、見込み完了日置き換え、
+        updated_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date, index, next_process)
+        binding.irb
+        if next_process.present?
+          next_start_date = WorkProcess.determine_next_start_date(next_process)
+          next_process["start_date"] = next_start_date
+          # binding.irb
 
-    #     end
-    #     workprocess["start_date"] = updated_date
-    #     workprocess["latest_estimated_completion_date"] = updated_date
-    #     # binding.irb
-    #   end
+        end
+        workprocess["start_date"] = updated_date
+        workprocess["latest_estimated_completion_date"] = updated_date
+        # binding.irb
+      end
 
-    # end
+    end
 
     # binding.irb
     @order.update(order_params.except(:machine_status_id))
