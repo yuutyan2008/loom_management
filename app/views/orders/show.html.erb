@@ -45,7 +45,7 @@
                 <% @machines.each do |machine| %>
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border-b text-gray-900"><%= machine&.name %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= machine_statuses(machine) %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= machine&.latest_machine_status&.name %></td>
                 </tr>
                 <% end %>
             <% else %>

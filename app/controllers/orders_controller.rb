@@ -1,3 +1,4 @@
+# app/controllers/orders_controller.rb
 class OrdersController < ApplicationController
   include ApplicationHelper
   before_action :require_login
@@ -44,7 +45,24 @@ class OrdersController < ApplicationController
     ActiveRecord::Base.transaction do
       if @order.update(order_params)
         update_related_models
-        create_new_machine_assignments if params[:order][:new_machine_assignments].present?
+
+        # 受注にMachineを割り当てる場合
+        # 例: params[:order][:assign_machine] = { machine_id: 2, machine_status_id: 3 }
+        if params[:order][:assign_machine].present?
+          machine_id = params[:order][:assign_machine][:machine_id]
+          new_status_id = params[:order][:assign_machine][:machine_status_id]
+          machine = Machine.find(machine_id)
+          assign_machine_to_order(@order, machine, new_status_id)
+        end
+
+        # 全WorkProcessが完了しMachineを初期状態に戻す場合
+        # 例: params[:order][:complete_all_work_processes] = { machine_id: 2 }
+        if params[:order][:complete_all_work_processes].present?
+          machine_id = params[:order][:complete_all_work_processes][:machine_id]
+          machine = Machine.find(machine_id)
+          reset_machine_to_idle(machine)
+        end
+
         redirect_to @order, notice: '受注が正常に更新されました。'
       else
         render :edit
@@ -123,73 +141,60 @@ class OrdersController < ApplicationController
     params[:order][:machine_statuses].each do |ms_param|
       machine_id = ms_param[:machine_id]
       new_status_id = ms_param[:machine_status_id]
-
-      # 関連するMachineAssignmentを取得
-      assignments = MachineAssignment.where(machine_id: machine_id)
-
-      assignments.each do |assignment|
-        assignment.update!(machine_status_id: new_status_id)
-      end
+      MachineAssignment.where(machine_id: machine_id).update_all(machine_status_id: new_status_id)
     end
   end
 
-  def create_new_machine_assignments
-    params[:order][:new_machine_assignments].each do |ma_param|
-      work_process_ids = determine_work_process_ids_for_new_assignment
-      work_process_ids.each do |wp_id|
-        # 各作業工程に対して MachineAssignment を作成
-        MachineAssignment.create!(
-          machine_id: ma_param[:machine_id],
-          machine_status_id: ma_param[:machine_status_id],
-          work_process_id: wp_id
-        )
-      end
+  # Orderに紐づく全WorkProcessを指定Machineに割り当て
+  def assign_machine_to_order(order, machine, machine_status_id)
+    # 既存データを消さずに、新たなWorkProcessに対してMachineAssignmentを追加する
+    wp_ids = order.work_processes.pluck(:id)
+    # 既に存在するMachineAssignmentと重複しないWorkProcessだけに割り当てる例（必要に応じてロジックを調整）
+    existing_wp_ids = MachineAssignment.where(machine_id: machine.id).pluck(:work_process_id)
+    new_wp_ids = wp_ids - existing_wp_ids
+    new_wp_ids.each do |wp_id|
+      MachineAssignment.create!(
+        machine_id: machine.id,
+        work_process_id: wp_id,
+        machine_status_id: machine_status_id
+      )
     end
   end
 
-  def determine_work_process_ids_for_new_assignment
-    current_wp = find_current_work_process(@order.work_processes)
-    if current_wp
-      # current_wp に紐づくすべての作業工程の ID を取得
-      associated_work_processes = @order.work_processes.where(work_process_definition_id: current_wp&.work_process_definition_id)
-      associated_work_processes.pluck(:id)
-    else
-      []
-    end
+  # 全WorkProcess完了後にMachineを初期状態へ戻す
+  def reset_machine_to_idle(machine)
+    MachineAssignment.where(machine_id: machine.id).delete_all
+    MachineAssignment.create!(
+      machine_id: machine.id,
+      work_process_id: nil,
+      machine_status_id: 1 # 初期待機状態
+    )
   end
 
-  ## 追加: indexアクション用のWorkProcess遅延チェックメソッド
+  # 以下のチェックメソッドは元のまま維持
   def check_overdue_work_processes_index(orders)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
-    # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
     overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
                                         .where(order_id: orders&.ids)
                                         .where("earliest_estimated_completion_date < ?", Date.today)
                                         .where.not(work_process_status_id: completed_status.id)
 
     if overdue_work_processes.exists?
-      # Orderごとにグループ化
       grouped = overdue_work_processes.group_by(&:order)
-      # 件数の取得
       total_overdue_orders = grouped.keys.size
-      # メッセージリストを作成
-      message = grouped.map do |order, work_processes|
-        wp_links = work_processes.each_with_index.map do |wp, index|
+      message = grouped.map do |order, wps|
+        wp_links = wps.each_with_index.map do |wp, index|
           if index == 0
-            # 最初のWorkProcessには受注IDを含める
             "受注 ID:#{order.id} 作業工程: #{wp.work_process_definition.name}"
           else
-            # 以降のWorkProcessは受注IDを含めずに作業工程のみ
             "作業工程: #{wp.work_process_definition.name}"
           end
         end.join(", ")
-        # 受注IDごとにリンクを生成
         link = view_context.link_to wp_links, order_path(order), class: "underline"
         "<li>#{link}</li>"
       end.join("<br>").html_safe
 
-      # フラッシュメッセージをHTMLとして生成
       flash.now[:alert] = <<-HTML.html_safe
         <strong>予定納期が過ぎている受注が #{total_overdue_orders} 件あります。</strong>
         <ul class="text-red-700 list-disc ml-4 px-4 py-2">
@@ -199,27 +204,21 @@ class OrdersController < ApplicationController
     end
   end
 
-  # 追加: showアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_show(work_processes)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
-    # 遅延しているWorkProcessを取得
     overdue_work_processes = work_processes.where("earliest_estimated_completion_date < ?", Date.today)
                                            .where.not(work_process_status_id: completed_status.id)
 
     if overdue_work_processes.exists?
-      # 同一Orderなのでグループ化は不要
       message = overdue_work_processes.each_with_index.map do |wp, index|
         if index == 0
-          # 最初のWorkProcessには受注IDを含める
           "受注 ID:#{@order.id} 作業工程: #{wp.work_process_definition.name}"
         else
-          # 以降のWorkProcessは受注IDを含めずに作業工程のみ
           "作業工程: #{wp.work_process_definition.name}"
         end
       end.join(", ")
 
-      # フラッシュメッセージをHTMLとして生成
       flash.now[:alert] = <<-HTML.html_safe
         <strong>以下の作業工程が予定完了日を過ぎており、まだ完了していません。</strong>
         <ul class="text-red-700 list-disc ml-4 px-4 py-2">
