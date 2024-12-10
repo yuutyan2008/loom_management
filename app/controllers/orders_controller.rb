@@ -151,7 +151,7 @@ class OrdersController < ApplicationController
     current_wp = find_current_work_process(@order.work_processes)
     if current_wp
       # current_wp に紐づくすべての作業工程の ID を取得
-      associated_work_processes = @order.work_processes.where(work_process_definition_id: current_wp.work_process_definition_id)
+      associated_work_processes = @order.work_processes.where(work_process_definition_id: current_wp&.work_process_definition_id)
       associated_work_processes.pluck(:id)
     else
       []
@@ -164,7 +164,7 @@ class OrdersController < ApplicationController
     return unless completed_status
     # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
     overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
-                                        .where(order_id: orders.ids)
+                                        .where(order_id: orders&.ids)
                                         .where("earliest_estimated_completion_date < ?", Date.today)
                                         .where.not(work_process_status_id: completed_status.id)
 
