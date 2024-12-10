@@ -31,7 +31,7 @@
                                 <%= machine&.name %>
                             </td>
                             <td class="px-4 py-2 border-b text-gray-900">
-                                <%= machine_statuses(machine) %>
+                                <%= machine&.latest_machine_status&.name %>
                             </td>
                             <td class="px-4 py-2 border-b text-gray-900">
                                 <%= product_number(machine) %>

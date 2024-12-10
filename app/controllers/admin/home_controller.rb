@@ -1,26 +1,37 @@
+# app/controllers/admin/home_controller.rb
 class Admin::HomeController < ApplicationController
   before_action :authenticate_admin!
   before_action :set_company, only: [:show]
 
   def index
     @orders = Order.all
-    @no_orders_message = "現在、受注はありません。"
-    @companies = Company.includes(machines: { machine_assignments: :machine_status })
+    @no_orders_message = "現在、受注はありません。" unless @orders.exists?
+
+    @companies = Company.includes(machines: :machine_assignments)
                         .where.not(id: 1)
                         .map do |company|
-      # 各機屋の稼働状況を集計
       machines = company.machines
+
+      # 各Machineの最新の稼働状況を取得
+      status_counts = {
+        "未稼働" => 0,
+        "準備中" => 0,
+        "稼働中" => 0,
+        "故障中" => 0
+      }
+
+      machines.each do |machine|
+        latest_status = machine.latest_machine_status&.name
+        status_counts[latest_status] += 1 if status_counts.key?(latest_status)
+      end
+
       {
         id: company.id,
         name: company.name,
-        inactive_count: machines.joins(machine_assignments: :machine_status)
-                                .where(machine_statuses: { name: "未稼働" }).uniq.count,
-        preparation_count: machines.joins(machine_assignments: :machine_status)
-                                .where(machine_statuses: { name: "準備中" }).uniq.count,
-        active_count: machines.joins(machine_assignments: :machine_status)
-                              .where(machine_statuses: { name: "稼働中" }).uniq.count,
-        broken_count: machines.joins(machine_assignments: :machine_status)
-                              .where(machine_statuses: { name: "故障中" }).uniq.count
+        inactive_count: status_counts["未稼働"],
+        preparation_count: status_counts["準備中"],
+        active_count: status_counts["稼働中"],
+        broken_count: status_counts["故障中"]
       }
     end
   end
