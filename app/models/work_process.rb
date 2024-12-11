@@ -186,56 +186,66 @@ class WorkProcess < ApplicationRecord
   # end
 
 
-  def self.check_current_work_process(process, start_date, actual_completion_date, index, next_process = nil)
-    # short = 0
-    # long = 0
-    # 配列を一個ずつ取り出す
-    # estimate_workprocesses.each do |process|
-    if index != 0
+  def self.check_current_work_process(process, start_date, actual_completion_date)
+    update = true
+    next_start_date = start_date
+
+    unless update == true
+      # 開始日の更新が必要
+      process[:start_date] = next_start_date
+      start_date = process[:start_date]
+    end
+
+    if process["work_process_definition_id"].to_i != 1
       # 開始日の更新が必要
       start_date = actual_completion_date
 
-
+      # binding.irb
       self.calc_process_estimate(process, start_date)
 
-            # binding.irb
-    elsif index == 0
+            binding.irb
+    else
       process["latest_estimated_completion_date"] = actual_completion_date
-      # binding.irb
+      binding.irb
+      # next_start_date = actual_completion_date
     end
-    process
+
+    binding.irb
+
+  # 次の工程のstart_dateを決定
+    if process["work_process_definition_id"].to_i == 4
+      # 日曜日なら翌々週の月曜が作業開始日
+      if process[:earliest_estimated_completion_date].wday == 0
+      next_start_date = process[:earliest_estimated_completion_date] + 8
+      else
+      # 次の月曜日が開始日
+      next_start_date = process[:earliest_estimated_completion_date].next_week
+      end
+    else
+      next_start_date = process[:earliest_estimated_completion_date]
+    end
+    update = false
+    binding.irb
+    [process, start_date, actual_completion_date]
+
   end
 
-  def self.calc_process_estimate(process)
+
+
+  def self.calc_process_estimate(process, start_date)
       # 納期の見込み日数のレコードを取得
       work_process_id = process["id"]
       target_estimate_record = ProcessEstimate.joins(:work_processes)
-      .where(work_processes: { id: work_process_id })
-      .first
-
+      .find_by(work_processes: { id: work_process_id })
+# binding.irb
       # ナレッジの値を計算して更新
       process["earliest_estimated_completion_date"] = start_date.to_date + target_estimate_record.earliest_completion_estimate
       process["latest_estimated_completion_date"] = start_date.to_date + target_estimate_record.latest_completion_estimate
 
       process
+      binding.irb
   end
 
-  # 次の工程のstart_dateを決定
-  def self.determine_next_start_date(process)
-    if process[:work_process_definition_id] == 4
-      # 日曜日なら翌々週の月曜が作業開始日
-      if process[:latest_estimated_completion_date].wday == 0
-      start_date = process[:latest_estimated_completion_date] + 8
-      else
-      # 次の月曜日が開始日
-      start_date = process[:latest_estimated_completion_date].next_week
-      end
-    else
-      start_date = process[:latest_estimated_completion_date]
-    end
-    # binding.irb
-          start_date
-  end
 
 
   # 現在作業中の作業工程を取得するスコープ
