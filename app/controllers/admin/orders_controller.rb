@@ -85,31 +85,37 @@ before_action :admin_user
 
     # 完了日の取得
     workprocesses = order_work_processes[:work_processes_attributes].values
-    workprocesses.each_with_index do |workprocess, index|
+      # binding.irb
+#
+    # workprocesses.each_with_index do |workprocess, index|
+    workprocesses.each do |workprocess|
       # 見込み完了日、作業開始日更新
       start_date = workprocess["start_date"]
       actual_completion_date = workprocess["actual_completion_date"]
-      # binding.irb
 
       # 次の工程を取得
-      next_process = workprocesses[index + 1]
+      # next_process = workprocesses[index + 1]
 
       if actual_completion_date.present?
 
         # 開始日、見込み完了日置き換え、
-        updated_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date, index, next_process)
-        binding.irb
-        if next_process.present?
-          next_start_date = WorkProcess.determine_next_start_date(next_process)
-          next_process["start_date"] = next_start_date
-          # binding.irb
-
-        end
-        workprocess["start_date"] = updated_date
-        workprocess["latest_estimated_completion_date"] = updated_date
+        updated_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
         # binding.irb
-      end
 
+        updated_date = {
+          process: updated_date[0],
+          start_date: updated_date[1],
+          actual_completion_date: updated_date[2]
+        }
+
+        # 更新された値を反映
+        workprocess["start_date"] = updated_date[:start_date]
+        workprocess["latest_estimated_completion_date"] = updated_date[:process]["latest_estimated_completion_date"]
+
+        # 必要に応じて、他のプロパティを更新
+        workprocess["earliest_estimated_completion_date"] = updated_date[:process]["earliest_estimated_completion_date"]
+        binding.irb
+      end
     end
 
     # binding.irb
