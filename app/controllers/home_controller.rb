@@ -10,7 +10,7 @@ class HomeController < ApplicationController
       # machine_id: 2のMachineAssignmentを想定例として取得
       # 実際には複数のMachineAssignmentを取得し、配列で表示する場合
       @machine_assignments = MachineAssignment.includes(machine: {}, work_process: :work_process_definition)
-                                              .where(machine_id: current_user.id) # 条件は実際の要件に合わせる
+                                              .where(machine_id: current_user.company.id) # 条件は実際の要件に合わせる
                                               .order(created_at: :desc)
       # 複数のmachine_idに対応する場合はwhere(machine_id: [リスト])など
     else
