@@ -1,15 +1,53 @@
 class HomeController < ApplicationController
-  before_action :require_login, only: [:index]
+  before_action :require_login, only: [:index, :update]
 
   def index
     @company = current_user.company
     if @company.orders.exists?
-      @orders = @company.orders
+      @orders = @company.orders.includes(:work_processes)
       check_overdue_work_processes_index(@orders)
+
+      # machine_id: 2のMachineAssignmentを想定例として取得
+      # 実際には複数のMachineAssignmentを取得し、配列で表示する場合
+      @machine_assignments = MachineAssignment.includes(machine: {}, work_process: :work_process_definition)
+                                              .where(machine_id: current_user.company.id) # 条件は実際の要件に合わせる
+                                              .order(created_at: :desc)
+      # 複数のmachine_idに対応する場合はwhere(machine_id: [リスト])など
     else
       @orders = []
       @no_orders_message = "現在受注している商品はありません"
+      @machine_assignments = []
     end
+  end
+
+  def update
+    ActiveRecord::Base.transaction do
+      if params[:commit] == "作業開始"
+        # 作業開始処理
+        # 例：指定のWorkProcessを更新
+        # 条件はユーザー要件に合わせて変更してください
+        order_id = 13
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                   .update_all(work_process_status_id: 3) # 完了
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 2)
+                   .update_all(work_process_status_id: 2) # 作業中
+        # definition_id=1は作業前のまま
+
+        MachineAssignment.where(machine_id: 2, machine_status_id: 1).update_all(machine_status_id: 3)
+      elsif params[:commit] == "作業終了"
+        # 作業終了処理
+        order_id = 13
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
+                   .update_all(work_process_status_id: 3) # 全て完了
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 1)
+                   .update_all(work_process_status_id: 2) # 作業中に更新
+        # 新規MachineAssignment追加
+        MachineAssignment.create!(machine_id: 2, machine_status_id: 1, work_process_id: nil)
+      end
+    end
+    redirect_to root_path, notice: "ステータスが正常に更新されました。"
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+    redirect_to root_path, alert: "ステータスの更新に失敗しました: #{e.message}"
   end
 
   private
