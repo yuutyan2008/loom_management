@@ -1,6 +1,17 @@
-  <h2>工程ごとの機屋一覧</h2>
+  <h2 lass="pt-10">工程ごとの機屋一覧</h2>
 
     <style>
+      /* テーブル全体の背景色を白に設定 */
+      .gantt-wrap {
+        background-color: #ffffff; /* 背景色を白に設定 */
+      }
+
+      /* 内部のテーブルの背景を白に設定 */
+      .gantt-wrap table {
+        background-color: #ffffff; /* テーブル全体の背景色 */
+        border-collapse: collapse; /* 境界線の余白を削除 */
+      }
+
         /* クラスに応じたスタイルを設定 */
       g.bar-wrapper.class-a rect.bar-progress {
         fill: #3498db !important; /* 青 */
@@ -13,28 +24,31 @@
 
   <div class='gantt-wrap flex min-w-[800px]'>
     <table class="flex-none w-1/3 border border-gray-300 table-auto">
-      <thead>
-        <tr>
-          <th>品番</th>
-          <th>企業</th>
-          <th>織機</th>
-          <th>ステータス</th>
+      <thead class="pb-20 h-[60px]">
+        <tr class='border border-gray-300'>
+          <th class="pt-5">品番</th>
+          <th class="pt-5">企業</th>
+          <th class="pt-5">織機</th>
+          <th class="pt-5">ステータス</th>
         </tr>
       </thead>
       <tbody>
-        <% JSON.parse(@orders).each do |order| %>
-
-          <tr>
-            <td><%= order["product_number"] %></td>
-            <td><%= order["company"] %></td>
-            <td><%= order["machine"] %></td>
-            <td><%= order["work_process_status"] %></td>
+        <% JSON.parse(@orders).group_by { |order| order["custom_index"] }.each do |order_id, grouped_orders| %>
+          <tr class='border border-gray-300 h-[36px]'>
+            <td class='text-xs border border-gray-300 h-[36px]'><%= grouped_orders.first["product_number"] %></td>
+            <td class='text-xs border border-gray-300 h-[38px]'><%= grouped_orders.first["company"] %></td>
+            <td class='text-xs border border-gray-300 h-[38px]'>
+              <%= grouped_orders.map { |order| order["machine"] }.uniq.join(", ") %>
+            </td>
+            <td class='text-xs border border-gray-300 h-[38px]'>
+              <%= grouped_orders.map { |order| order["work_process_status"] }.uniq.join(", ") %>
+            </td>
           </tr>
         <% end %>
       </tbody>
     </table>
 
-    <svg id="gantt" class="flex-grow w-3/4"></svg>
+    <svg id="gantt" class="flex-grow"></svg>
   </div>
 
   <script>
@@ -43,7 +57,11 @@
         console.log(orders)
 
       const gantt = new Gantt("#gantt", orders, {
-        view_mode: 'Month'
+        view_mode: 'Month',
+        header_height: 45,
+        bar_height: 20,
+        // column_width: 30,
+        // padding: 60
       });
 
       //
