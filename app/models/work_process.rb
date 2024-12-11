@@ -18,7 +18,6 @@ class WorkProcess < ApplicationRecord
     .joins(:work_process_definition)
     .order('work_process_definitions.sequence') }
 
-
   # 発注登録時に一括作成するWorkProcess配列を定義
   def self.initial_processes_list(start_date)
     [
