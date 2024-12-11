@@ -1,4 +1,6 @@
 class Admin::MachinesController < ApplicationController
+  include ApplicationHelper
+
   before_action :machine_params, only: %i[update]
   before_action :set_machine, only: %i[show edit update]
   before_action :admin_user
@@ -92,6 +94,7 @@ class Admin::MachinesController < ApplicationController
         {
           product_number: order.product_number.number,
           company: order.company.name,
+          machine: machine_names(order),
           id: process.id.to_s,
           name: process.work_process_definition.name,
           work_process_status: process.work_process_status.name,
