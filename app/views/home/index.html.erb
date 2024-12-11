@@ -1,40 +1,201 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">ホーム画面</h1>
-<section class="mb-12">
-    <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">受注管理</h2>
-    <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
-        <% if @orders.any? %>
-            <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
-                <thead class="uppercase">
-                    <tr class="bg-gray-100">
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">数量</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の作業工程</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">ステータス</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">完了予定日</th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
+
+<section class="w-full px-4 py-6">
+    <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">織機の稼働状況を更新</h2>
+    <% if @machine_assignments.any? %>
+        <!-- 親コンテナ: スマホ1列、PC2列のグリッドレイアウト -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <% @machine_assignments.each do |assignment| %>
+            <% machine_name = "#{assignment.machine_id}号機" %>
+            <% work_process_name = assignment.work_process&.work_process_definition&.name || "作業工程なし" %>
+            <% machine_status_name = MachineStatus.find(assignment.machine_status_id).name %>
+            <!-- ボタンの状態判定 -->
+            <% if assignment.work_process_id.present? %>
+                <% wp_status_id = assignment.work_process.work_process_status_id %>
+                <% if wp_status_id == 1 %>
+                    <!-- 作業前 → 作業開始ボタン表示 -->
+                    <% button_label = "作業開始" %>
+                    <% button_disabled = false %>
+                <% elsif wp_status_id == 2 %>
+                    <!-- 作業中 → 作業終了ボタン表示 -->
+                    <% button_label = "作業終了" %>
+                    <% button_disabled = false %>
+                <% else %>
+                    <!-- 作業完了または確認中 → ボタン無効化 -->
+                    <% button_label = "更新不可" %>
+                    <% button_disabled = true %>
+                <% end %>
+            <% else %>
+                <!-- work_process_idがnil → ボタン無効化 -->
+                <% button_label = "更新不可" %>
+                <% button_disabled = true %>
+            <% end %>
+            <div class="w-full px-2 py-2">
+                <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                            <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine_name %></td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+                            <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= work_process_name %></td>
+                        </tr>
+                        <tr>
+                            <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況</th>
+                            <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine_status_name %></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="px-4 py-2">
+                                <div class="flex justify-center space-x-2">
+                                    <%= form_with url: update_home_path, method: :patch, local: true do %>
+                                    <%= submit_tag button_label, name: 'commit',
+                                                    class: "rounded-full w-32 h-32 text-white text-xl font-semibold #{button_disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'}",
+                                                    disabled: button_disabled %>
+                                    <% end %>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        <% end %>
+        </div>
+    <% else %>
+        <p>表示するデータがありません。</p>
+    <% end %>
+</section>
+
+
+
+<section class="w-full px-4 py-6">
+    <h2 class="px-4 text-2xl text-gray-700 font-semibold mb-4">織機の稼働状況を更新（現在作成中）</h2>
+    <!-- 親コンテナ: Flexboxを使用して横並びに配置 -->
+    <div class="flex md:flex-row w-full space-y-4 md:space-y-0 md:space-x-4">
+        <!-- テーブル1 -->
+        <div class="w-full md:w-1/2 px-2 py-2">
+            <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">1号機</td>
                     </tr>
                 </thead>
                 <tbody>
-                    <% @orders.each do |order| %>
-                    <tr class="hover:bg-gray-50">
-                        <td scope="row" class="py-2 px-4 text-gray-700 border-b"><%= order&.product_number&.number %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order&.color_number&.color_code %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order&.quantity %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_name(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_status(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_start_date(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_factory_estimated_completion_date(order) %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= link_to '詳細', order_path(order), class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= link_to '編集', edit_order_path(order), class: "inline-block px-4 py-2 text-white bg-teal-500 rounded hover:bg-teal-600" %></td>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">糸</td>
                     </tr>
-                    <% end %>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況を更新</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">稼働中</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="px-4 py-2">
+                            <div class="flex justify-center space-x-2">
+                                <div class="rounded py-8 px-8 bg-gray-500 text-white text-xl font-semibold hover:bg-gray-700">
+                                    更新
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-        <% else %>
-            <p><%= @no_orders_message %></p>
-        <% end %>
+        </div>
+        <!-- テーブル2 -->
+        <div class="w-full md:w-1/2 px-2 py-2">
+            <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">2号機</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+                        <td class="w-1/4 px-4 py-4 text-center border-b">糸</td>
+                    </tr>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況を更新</th>
+                        <td class="w-1/4 px-4 py-4 text-center border-b">稼働中</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="px-4 py-2">
+                            <div class="flex justify-center space-x-2">
+                                <div class="rounded py-8 px-8 bg-gray-500 text-white text-xl font-semibold hover:bg-gray-700">
+                                    更新
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- 親コンテナ: Flexboxを使用して横並びに配置 -->
+    <div class="flex md:flex-row w-full space-y-4 md:space-y-0 md:space-x-4">
+        <!-- テーブル1 -->
+        <div class="w-full md:w-1/2 px-2 py-2">
+            <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">3号機</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">糸</td>
+                    </tr>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況を更新</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">稼働中</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="px-4 py-2">
+                            <div class="flex justify-center space-x-2">
+                                <div class="rounded py-8 px-8 bg-gray-500 text-white text-xl font-semibold hover:bg-gray-700">
+                                    更新
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- テーブル2 -->
+        <div class="w-full md:w-1/2 px-2 py-2">
+            <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                <thead>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                        <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b">4号機</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+                        <td class="w-1/4 px-4 py-4 text-center border-b">糸</td>
+                    </tr>
+                    <tr>
+                        <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況を更新</th>
+                        <td class="w-1/4 px-4 py-4 text-center border-b">稼働中</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="px-4 py-2">
+                            <div class="flex justify-center space-x-2">
+                                <div class="inline-block rounded py-8 px-8 bg-gray-500 text-white text-xl font-semibold hover:bg-gray-700">
+                                    更新
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </section>

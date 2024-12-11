@@ -32,4 +32,6 @@ Rails.application.routes.draw do
   resources :orders, only: [:index, :show, :new, :create, :edit, :update, :destroy]
   resources :users, only: [:new, :create, :show, :edit, :update]
   root to: 'home#index'
+  # HomeControllerのupdateアクションを定義
+  patch 'home/update', to: 'home#update', as: 'update_home'
 end
