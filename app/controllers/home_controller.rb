@@ -1,12 +1,18 @@
 class HomeController < ApplicationController
-  before_action :require_login, only: [:index]
+  before_action :require_login, only: [:index, :update]
 
   def index
     @company = current_user.company
     if @company.orders.exists?
       @orders = @company.orders.includes(:work_processes)
       check_overdue_work_processes_index(@orders)
-      @machine_assignments = MachineAssignment.includes(:work_process).where(work_processes: { work_process_definition_id: [1, 2, 3, 4, 5] })
+
+      # machine_id: 2のMachineAssignmentを想定例として取得
+      # 実際には複数のMachineAssignmentを取得し、配列で表示する場合
+      @machine_assignments = MachineAssignment.includes(machine: {}, work_process: :work_process_definition)
+                                              .where(machine_id: current_user.id) # 条件は実際の要件に合わせる
+                                              .order(created_at: :desc)
+      # 複数のmachine_idに対応する場合はwhere(machine_id: [リスト])など
     else
       @orders = []
       @no_orders_message = "現在受注している商品はありません"
@@ -16,26 +22,28 @@ class HomeController < ApplicationController
 
   def update
     ActiveRecord::Base.transaction do
-      # 条件1: work_process_difinition_idが1〜3の作業工程を「作業完了」に更新
-      work_processes_to_complete = WorkProcess.where(work_process_difinition_id: [1, 2, 3], work_process_status_id: [1, 2]) # ステータス1,2が未完了と仮定
-      work_processes_to_complete.update_all(work_process_status_id: 3)
+      if params[:commit] == "作業開始"
+        # 作業開始処理
+        # 例：指定のWorkProcessを更新
+        # 条件はユーザー要件に合わせて変更してください
+        order_id = 13
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                   .update_all(work_process_status_id: 3) # 完了
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 2)
+                   .update_all(work_process_status_id: 2) # 作業中
+        # definition_id=1は作業前のまま
 
-      # 織機の状態を「稼働中」に更新
-      MachineAssignment.where(work_process: work_processes_to_complete).update_all(machine_status_id: 3)
-
-      # 条件2: 「製織」（work_process_difinition_id:4）の作業完了後の処理
-      work_process_definition_4 = WorkProcessDefinition.find_by(id: 4)
-      raise ActiveRecord::RecordNotFound, "製織の作業工程が見つかりません。" unless work_process_definition_4
-
-      completed_manufacture_processes = WorkProcess.where(work_process_difinition_id: 4, work_process_status_id: [1, 2])
-      completed_manufacture_processes.update_all(work_process_status_id: 3)
-
-      # 織機の割当てを解除
-      MachineAssignment.where(work_process: completed_manufacture_processes).update_all(machine_id: nil)
-
-      # 「整理加工」（work_process_difinition_id:5）を「作業中」に更新
-      WorkProcess.where(work_process_difinition_id: 5, order_id: completed_manufacture_processes.pluck(:order_id))
-                 .update_all(work_process_status_id: 2)
+        MachineAssignment.where(machine_id: 2, machine_status_id: 1).update_all(machine_status_id: 3)
+      elsif params[:commit] == "作業終了"
+        # 作業終了処理
+        order_id = 13
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
+                   .update_all(work_process_status_id: 3) # 全て完了
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 1)
+                   .update_all(work_process_status_id: 2) # 作業中に更新
+        # 新規MachineAssignment追加
+        MachineAssignment.create!(machine_id: 2, machine_status_id: 1, work_process_id: nil)
+      end
     end
     redirect_to root_path, notice: "ステータスが正常に更新されました。"
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
