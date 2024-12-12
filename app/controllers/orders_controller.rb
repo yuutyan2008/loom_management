@@ -5,8 +5,8 @@ class OrdersController < ApplicationController
   before_action :authorize_order, only: [:show, :destroy]
 
   def index
-    @company = current_user.company
-    @orders = @company.orders.exists? ? @company.orders : []
+    @company = current_user&.company
+    @orders = @company&.orders || Order.none
     @no_orders_message = "現在受注している商品はありません" unless @orders.any?
 
     check_overdue_work_processes_index(@orders)

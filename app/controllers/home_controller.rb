@@ -2,47 +2,54 @@ class HomeController < ApplicationController
   before_action :require_login, only: [:index, :update]
 
   def index
-    @company = current_user.company
-    if @company.orders.exists?
-      @orders = @company.orders.includes(:work_processes)
+    @company = current_user&.company
+    # 会社に紐づく全Machineを取得し、関連情報をプリロード
+    @machines = @company&.machines&.machine_associations
+    if @company&.orders.exists?
+      @orders = @company&.orders.includes(:work_processes)
       check_overdue_work_processes_index(@orders)
-
       # machine_id: 2のMachineAssignmentを想定例として取得
       # 実際には複数のMachineAssignmentを取得し、配列で表示する場合
-      @machine_assignments = MachineAssignment.includes(machine: {}, work_process: :work_process_definition)
-                                              .where(machine_id: current_user.company.id) # 条件は実際の要件に合わせる
-                                              .order(created_at: :desc)
+      # @machine_assignments = MachineAssignment.includes(machine: { company: {} }, work_process: :work_process_definition)
+      #                                         .where(machine: { company_id: @company.id }) # 条件は実際の要件に合わせる
+      #                                         .order(created_at: :desc)
       # 複数のmachine_idに対応する場合はwhere(machine_id: [リスト])など
+      # @machine_assignments = all_assignments.group_by(&:machine_id).map { |_, assignments| assignments.first }
     else
       @orders = []
       @no_orders_message = "現在受注している商品はありません"
-      @machine_assignments = []
     end
   end
 
   def update
+    @company = current_user&.company
+    machine_id = params[:machine_id]
+    order_id = params[:order_id] # machine.latest_work_processから取得したorder_id
+    @machine = @company&.machines.find(machine_id)
+    @order = @company&.orders.find(order_id)
+
     ActiveRecord::Base.transaction do
       if params[:commit] == "作業開始"
         # 作業開始処理
-        # 例：指定のWorkProcessを更新
-        # 条件はユーザー要件に合わせて変更してください
-        order_id = 13
+        # 指定のWorkProcessを更新
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
                    .update_all(work_process_status_id: 3) # 完了
-        WorkProcess.where(order_id: order_id, work_process_definition_id: 2)
-                   .update_all(work_process_status_id: 2) # 作業中
-        # definition_id=1は作業前のまま
-
-        MachineAssignment.where(machine_id: 2, machine_status_id: 1).update_all(machine_status_id: 3)
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
+                   .update_all(work_process_status_id: 2) # 作業中に更新
+        # MachineAssignmentを稼働中に更新
+        MachineAssignment.where(machine_id: machine_id, machine_status_id: [1,2,4]) # 未稼働{1}, 準備中{2}, 故障中{4}
+                         .update_all(machine_status_id: 3) # 稼働中
       elsif params[:commit] == "作業終了"
         # 作業終了処理
-        order_id = 13
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
-                   .update_all(work_process_status_id: 3) # 全て完了
-        WorkProcess.where(order_id: order_id, work_process_definition_id: 1)
+                   .update_all(work_process_status_id: 3) # 完了
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 5)
                    .update_all(work_process_status_id: 2) # 作業中に更新
+        # MachineAssignmentの織機をnilに更新
+        MachineAssignment.where(machine_id: machine_id, work_process_id: @order.work_processes)
+                         .update_all(machine_id: nil)
         # 新規MachineAssignment追加
-        MachineAssignment.create!(machine_id: 2, machine_status_id: 1, work_process_id: nil)
+        MachineAssignment.create!(machine_id: machine_id, machine_status_id: 1, work_process_id: nil)
       end
     end
     redirect_to root_path, notice: "ステータスが正常に更新されました。"
@@ -59,9 +66,9 @@ class HomeController < ApplicationController
 
     # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
     overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
-                                       .where(order_id: orders.ids)
-                                       .where("factory_estimated_completion_date < ?", Date.today)
-                                       .where.not(work_process_status_id: completed_status.id)
+                                        .where(order_id: orders.ids)
+                                        .where("factory_estimated_completion_date < ?", Date.today)
+                                        .where.not(work_process_status_id: completed_status.id)
 
     if overdue_work_processes.exists?
       # Orderごとにグループ化

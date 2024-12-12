@@ -25,7 +25,7 @@
                     <td class="py-2 px-4 border-b"><%= work_process_name(order) %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_status(order) %></td>
                     <td class="py-2 px-4 border-b"><%= machine_names(order) %></td>
-                    <td class="py-2 px-4 border-b"><%= machine_statuses_for_order(order) %></td>
+                    <td class="py-2 px-4 border-b"><%= order&.latest_machine_assignment&.machine_status&.name %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_start_date(order) %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_factory_estimated_completion_date(order) %></td>
                     <td class="py-2 px-4 border-b">
@@ -39,7 +39,7 @@
             </tbody>
         </table>
     <% else %>
-        <p><%= @no_orders_message %></p>
+        <p class="text-center text-rose-500"><%= @no_orders_message %></p>
     <% end %>
     </div>
 </section>
