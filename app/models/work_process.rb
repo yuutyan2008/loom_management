@@ -120,115 +120,61 @@ class WorkProcess < ApplicationRecord
     estimate_workprocesses
   end
 
-  # def self.update_deadline(workprocess, start_date)
-  #   binding.irb
-  #   short = 0
-  #   long = 0
-  #   update = true
-  #   # 配列を一個ずつ取り出す
-  #   workprocess.each do |process|
-  #     unless update == true
-  #       # 開始日の更新が必要
-  #       binding.irb
-  #       process[:start_date] = start_date
-  #     end
-
-
-  #   work_process_id = process["id"]
-  #   target_estimate_record = ProcessEstimate.joins(:work_processes)
-  #   .where(work_processes: { id: work_process_id })
-  #   .first
-
-  #   # ナレッジの値を計算して更新
-  #   process["earliest_estimated_completion_date"] = start_date.to_date + target_estimate_record.earliest_completion_estimate
-  #   process["latest_estimated_completion_date"] = start_date.to_date + target_estimate_record.latest_completion_estimate
-  #   # start_date = self.new_start_date(workprocess, start_date)
-  #   binding.irb
-
-  #     # 納期の見込み日数のレコードを取得
-  #     # process = self.arrange_estimate_record(process, start_date)
-  #     binding.irb
-  #     if process[:work_process_definition_id] == 4
-  #       # 日曜日なら翌々週の月曜が作業開始日
-  #         if process[:latest_estimated_completion_date].wday == 0
-  #           start_date = process[:latest_estimated_completion_date] + 8
-  #         else
-  #           # 次の月曜日が開始日
-  #           start_date = process[:latest_estimated_completion_date].next_week
-  #         end
-  #     else
-  #       start_date = process[:latest_estimated_completion_date]
-  #     end
-  #     # binding.irb
-
-  #     update = false
-  #     #
-  #     process[:start_date] = start_date
-  #     # binding.irb
-  #     process
-  #   end
-  # end
-
-
-  # 納期の見込み日数のレコードを取得
-  # def self.arrange_estimate_record(process, start_date)
-  #   work_process_id = process["id"]
-  #   target_estimate_record = ProcessEstimate.joins(:work_processes)
-  #   .where(work_processes: { id: work_process_id })
-  #   .first
-
-  #   # ナレッジの値を計算して更新
-  #   process["earliest_estimated_completion_date"] = start_date.to_date + target_estimate_record.earliest_completion_estimate
-  #   process["latest_estimated_completion_date"] = start_date.to_date + target_estimate_record.latest_completion_estimate
-  #   # start_date = self.new_start_date(workprocess, start_date)
-  #   binding.irb
-  # end
-
 
   def self.check_current_work_process(process, start_date, actual_completion_date)
-    update = true
-    next_start_date = start_date
+    # binding.irb
+    # update = true
 
-    unless update == true
+    # 工程idが2以上の場合
+    if process[:work_process_definition_id].to_i >= 2
+      if actual_completion_date.present?
+        process[:latest_estimated_completion_date] = actual_completion_date
+        process[:earliest_estimated_completion_date] = actual_completion_date
+        # process[:start_date] = actual_completion_date
+
+        start_date = process[:start_date]
+        # binding.irb
+    # unless update == true
+      else
       # 開始日の更新が必要
-      process[:start_date] = next_start_date
-      start_date = process[:start_date]
+              # binding.irb
+        process[:start_date] = start_date
+
+        # 更新された開始日からナレッジを再計算
+        self.calc_process_estimate(process, start_date)
+
+        # binding.irb
+      end
     end
 
-    if process["work_process_definition_id"].to_i != 1
-      # 開始日の更新が必要
-      start_date = actual_completion_date
+    if process[:work_process_definition_id].to_i == 1
 
-      # binding.irb
-      self.calc_process_estimate(process, start_date)
+      if actual_completion_date.present?
+        process[:latest_estimated_completion_date] = actual_completion_date
+        process[:earliest_estimated_completion_date] = actual_completion_date
+      else
+        process = self.calc_process_estimate(process, start_date)
+      end
 
-            binding.irb
-    else
-      process["latest_estimated_completion_date"] = actual_completion_date
-      binding.irb
-      # next_start_date = actual_completion_date
     end
 
-    binding.irb
 
   # 次の工程のstart_dateを決定
-    if process["work_process_definition_id"].to_i == 4
+    if process[:work_process_definition_id].to_i == 4
       # 日曜日なら翌々週の月曜が作業開始日
-      if process[:earliest_estimated_completion_date].wday == 0
-      next_start_date = process[:earliest_estimated_completion_date] + 8
+      if process[:earliest_estimated_completion_date].to_date.wday == 0
+        next_start_date = process[:earliest_estimated_completion_date].to_date + 8
       else
-      # 次の月曜日が開始日
-      next_start_date = process[:earliest_estimated_completion_date].next_week
+        # 次の月曜日が開始日
+        next_start_date = process[:earliest_estimated_completion_date].to_date.next_week
       end
     else
+      # ここに、工程が５なら次の開始日は不要の処理を作りたい
       next_start_date = process[:earliest_estimated_completion_date]
     end
-    update = false
-    binding.irb
-    [process, start_date, actual_completion_date]
-
+    # update = false
+    return [process, next_start_date]
   end
-
 
 
   def self.calc_process_estimate(process, start_date)
@@ -238,13 +184,12 @@ class WorkProcess < ApplicationRecord
       .find_by(work_processes: { id: work_process_id })
 # binding.irb
       # ナレッジの値を計算して更新
-      process["earliest_estimated_completion_date"] = start_date.to_date + target_estimate_record.earliest_completion_estimate
-      process["latest_estimated_completion_date"] = start_date.to_date + target_estimate_record.latest_completion_estimate
+      process[:earliest_estimated_completion_date] = start_date.to_date + target_estimate_record.earliest_completion_estimate
+      process[:latest_estimated_completion_date] = start_date.to_date + target_estimate_record.latest_completion_estimate
+      # binding.irb
 
       process
-      binding.irb
   end
-
 
 
   # 現在作業中の作業工程を取得するスコープ
@@ -263,31 +208,5 @@ class WorkProcess < ApplicationRecord
       order(:start_date).first
     end
   end
-
-  # 発注の更新処理
-  # def self.update_work_process(work_processes_attributes)
-  #   ActiveRecord::Base.transaction(requires_new: true) do
-  #     # WorkProcessの直接的な更新
-  #     self.update!(
-  #       work_process_status_id: params["work_process_status_id"],
-  #       factory_estimated_completion_date: params["factory_estimated_completion_date"],
-  #       actual_completion_date: params["actual_completion_date"],
-  #       start_date: params["start_date"]
-  #     )
-  #   end
-  # end
-
-  # # 完了日の置き換え
-  # def self.update_by_actual_completion_date(workprocess, actual_completion_date)
-  #   binding.irb
-  #   workprocess["latest_estimated_completion_date"] = actual_completion_date
-  #   # workprocess["start_date"] = actual_completion_date
-  #   workprocess
-  # end
-
-
-
-
-
 
 end
