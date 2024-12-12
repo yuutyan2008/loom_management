@@ -2,6 +2,9 @@ class UsersController < ApplicationController
   before_action :set_order, only: [:show, :edit, :update]
   before_action :require_login, only: [:show, :edit, :update]
 
+  def show
+  end
+
   def new
     @user = User.new
     @companies = Company.all
@@ -25,9 +28,6 @@ class UsersController < ApplicationController
       flash.now[:alert] = '登録できませんでした'
       render 'new'
     end
-  end
-
-  def show
   end
 
   def edit
