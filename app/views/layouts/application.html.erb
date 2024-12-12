@@ -68,7 +68,6 @@
           <% else %>
             <%# 未ログイン時のナビゲーション %>
             <p><%= link_to "ログイン", login_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-            <p><%= link_to "ユーザー登録", signin_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
           <% end %>
         </div>
 
@@ -110,7 +109,6 @@
         <% else %>
           <%# 未ログイン時のナビゲーション %>
           <li><%= link_to "ログイン", login_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-          <li><%= link_to "ユーザー登録", signin_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
         <% end %>
       </ul>
     </div>
