@@ -1,0 +1,79 @@
+<!-- app/views/admin/users/new.html.erb -->
+<%= form_with(model: @user, url: admin_users_path, local: true) do |form| %>
+    <section class="px-4 sm:px-8 lg:px-24">
+        <div class="flex min-h-full flex-col justify-center sm:py-12">
+        <div class="mx-auto w-full max-w-md bg-white rounded-lg p-6 sm:p-8 lg:max-w-lg">
+            <h1 class="text-center text-2xl font-bold text-gray-800 sm:text-3xl mt-6 mb-6">ユーザー登録</h1>
+
+            <!-- バリデーションエラーメッセージの表示 -->
+            <% if @user.errors.any? %>
+            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded">
+                <h2 class="font-semibold">以下のエラーがあります:</h2>
+                <ul class="list-disc list-inside">
+                <% @user.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                <% end %>
+                </ul>
+            </div>
+            <% end %>
+
+            <div class="space-y-6">
+
+            <!-- 名前フィールド -->
+            <div>
+                <label for="name" class="block text-md font-semibold text-gray-900">
+                <%= form.label :name, "名前" %>
+                </label>
+                <div class="mt-2">
+                <%= form.text_field :name, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                </div>
+            </div>
+
+            <!-- メールアドレスフィールド (任意) -->
+            <div>
+                <label for="email" class="block text-md font-semibold text-gray-900">
+                <%= form.label :email, "メールアドレス" %>
+                </label>
+                <div class="mt-2">
+                <%= form.email_field :email, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                </div>
+            </div>
+
+            <!-- 電話番号フィールド (任意) -->
+            <div>
+                <label for="phone_number" class="block text-md font-semibold text-gray-900">
+                <%= form.label :phone_number, "電話番号" %>
+                </label>
+                <div class="mt-2">
+                <%= form.text_field :phone_number, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                </div>
+            </div>
+
+            <!-- 所属会社フィールド -->
+            <div>
+                <label for="company_id" class="block text-md font-semibold text-gray-900">
+                <%= form.label :company_id, "会社名" %>
+                </label>
+                <div class="mt-2">
+                <%= form.collection_select :company_id, @companies, :id, :name, { prompt: "既存の会社を選択" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+                </div>
+            </div>
+
+            <!-- 新しい会社名フィールド (任意) -->
+            <div>
+                <label for="new_company_name" class="block text-md font-semibold text-gray-900">
+                新しい会社名
+                </label>
+                <div class="mt-2">
+                <%= form.text_field :new_company_name, name: 'user[new_company_name]', placeholder: "新しい会社名を入力してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                </div>
+            </div>
+
+            </div>
+            <div class="mt-6">
+            <%= form.submit "登録", class: "w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+            </div>
+        </div>
+        </div>
+    </section>
+<% end %>
