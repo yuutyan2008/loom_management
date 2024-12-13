@@ -41,7 +41,8 @@
               <%= grouped_orders.map { |order| order["machine"] }.uniq.join(", ") %>
             </td>
             <td class='text-xs border border-gray-300 h-[38px]'>
-              <%= grouped_orders.map { |order| order["work_process_status"] }.uniq.join(", ") %>
+              <% work_process = WorkProcess.current_work_process %>
+              <%= work_process&.work_process_status&.name || "未設定" %>
             </td>
           </tr>
         <% end %>
