@@ -26,7 +26,7 @@
           <tr class="hover:bg-gray-100">
             <td class="py-2 px-4 text-gray-700 border-b"><%= machine&.company&.name %></td>
             <td class="py-2 px-4 text-gray-700 border-b"><%= machine&.name %></td>
-            <td class="py-2 px-4 text-gray-700 border-b"><%= machine_statuses(machine) %></td>
+            <td class="py-2 px-4 text-gray-700 border-b"><%= machine&.latest_machine_status&.name %></td>
             <td class="py-2 px-4 text-gray-700 border-b"><%= product_number(machine) %></td>
             <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_name(machine) %></td>
             <td class="py-2 px-4 text-gray-700 border-b"><%= work_process_status(machine) %></td>
