@@ -15,7 +15,11 @@ Rails.application.routes.draw do
     resources :machines do
       get 'gant_index', on: :collection
     end
-    resources :orders
+    resources :orders do
+      collection do
+        get 'past_orders'
+      end
+    end
     resources :users
     resources :products
 
@@ -29,8 +33,12 @@ Rails.application.routes.draw do
 
   # 通常ユーザー用のリソース
   resources :machines, only: [:index, :show, :new, :create, :edit, :update, :destroy]
-  resources :orders, only: [:index, :show, :new, :create, :edit, :update, :destroy]
-  resources :users, only: [:new, :create, :show, :edit, :update]
+  resources :orders do
+    collection do
+      get 'past_orders'
+    end
+  end
+  resources :users
   root to: 'home#index'
   # HomeControllerのupdateアクションを定義
   patch 'home/update', to: 'home#update', as: 'update_home'

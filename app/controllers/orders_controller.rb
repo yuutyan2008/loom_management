@@ -6,10 +6,18 @@ class OrdersController < ApplicationController
 
   def index
     @company = current_user&.company
-    @orders = @company&.orders || Order.none
+    @orders = @company&.orders&.incomplete || Order.none
     @no_orders_message = "現在受注している商品はありません" unless @orders.any?
 
     check_overdue_work_processes_index(@orders)
+  end
+
+  def past_orders
+    @company = current_user&.company
+    @orders = @company&.orders&.completed || Order.none
+    @no_past_orders_message = "過去の受注はありません" unless @orders.any?
+
+    check_overdue_work_processes_index(@orders) # 必要に応じて修正
   end
 
   def show
