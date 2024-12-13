@@ -10,7 +10,21 @@ class OrdersController < ApplicationController
     @no_orders_message = "現在受注している商品はありません" unless @orders.any?
 
     check_overdue_work_processes_index(@orders)
+
+    # 検索の実行（スコープを適用）
+    @orders =
+    @orders
+      .search_by_product_number(params[:product_number_id])
+      .search_by_color_number(params[:color_number_id])
+      .search_by_work_processes(params[:work_process])
   end
+
+  def search_params
+    if params[:search].present?
+      params.fetch(:search, {}).permit(:work_process, :product_number_id, :color_number_id)
+    end
+  end
+
 
   def show
     @work_processes = @order.work_processes

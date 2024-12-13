@@ -27,7 +27,7 @@
       <thead class="pb-20 h-[60px]">
         <tr class='border border-gray-300'>
           <th class="pt-5">品番</th>
-          <th class="pt-5">企業</th>
+          <th class="pt-5">会社</th>
           <th class="pt-5">織機</th>
           <th class="pt-5">ステータス</th>
         </tr>
@@ -52,7 +52,7 @@
   </div>
 
   <script>
-    window.onload = function () {
+    document.addEventListener("DOMContentLoaded", function () {
       const orders = <%= raw @orders %>
         console.log(orders)
 
@@ -134,5 +134,5 @@
           console.log("After Translation:", subtitle.textContent);
         });
       }
-    }
+    })
   </script>

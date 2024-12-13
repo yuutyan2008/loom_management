@@ -23,6 +23,20 @@ before_action :admin_user
 
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_index(@orders)
+
+    # 検索の実行（スコープを適用）
+    @orders =
+    @orders
+      .search_by_company(params[:company_id])
+      .search_by_product_number(params[:product_number_id])
+      .search_by_color_number(params[:color_number_id])
+      .search_by_work_process_definitios(params[:work_process_definition_id])
+  end
+
+  def search_params
+    if params[:search].present?
+      params.fetch(:search, {}).permit(:company_id, :work_process_definition_id, :product_number_id, :color_number_id)
+    end
   end
 
   def new
@@ -205,22 +219,6 @@ before_action :admin_user
     )
   end
 
-
-  # def update_work_processes
-  #   # パラメータから work_processes を取得
-  #   work_processes_params = params[:work_processes] || {}
-
-  #   work_processes_params.each do |id, attributes|
-  #     work_process = WorkProcess.find(id)
-
-  #     # 子モデルを更新
-  #     work_process.update(
-  #       status_id: attributes[:status_id],
-  #       start_date: attributes[:start_date]
-  #     )
-  #   end
-  # end
-
   def set_order
     @order = Order.find(params[:id])
   end
@@ -301,4 +299,15 @@ before_action :admin_user
       HTML
     end
   end
+
+
+
+  def set_work_process
+    @work_process = Task.find(params[:id])
+  end
+
+  def set_product_number
+    @product_number = current_user.product_number
+  end
+
 end
