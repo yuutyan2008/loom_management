@@ -1,6 +1,9 @@
 class UsersController < ApplicationController
-  before_action :set_order, only: [:show, :edit, :update]
-  before_action :require_login, only: [:show, :edit, :update]
+  before_action :set_order, only: [ :show, :edit, :update ]
+  before_action :require_login, only: [ :show, :edit, :update ]
+
+  def show
+  end
 
   def new
     @user = User.new
@@ -18,16 +21,13 @@ class UsersController < ApplicationController
     end
     if @user.save
       log_in(@user)
-      flash[:notice] = 'ユーザーを登録しました'
+      flash[:notice] = "\u30E6\u30FC\u30B6\u30FC\u3092\u767B\u9332\u3057\u307E\u3057\u305F"
       completed_signin(@user)
     else
       @companies = Company.all
-      flash.now[:alert] = '登録できませんでした'
-      render 'new'
+      flash.now[:alert] = "\u767B\u9332\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F"
+      render "new"
     end
-  end
-
-  def show
   end
 
   def edit
@@ -35,9 +35,9 @@ class UsersController < ApplicationController
 
   def update
     if @user.update(user_params)
-      redirect_to user_path(@user), notice: 'ユーザー情報が更新されました。'
+      redirect_to user_path(@user), notice: "\u30E6\u30FC\u30B6\u30FC\u60C5\u5831\u304C\u66F4\u65B0\u3055\u308C\u307E\u3057\u305F\u3002"
     else
-      render :edit, alert: 'ユーザー情報が更新できませんでした。'
+      render :edit, alert: "\u30E6\u30FC\u30B6\u30FC\u60C5\u5831\u304C\u66F4\u65B0\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002"
     end
   end
 

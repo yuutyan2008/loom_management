@@ -99,7 +99,7 @@ class Admin::MachinesController < ApplicationController
 
   def gant_index
     @orders = Order.includes(:work_processes, :company)
-    colors = ["class-a", "class-b"]
+    colors = [ "class-a", "class-b" ]
 
   # 現在の作業工程を取得
   current_work_process = WorkProcess.current_work_process
@@ -117,9 +117,9 @@ class Admin::MachinesController < ApplicationController
           id: process.id.to_s,
           name: process.work_process_definition.name,
           work_process_status: process.work_process_status.name,
-          end: process&.earliest_estimated_completion_date&.strftime('%Y-%m-%d'),
+          end: process&.earliest_estimated_completion_date&.strftime("%Y-%m-%d"),
           # end: process&.factory_estimated_completion_date&.strftime('%Y-%m-%d'),
-          start: process&.start_date&.strftime('%Y-%m-%d'),
+          start: process&.start_date&.strftime("%Y-%m-%d"),
           # actual_completion_date: process&.actual_completion_date&.strftime('%Y-%m-%d'),
           progress: 100,
           # dependencies: tmp.join(",")
@@ -148,10 +148,10 @@ class Admin::MachinesController < ApplicationController
         {
           name: process.work_process_definition.name,
           work_process_status: process.work_process_status.name,
-          start: process.earliest_estimated_completion_date.strftime('%Y-%m-%d'),
-          end: process.factory_estimated_completion_date.strftime('%Y-%m-%d'),
-          start_date: process.start_date.strftime('%Y-%m-%d'),
-          actual_completion_date: process.actual_completion_date.strftime('%Y-%m-%d'),
+          start: process.earliest_estimated_completion_date.strftime("%Y-%m-%d"),
+          end: process.factory_estimated_completion_date.strftime("%Y-%m-%d"),
+          start_date: process.start_date.strftime("%Y-%m-%d"),
+          actual_completion_date: process.actual_completion_date.strftime("%Y-%m-%d")
         }
       }
     }

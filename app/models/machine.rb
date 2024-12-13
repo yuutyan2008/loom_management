@@ -42,6 +42,10 @@ class Machine < ApplicationRecord
   end
 
   # 以下はWorkProcessモデルのデータを取得する方法
+  # 最新のMachineAssignmentを取得するメソッド
+  def latest_machine_assignment
+    machine_assignments.order(created_at: :desc).first
+  end
   # 最新の工程を取得するメソッドを定義
   def latest_work_process
     work_processes.order(created_at: :desc).first

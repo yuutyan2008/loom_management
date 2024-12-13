@@ -1,16 +1,17 @@
 class Admin::OrdersController < ApplicationController
   # 定義された関数の使用
   include ApplicationHelper
-before_action :order_params, only: [:update]
-before_action :create_order_params, only: [:create]
+before_action :order_params, only: [ :update ]
+before_action :create_order_params, only: [ :create ]
 
-before_action :set_order, only: [:edit, :show, :update, :destroy]
+before_action :set_order, only: [ :edit, :show, :update, :destroy ]
 # before_action :work_process_params, only: [:create, :update]
 before_action :admin_user
 
   def index
-    @orders = Order.includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
-
+    @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
+                   .incomplete
+    @no_orders_message = "現在受注している商品はありません" unless @orders.any?
     # 各注文に対して現在作業中の作業工程を取得
     @current_work_processes = {}
     @orders.each do |order|
@@ -26,7 +27,6 @@ before_action :admin_user
       end
 
     end
-
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_index(@orders)
 
@@ -43,6 +43,23 @@ before_action :admin_user
   #   if params[:search].present?
   #     params.fetch(:search, {}).permit(:company_id, :work_process_definition_id, :product_number_id, :color_number_id)
   #   end
+
+  def past_orders
+    @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
+                   .completed
+    @no_past_orders_message = "過去の受注はありません" unless @orders.any?
+    # 現在の作業工程を取得（完了済みのため基本的にnilになる可能性が高い）
+    @current_work_processes = {}
+    @orders.each do |order|
+      if order.work_processes.any?
+        @current_work_processes[order.id] = order.work_processes.current_work_process
+      else
+        @current_work_processes[order.id] = nil
+      end
+    end
+    # 遅延している作業工程のチェック（必要に応じて）
+    check_overdue_work_processes_index(@orders)
+  end
   # end
 
   def new
@@ -106,7 +123,7 @@ before_action :admin_user
 
     # 完了日の取得
     workprocesses = order_work_processes[:work_processes_attributes].values
-#
+    #
     next_start_date = nil
 
     workprocesses.each_with_index do |workprocess, index|
@@ -196,8 +213,8 @@ before_action :admin_user
         :factory_estimated_completion_date,
         :actual_completion_date,
         :start_date,
-        process_estimate: [:machine_type_id],
-        machine_assignments: [:id, :machine_status_id]
+        process_estimate: [ :machine_type_id ],
+        machine_assignments: [ :id, :machine_status_id ]
       ]
     )
   end
@@ -220,7 +237,7 @@ before_action :admin_user
         :latest_estimated_completion_date,
         :actual_completion_date,
         :start_date,
-        process_estimate: [:machine_type_id],
+        process_estimate: [ :machine_type_id ]
       ]
     )
   end
@@ -238,7 +255,7 @@ before_action :admin_user
 
   # 追加: indexアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_index(orders)
-    completed_status = WorkProcessStatus.find_by(name: '作業完了')
+    completed_status = WorkProcessStatus.find_by(name: "\u4F5C\u696D\u5B8C\u4E86")
     return unless completed_status
 
     # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
@@ -273,7 +290,7 @@ before_action :admin_user
 
   # 追加: showアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_show(work_processes)
-    completed_status = WorkProcessStatus.find_by(name: '作業完了')
+    completed_status = WorkProcessStatus.find_by(name: "\u4F5C\u696D\u5B8C\u4E86")
     return unless completed_status
 
     # 遅延しているWorkProcessを取得
