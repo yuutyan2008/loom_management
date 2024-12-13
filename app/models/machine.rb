@@ -17,19 +17,24 @@ class Machine < ApplicationRecord
     )
   }
 
-     # 会社名
-     scope :search_by_company, ->(company_id) { joins(:company).where(company: { id: company_id }) if company_id.present? }
+  # 会社名
+  scope :search_by_company, ->(company_id) {
+    joins(:company).where(company: { id: company_id }) if company_id.present?
+  }
 
-     # 織機
-     scope :search_by_machine, ->(machine_id) { joins(:machines).where(machines: { id: machine_id }) if machine_id.present? }
+  # 織機
+  scope :search_by_machine, ->(machine_id) { where(id: machine_id) if machine_id.present? }
 
-     # 色番
-     scope :search_by_color_number, ->(color_number_id) { joins(:color_number).where(color_number: { id: color_number_id }) if color_number_id.present? }
+  # 色番
+  scope :search_by_product_number, ->(product_number_id) {
+    joins(machine_assignments: { work_process: :order })
+    .where(orders: { product_number_id: product_number_id }) if product_number_id.present?
+  }
 
-     # 現在の工程
-     scope :search_by_work_process_definitios, ->(work_process_definition_id) {
-       joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
-     }
+  # 現在の工程
+  scope :search_by_work_process_definitios, ->(work_process_definition_id) {
+    joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
+  }
 
   # 特定のIDを持つ機械を取得するクラスメソッド
   def self.find_with_associations(id)
