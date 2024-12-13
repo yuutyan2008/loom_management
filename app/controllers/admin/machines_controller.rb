@@ -10,6 +10,14 @@ class Admin::MachinesController < ApplicationController
   def index
     @machines = Machine.machine_associations.order(:id)
     check_machine_status_index(@machines)
+
+    # 検索の実行（スコープを適用）
+    @machines =
+    @machines
+      .search_by_company(params[:company_id])
+      .search_by_machine(params[:machine_id])
+      .search_by_product_number(params[:product_number_id])
+      .search_by_work_process_definitios(params[:work_process_definition_id])
   end
 
   def show

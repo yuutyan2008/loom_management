@@ -1,49 +1,82 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注済み商品一覧</h1>
+
+
+<%= form_with(url: admin_orders_path, method: :get, local: true) do |f| %>
+
+<%= f.label :company_id, '会社名' %>
+<%= f.collection_select :company_id, Company.all, :id, :name, { include_blank: true }, { selected: params[:company_id] } %>
+
+<%= f.label :company_id, '品番' %>
+<%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
+
+<%= f.label :company_id, '色番' %>
+<%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { include_blank: true }, { selected: params[:color_number_id] } %>
+
+<%= f.label :work_process_definitions, '現在の工程' %>
+<%= f.collection_select :work_process_definitions_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { selected: params[:work_process_definitions_id] } %>
+
 <section class="mb-12">
-  <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
-    <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
-      <thead class="uppercase">
-        <tr class="bg-gray-100">
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">ID</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">会社名</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
-          <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @orders.each do |order| %>
-          <% current_process = @current_work_processes[order.id] %>
-          <% if current_process %>
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 px-4 text-gray-700 border-b"><%= order.id %></td>
-            <td class="py-2 px-4 text-gray-700 border-b"><%= order.company.name %></td>
-            <td class="py-2 px-4 text-gray-700 border-b"><%= order.product_number.number %></td>
-            <td class="py-2 px-4 text-gray-700 border-b"><%= order.color_number.color_code %></td>
-            <td class="py-2 px-4 text-gray-700 border-b">
-              <%= current_process.work_process_definition&.name.presence || "未設定" %>
-            </td>
-            <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.start_date %></td>
-            <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.factory_estimated_completion_date %></td>
-            <td class="py-2 px-4 text-gray-700 border-b">
-              <%= link_to '詳細', admin_order_path(order), class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %>
-            </td>
-            <td class="py-2 px-4 text-gray-700 border-b">
-              <%= link_to '編集', edit_admin_order_path(order), class: "inline-block px-4 py-2 text-white bg-teal-500 rounded hover:bg-teal-600" %>
-            </td>
-            <td class="py-2 px-4 text-gray-700 border-b">
-              <%= link_to '削除', admin_order_path(order) ,method: :delete,
-              data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"}, class: "inline-block px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600" %>
-            </td>
-          </tr>
-          <% end %>
-        <% end %>
-      </tbody>
-    </table>
+
+  <div class="flex justify-center space-x-2">
+    <div class="px-2 py-2">
+      <%= f.submit "検索", class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-purple-700" %>
+    </div>
+    <div class="px-2 py-2">
+      <%= link_to "リセット", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-red-700" %>
+    </div>
   </div>
+</section>
+<% end %>
+
+<section class="mb-12">
+  <% if @orders.present? %>
+    <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
+      <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
+        <thead class="uppercase">
+          <tr class="bg-gray-100">
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">ID</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">会社名</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
+            <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @orders.each do |order| %>
+            <% current_process = @current_work_processes[order.id] %>
+            <% if current_process %>
+            <tr class="hover:bg-gray-50">
+              <td class="py-2 px-4 text-gray-700 border-b"><%= order.id %></td>
+              <td class="py-2 px-4 text-gray-700 border-b"><%= order.company.name %></td>
+              <td class="py-2 px-4 text-gray-700 border-b"><%= order.product_number.number %></td>
+              <td class="py-2 px-4 text-gray-700 border-b"><%= order.color_number.color_code %></td>
+              <td class="py-2 px-4 text-gray-700 border-b">
+                <%= current_process.work_process_definition&.name.presence || "未設定" %>
+              </td>
+              <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.start_date %></td>
+              <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.factory_estimated_completion_date %></td>
+              <td class="py-2 px-4 text-gray-700 border-b">
+                <%= link_to '詳細', admin_order_path(order), class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %>
+              </td>
+              <td class="py-2 px-4 text-gray-700 border-b">
+                <%= link_to '編集', edit_admin_order_path(order), class: "inline-block px-4 py-2 text-white bg-teal-500 rounded hover:bg-teal-600" %>
+              </td>
+              <td class="py-2 px-4 text-gray-700 border-b">
+                <%= link_to '削除', admin_order_path(order) ,method: :delete,
+                data: {turbo_method: :delete, turbo_confirm: "本当に削除してよろしいですか？"}, class: "inline-block px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600" %>
+              </td>
+            </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+  <p class="text-center text-gray-500 mt-4">検索に一致する発注がありませんでした</p>
+  <% end %>
 </section>
