@@ -52,7 +52,7 @@
             <!-- 所属会社フィールド -->
             <div>
                 <label for="company_id" class="block text-md font-semibold text-gray-900">
-                <%= form.label :company_id, "所属会社" %>
+                <%= form.label :company_id, "会社名" %>
                 </label>
                 <div class="mt-2">
                 <%= form.collection_select :company_id, @companies, :id, :name, { prompt: "既存の会社を選択" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
