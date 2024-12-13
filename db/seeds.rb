@@ -1,5 +1,5 @@
 ActiveRecord::Base.transaction do
-  # 企業データを作成
+  # 会社データを作成
   Company.find_or_create_by!(id: 1) { |c| c.name = 'エルトップ' }
   Company.find_or_create_by!(id: 2) { |c| c.name = '機屋A' }
   Company.find_or_create_by!(id: 3) { |c| c.name = '機屋B' }
