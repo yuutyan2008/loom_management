@@ -12,12 +12,19 @@ class Admin::MachinesController < ApplicationController
     check_machine_status_index(@machines)
 
     # 検索の実行（スコープを適用）
-    @machines =
-    @machines
+    @machines = @machines
       .search_by_company(params[:company_id])
       .search_by_machine(params[:machine_id])
       .search_by_product_number(params[:product_number_id])
-      .search_by_work_process_definitios(params[:work_process_definition_id])
+      .search_by_work_process_definitios(params[:work_process_definitions_id])
+  end
+
+  def search_params
+    if params[:search].present?
+      params.fetch(:search, {}).permit(:company_id, :machine_id, :color_number_id, :work_process_definition_id)
+
+      binding.irb
+    end
   end
 
   def show

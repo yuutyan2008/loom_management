@@ -15,29 +15,35 @@ before_action :admin_user
     @current_work_processes = {}
     @orders.each do |order|
       if order.work_processes.any?
-        @current_work_processes[order.id] = order.work_processes.current_work_process
+        if params[:work_process_definitions_id]
+          is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definitions_id].to_i
+          @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
+        else
+          @current_work_processes[order.id] = order.work_processes.current_work_process
+        end
       else
         @current_work_processes[order.id] = nil
       end
+
     end
 
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_index(@orders)
 
     # 検索の実行（スコープを適用）
+
     @orders =
     @orders
       .search_by_company(params[:company_id])
       .search_by_product_number(params[:product_number_id])
       .search_by_color_number(params[:color_number_id])
-      .search_by_work_process_definitios(params[:work_process_definition_id])
   end
 
-  def search_params
-    if params[:search].present?
-      params.fetch(:search, {}).permit(:company_id, :work_process_definition_id, :product_number_id, :color_number_id)
-    end
-  end
+  # def search_params
+  #   if params[:search].present?
+  #     params.fetch(:search, {}).permit(:company_id, :work_process_definition_id, :product_number_id, :color_number_id)
+  #   end
+  # end
 
   def new
     @order = Order.new

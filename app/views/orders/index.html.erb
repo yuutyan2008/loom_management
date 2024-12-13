@@ -2,7 +2,6 @@
 
 <%= form_with(url: orders_path, method: :get, local: true) do |f| %>
 
-
 <%= f.label :company_id, '品番' %>
 <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
 
