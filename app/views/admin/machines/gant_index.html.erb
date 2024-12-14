@@ -27,8 +27,8 @@
       <thead class="pb-20 h-[60px]">
         <tr class='border border-gray-300'>
           <th class="pt-5">品番</th>
-          <th class="pt-5">会社名</th>
-          <th class="pt-5">織機名</th>
+          <th class="pt-5">会社</th>
+          <th class="pt-5">織機</th>
           <th class="pt-5">ステータス</th>
         </tr>
       </thead>
@@ -41,7 +41,8 @@
               <%= grouped_orders.map { |order| order["machine"] }.uniq.join(", ") %>
             </td>
             <td class='text-xs border border-gray-300 h-[38px]'>
-              <%= grouped_orders.map { |order| order["work_process_status"] }.uniq.join(", ") %>
+              <% work_process = WorkProcess.current_work_process %>
+              <%= work_process&.work_process_status&.name || "未設定" %>
             </td>
           </tr>
         <% end %>
@@ -52,7 +53,7 @@
   </div>
 
   <script>
-    window.onload = function () {
+    document.addEventListener("DOMContentLoaded", function () {
       const orders = <%= raw @orders %>
         console.log(orders)
 
@@ -134,5 +135,5 @@
           console.log("After Translation:", subtitle.textContent);
         });
       }
-    }
+    })
   </script>
