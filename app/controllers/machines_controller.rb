@@ -10,6 +10,19 @@ class MachinesController < ApplicationController
     @no_machines_message = "現在保有している織機はありません" if @machines.empty?
     @work_processes = WorkProcess.ordered
     check_machine_status_index(@machines)
+
+      # 検索の実行（スコープを適用）
+      @machines = @machines
+      .search_by_company(params[:company_id])
+      .search_by_machine(params[:machine_id])
+      .search_by_product_number(params[:product_number_id])
+      .search_by_work_process_definitios(params[:work_process_definition_id])
+  end
+
+  def search_params
+    if params[:search].present?
+      params.fetch(:search, {}).permit(:company_id, :machine_id, :color_number_id, :work_process_definition_id)
+    end
   end
 
   def show
