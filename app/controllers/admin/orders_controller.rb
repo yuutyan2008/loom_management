@@ -11,6 +11,7 @@ before_action :admin_user
   def index
     @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
                    .incomplete
+                   .order(:id)
     @no_orders_message = "現在受注している商品はありません" unless @orders.any?
     # 各注文に対して現在作業中の作業工程を取得
     @current_work_processes = {}
@@ -39,11 +40,6 @@ before_action :admin_user
       .search_by_color_number(params[:color_number_id])
   end
 
-  # def search_params
-  #   if params[:search].present?
-  #     params.fetch(:search, {}).permit(:company_id, :work_process_definition_id, :product_number_id, :color_number_id)
-  #   end
-
   def past_orders
     @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
                    .completed
@@ -71,21 +67,17 @@ before_action :admin_user
   def create
     # orderテーブル以外を除外してorderインスタンス作成
     @order = Order.new(create_order_params.except(:work_processes))
-    # binding.irb
     # work_processesのパラメータ取得
     # ハッシュの値部分のみを配列として取得
     work_processes = create_order_params[:work_processes]
-    # binding.irb
     # ハッシュのキー"start_date"を引数にパラメータを取得
     start_date = work_processes["start_date"]
     machine_type_id = work_processes["process_estimate"]["machine_type_id"].to_i
 
     # 5個のwork_processハッシュからなる配列を作成
     workprocess = WorkProcess.initial_processes_list(start_date)
-    # インスタンスの更新
     # process_estimate_idを入れる
     estimate_workprocess = WorkProcess.decide_machine_type(workprocess, machine_type_id)
-    # インスタンスの更新
     # 完了見込日時を入れる
     update_workprocess = WorkProcess.update_deadline(estimate_workprocess, start_date)
     # ５個のハッシュとorderの関連付け
@@ -99,12 +91,7 @@ before_action :admin_user
   def show
     @work_process = @order.work_processes.ordered
     @machines = @work_process.map(&:machines).flatten.uniq
-    # @work_process = @order.work_processes.joins(:work_process_definition)
-    # .order("work_process_definitions.sequence ASC")
-    # # 織機データを取得
-    # @machines = Machine.joins(work_processes: :order)
-    #                    .where(work_processes: { order_id: @order.id })
-    #                    .distinct
+
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_show(@order.work_processes)
   end
@@ -119,68 +106,50 @@ before_action :admin_user
   end
 
   def update
-    order_work_processes = order_params.except(:machine_status_id)
+    ActiveRecord::Base.transaction do
+      order_work_processes = order_params.except(:machine_status_id)
 
-    # 完了日の取得
-    workprocesses = order_work_processes[:work_processes_attributes].values
-    #
-    next_start_date = nil
+      # 完了日の取得
+      workprocesses = order_work_processes[:work_processes_attributes].values
 
-    workprocesses.each_with_index do |workprocess, index|
-      if index == 0
-        start_date = workprocess["start_date"]
-      else
-        start_date = next_start_date
+      next_start_date = nil
+
+      workprocesses.each_with_index do |workprocess, index|
+        if index == 0
+          start_date = workprocess["start_date"]
+        else
+          start_date = next_start_date
+        end
+
+        # 見込み完了日、作業開始日更新
+        actual_completion_date = workprocess["actual_completion_date"]
+
+        # 開始日、見込み完了日置き換え
+        updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
+
+        # 更新された値を反映
+        workprocess[:start_date] = updated_date[:start_date]
+        workprocess[:latest_estimated_completion_date] = updated_date[:latest_estimated_completion_date]
+        workprocess[:earliest_estimated_completion_date] = updated_date[:earliest_estimated_completion_date]
       end
-      # 見込み完了日、作業開始日更新
-      # start_date = workprocess["start_date"]
-      actual_completion_date = workprocess["actual_completion_date"]
-
-      # # 開始日を更新
-      # if process[:work_process_definition_id].to_i >= 2
-      #   start_date = next_start_date
-      # end
-
-      # 次の工程を取得
-      # next_process = workprocesses[index + 1]
-
-      # if actual_completion_date.present?
-
-      # 開始日、見込み完了日置き換え、
-      updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
-
-      # binding.irb
-
-      # updated_date = {
-      #   process: updated_date[0],
-      #   start_date: updated_date[1],
-      #   actual_completion_date: updated_date[2]
-      # }
-
-      # 更新された値を反映
-      workprocess[:start_date] = updated_date[:start_date]
-      workprocess[:latest_estimated_completion_date] = updated_date[:latest_estimated_completion_date]
-      workprocess[:earliest_estimated_completion_date] = updated_date[:earliest_estimated_completion_date]
-
-
-      # new_workprocess = workprocess.to_h(exclude)
-
-      # old_workprocess = WorkProcess.find_by(id: workprocess[:id])
-
-      # # binding.irb
-      # old_workprocess.update(workprocess.to_h)
-      # binding.irb
-
-      next_start_date
+      # Orderの更新
+      if @order.update!(order_work_processes)
+        # MachineAssignmentの更新
+        machine_status_id = order_params[:machine_status_id]
+        target_machine_assignments = MachineAssignment.where(work_process_id: @order.work_processes.pluck(:id))
+        target_machine_assignments.update_all(machine_status_id: machine_status_id)
+      else
+        redirect_to admin_order_path(@order)
+      end
     end
 
-    @order.update(order_work_processes)
-    machine_status_id = order_params[:machine_status_id]
-    target_machine_assignments = MachineAssignment.where(work_process_id: @order.work_processes.pluck(:id))
-    target_machine_assignments.update_all(machine_status_id: machine_status_id)
-
     redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    # トランザクション内でエラーが発生した場合はロールバックされる
+    flash[:alert] = "更新に失敗しました: #{e.message}"
+    redirect_to admin_order_path(@order)
   end
+
 
   # 削除処理の開始し管理者削除を防ぐロジックはmodelで行う
   def destroy
@@ -322,8 +291,6 @@ before_action :admin_user
       HTML
     end
   end
-
-
 
   def set_work_process
     @work_process = Task.find(params[:id])

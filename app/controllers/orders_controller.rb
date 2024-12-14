@@ -50,17 +50,48 @@ class OrdersController < ApplicationController
 
   def update
     ActiveRecord::Base.transaction do
-      if @order.update(order_params)
-        update_related_models
-        create_new_machine_assignments if params[:order][:new_machine_assignments].present?
-        redirect_to @order, notice: '受注が正常に更新されました。'
+      # 追記：作業完了日入力時の更新
+      order_work_processes = update_order_params.except(:machine_status_id)
+
+      # 完了日の取得
+      workprocesses = order_work_processes[:work_processes_attributes].values
+
+      next_start_date = nil
+
+      workprocesses.each_with_index do |workprocess, index|
+        if index == 0
+          start_date = workprocess["start_date"]
+        else
+          start_date = next_start_date
+        end
+
+        # 見込み完了日、作業開始日更新
+        actual_completion_date = workprocess["actual_completion_date"]
+
+        # 開始日、見込み完了日置き換え
+        updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
+
+        # 更新された値を反映
+        workprocess[:start_date] = updated_date[:start_date]
+        workprocess[:latest_estimated_completion_date] = updated_date[:latest_estimated_completion_date]
+        workprocess[:earliest_estimated_completion_date] = updated_date[:earliest_estimated_completion_date]
+      end
+
+      # Orderの更新
+      if @order.update!(order_work_processes)
+        # MachineAssignmentの更新
+        machine_status_id = order_params[:machine_status_id]
+        target_machine_assignments = MachineAssignment.where(work_process_id: @order.work_processes.pluck(:id))
+        target_machine_assignments.update_all(machine_status_id: machine_status_id)
       else
-        render :edit
+        redirect_to admin_order_path(@order)
       end
     end
-  rescue ActiveRecord::RecordInvalid => e
-    flash.now[:alert] = "更新に失敗しました: #{e.message}"
-    render :edit
+    redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    # トランザクション内でエラーが発生した場合はロールバックされる
+    flash[:alert] = "更新に失敗しました: #{e.message}"
+    redirect_to admin_order_path(@order)
   end
 
   def destroy
@@ -88,6 +119,31 @@ class OrdersController < ApplicationController
       :roll_count,
       :quantity,
       :start_date
+    )
+  end
+
+  # 追記：作業完了日入力時の更新
+  def update_order_params
+    params.require(:order).permit(
+      :company_id,
+      :product_number_id,
+      :color_number_id,
+      :roll_count,
+      :quantity,
+      :machine_status_id,
+      work_processes_attributes: [ # accepts_nested_attributes_forに対応
+        :id,
+        :process_estimate_id,
+        :work_process_definition_id,
+        :work_process_status_id,
+        :factory_estimated_completion_date,
+        :earliest_estimated_completion_date,
+        :latest_estimated_completion_date,
+        :actual_completion_date,
+        :start_date,
+        process_estimate: [ :machine_type_id ],
+        new_machine_assignments: [:machine_id, :machine_status_id]
+      ]
     )
   end
 
