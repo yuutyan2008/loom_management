@@ -45,7 +45,7 @@
   <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">織機詳細</h2>
   <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
     <table class="min-w-full border border-gray-300 bg-gray-100">
-      <% if @machines.any? %>
+      <% if @machines.present? %>
       <tbody>
         <% @machines.each do |machine, i| %>
           <tr class="bg-gray-100 border-b">

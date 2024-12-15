@@ -90,7 +90,7 @@ before_action :admin_user
 
   def show
     @work_process = @order.work_processes.ordered
-    @machines = @work_process.map(&:machines).flatten.uniq
+    @machines = @work_process.map { |work_process| work_process.machines}.flatten.uniq
 
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_show(@order.work_processes)
@@ -100,9 +100,10 @@ before_action :admin_user
     if @order.nil?
       Rails.logger.debug "注文が見つかりません"
     end
+    # orderedスコープで並び替えて取得
     @work_processes = @order.work_processes.ordered
 
-    @machines = @work_processes.map(&:machines).flatten.uniq
+    @work_processes.map { |work_process| work_process.machines }.flatten.uniq
   end
 
   def update
