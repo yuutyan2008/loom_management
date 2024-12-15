@@ -3,6 +3,8 @@
     <style>
       /* テーブル全体の背景色を白に設定 */
       .gantt-wrap {
+        display: flex;
+        align-items: flex-start;
         background-color: #ffffff; /* 背景色を白に設定 */
       }
 
@@ -53,7 +55,7 @@
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener("turbo:load", function () {
       const orders = <%= raw @orders %>
         console.log(orders)
 

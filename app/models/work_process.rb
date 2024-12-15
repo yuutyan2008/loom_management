@@ -12,7 +12,7 @@ class WorkProcess < ApplicationRecord
     # ネストされた全ての発注関連データを取得
     includes(
       :work_process_definition,
-      machine_assignments: :machine_status,
+      machine_assignments: [:machine, :machine_status],
       order: [:company, :product_number, :color_number]
     )
     .joins(:work_process_definition)
