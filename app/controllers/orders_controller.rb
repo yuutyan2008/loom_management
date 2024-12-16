@@ -159,7 +159,7 @@ class OrdersController < ApplicationController
       :roll_count,
       :quantity,
       # :machine_status_id,
-      machine_assignments_attributes: [:machine_id, :machine_status_id],
+      machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応
         :id,
         :process_estimate_id,
