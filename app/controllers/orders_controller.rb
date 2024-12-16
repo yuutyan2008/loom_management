@@ -80,7 +80,7 @@ class OrdersController < ApplicationController
       next_start_date = nil
 
       workprocesses.each_with_index do |workprocess, index|
-        # binding.irb
+
         if index == 0
           start_date = workprocess["start_date"]
         else
@@ -99,21 +99,18 @@ class OrdersController < ApplicationController
         workprocess[:earliest_estimated_completion_date] = updated_date[:earliest_estimated_completion_date]
       end
       # Orderの更新
-      if @order.update!(order_work_processes)
-        binding.irb
+      if @order.update!(update_order_params)
         # MachineAssignmentの更新
         machine_assignment = update_order_params[:machine_assignments_attributes]
-        binding.irb
 
         machine_id = machine_assignment[0][:machine_id].to_i
         target_machine_assignments = MachineAssignment.where(work_process_id: @order.work_processes.pluck(:id))
         target_machine_assignments.update_all(machine_id: machine_id)
         machine_assignment
-              # binding.irb
+
       else
         redirect_to admin_order_path(@order)
       end
-      binding.irb
     end
     redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
