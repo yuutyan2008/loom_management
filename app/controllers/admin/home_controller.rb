@@ -6,6 +6,18 @@ class Admin::HomeController < ApplicationController
     @orders = Order.all
     @no_orders_message = "現在、受注はありません。" unless @orders.exists?
 
+    # WorkProcessにMachineAssignmentがないOrderを取得
+    @orders_needing_assignment = @orders.select do |order|
+      !order.work_processes.any? { |wp| wp.machine_assignments.any? }
+    end
+
+    # デバッグ用に binding.irb を挿入
+    # binding.irb if @orders_needing_assignment.any?
+
+    if @orders_needing_assignment.any?
+      flash.now[:alert] = build_flash_message(@orders_needing_assignment)
+    end
+
     @companies = Company.includes(machines: :machine_assignments)
                         .where.not(id: 1)
                         .map do |company|
@@ -39,10 +51,15 @@ class Admin::HomeController < ApplicationController
     @machines = @company.machines.includes(machine_assignments: :machine_status).order(:id).uniq
 
     # 最新の情報を各機械ごとに取得
-    @latest_work_processes = @machines.map(&:latest_work_process)
-    @latest_work_process_statuses = @machines.map(&:latest_work_process_status)
-    @latest_factory_estimated_completion_dates = @machines.map(&:latest_factory_estimated_completion_date)
-    @latest_machine_assignments = @machines.map(&:latest_machine_assignment)
+    @machines_with_details = @machines.map do |machine|
+      {
+        machine: machine,
+        latest_process: machine.latest_work_process,
+        latest_status: machine.latest_work_process_status,
+        latest_completion_date: machine.latest_factory_estimated_completion_date,
+        latest_assignment: machine.latest_machine_assignment
+      }
+    end
   rescue ActiveRecord::RecordNotFound
     redirect_to admin_root_path, alert: "指定された会社が見つかりませんでした。"
   end
@@ -56,5 +73,13 @@ class Admin::HomeController < ApplicationController
 
   def set_company
     @company = Company.find(params[:id])
+  end
+
+  def build_flash_message(orders)
+    messages = orders.map do |order|
+      "#{order.company.name} で織機の割り当てができていない受注があります。" +
+      "詳しくは #{view_context.link_to('編集', edit_admin_order_path(order), class: 'text-blue-500 underline')} や #{view_context.link_to('詳細', admin_order_path(order), class: 'text-blue-500 underline')} をご確認ください。"
+    end
+    messages.join("<br>").html_safe
   end
 end
