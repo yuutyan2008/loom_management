@@ -62,6 +62,8 @@
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border-b text-gray-900"><%= machine.name %></td>
                     <td class="px-4 py-2 border-b text-gray-900">
+                    <% machine_assignment = machine.machine_assignments.order(:created_at).last %>
+                    <%= hidden_field_tag "order[machine_assignments_attributes][][id]", machine_assignment&.id %>
                     <%= hidden_field_tag "order[machine_assignments_attributes][][machine_id]", machine.id %>
                     <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
                     </td>

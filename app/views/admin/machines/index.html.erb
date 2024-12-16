@@ -10,7 +10,7 @@
 <%= f.label :company_id, '会社名' %>
 <%= f.collection_select :company_id, Company.all, :id, :name, { include_blank: true }, { selected: params[:company_id] } %>
 <%= f.label :machine_id, '織機名' %>
-<%= f.collection_select :machine_id, Machine.all, :id, :name, { include_blank: true }, { selected: params[:machine_id] } %>
+<%= f.collection_select :machine_id, Machine.select(:id, :name).distinct, :id, :name, { include_blank: true }, { selected: params[:machine_id] } %>
 <%= f.label :company_id, '品番' %>
 <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
 <%= f.label :work_process_definitions, '現在の工程' %>
