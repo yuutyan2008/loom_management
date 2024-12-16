@@ -3,6 +3,8 @@
     <style>
       /* テーブル全体の背景色を白に設定 */
       .gantt-wrap {
+        display: flex;
+        align-items: flex-start;
         background-color: #ffffff; /* 背景色を白に設定 */
       }
 
@@ -23,10 +25,10 @@
     </style>
 
   <div class='gantt-wrap flex min-w-[800px]'>
-    <table class="flex-none w-1/3 border border-gray-300 table-auto">
-      <thead class="pb-20 h-[60px]">
+    <table class="flex-none w-1/3 border border-gray-300" style='border-spacing:0px !important;'>
+      <thead class="pb-20">
         <tr class='border border-gray-300'>
-          <th class="pt-5">品番</th>
+          <th class="p-5" style="height:55px;">品番</th>
           <th class="pt-5">会社</th>
           <th class="pt-5">織機</th>
           <th class="pt-5">ステータス</th>
@@ -34,13 +36,13 @@
       </thead>
       <tbody>
         <% JSON.parse(@orders).group_by { |order| order["custom_index"] }.each do |order_id, grouped_orders| %>
-          <tr class='border border-gray-300 h-[36px]'>
-            <td class='text-xs border border-gray-300 h-[36px]'><%= grouped_orders.first["product_number"] %></td>
-            <td class='text-xs border border-gray-300 h-[38px]'><%= grouped_orders.first["company"] %></td>
-            <td class='text-xs border border-gray-300 h-[38px]'>
+          <tr class='border border-gray-300' style="height:186.76px; box-sizing: content-box;">
+            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;"><%= grouped_orders.first["product_number"] %></td>
+            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;"><%= grouped_orders.first["company"] %></td>
+            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;">
               <%= grouped_orders.map { |order| order["machine"] }.uniq.join(", ") %>
             </td>
-            <td class='text-xs border border-gray-300 h-[38px]'>
+            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;">
               <% work_process = WorkProcess.current_work_process %>
               <%= work_process&.work_process_status&.name || "未設定" %>
             </td>
@@ -53,7 +55,7 @@
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener("turbo:load", function () {
       const orders = <%= raw @orders %>
         console.log(orders)
 
