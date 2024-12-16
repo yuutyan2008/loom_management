@@ -8,30 +8,44 @@
 
 
 <%= form_with(url: admin_orders_path, method: :get, local: true) do |f| %>
-
-<%= f.label :company_id, '会社名' %>
-<%= f.collection_select :company_id, Company.all, :id, :name, { include_blank: true }, { selected: params[:company_id] } %>
-
-<%= f.label :company_id, '品番' %>
-<%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
-
-<%= f.label :company_id, '色番' %>
-<%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { include_blank: true }, { selected: params[:color_number_id] } %>
-
-<%= f.label :work_process_definitions, '現在の工程' %>
-<%= f.collection_select :work_process_definitions_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { selected: params[:work_process_definitions_id] } %>
-
-<section class="mb-12">
-
-  <div class="flex justify-center space-x-2">
-    <div class="px-2 py-2">
-      <%= f.submit "検索", class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-purple-700" %>
-    </div>
-    <div class="px-2 py-2">
-      <%= link_to "リセット", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-red-700" %>
+  <div class="px-4 mb-4">
+    <div class="flex flex-col md:flex-row md:space-x-6">
+      <div class="w-full md:w-1/2 mb-4 md:mb-0">
+        <label class="text-gray-700 font-bold mb-2 block">
+          <%= f.label :company_id, '会社名' %>
+        </label>
+        <%= f.collection_select :company_id, Company.all, :id, :name, { include_blank: true }, { selected: params[:company_id] } %>
+      </div>
+      <div class="w-full md:w-1/2 mb-4 md:mb-0">
+        <label class="text-gray-700 font-bold mb-2 block">
+          <%= f.label :company_id, '品番' %>
+        </label>
+        <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
+      </div>
+      <div class="w-full md:w-1/2 mb-4 md:mb-0">
+        <label class="text-gray-700 font-bold mb-2 block">
+          <%= f.label :company_id, '色番' %>
+        </label>
+        <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { include_blank: true }, { selected: params[:color_number_id] } %>
+      </div>
+      <div class="w-full md:w-1/2 mb-4 md:mb-0">
+        <label class="text-gray-700 font-bold mb-2 block">
+          <%= f.label :work_process_definitions, '現在の工程' %>
+        </label>
+        <%= f.collection_select :work_process_definitions_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { selected: params[:work_process_definitions_id] } %>
+      </div>
     </div>
   </div>
-</section>
+  <section class="mb-12">
+    <div class="flex justify-center space-x-2">
+      <div class="px-2 py-2">
+        <%= f.submit "検索", class: "inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700" %>
+      </div>
+      <div class="px-2 py-2">
+        <%= link_to "リセット", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-red-700" %>
+      </div>
+    </div>
+  </section>
 <% end %>
 
 <section class="mb-12">
