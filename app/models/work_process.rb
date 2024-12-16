@@ -122,7 +122,7 @@ class WorkProcess < ApplicationRecord
 
 
   def self.check_current_work_process(process, start_date, actual_completion_date)
-    # binding.irb
+
     # update = true
 
     # 工程idが2以上の場合
@@ -133,17 +133,17 @@ class WorkProcess < ApplicationRecord
         # process[:start_date] = actual_completion_date
 
         start_date = process[:start_date]
-        # binding.irb
+
     # unless update == true
       else
       # 開始日の更新が必要
-              # binding.irb
+
         process[:start_date] = start_date
 
         # 更新された開始日からナレッジを再計算
         self.calc_process_estimate(process, start_date)
 
-        # binding.irb
+
       end
     end
 
@@ -182,11 +182,11 @@ class WorkProcess < ApplicationRecord
       work_process_id = process["id"]
       target_estimate_record = ProcessEstimate.joins(:work_processes)
       .find_by(work_processes: { id: work_process_id })
-# binding.irb
+
       # ナレッジの値を計算して更新
       process[:earliest_estimated_completion_date] = start_date.to_date + target_estimate_record.earliest_completion_estimate
       process[:latest_estimated_completion_date] = start_date.to_date + target_estimate_record.latest_completion_estimate
-      # binding.irb
+
 
       process
   end
