@@ -22,8 +22,6 @@ class Admin::MachinesController < ApplicationController
   def search_params
     if params[:search].present?
       params.fetch(:search, {}).permit(:company_id, :machine_id, :color_number_id, :work_process_definition_id)
-
-      binding.irb
     end
   end
 
@@ -83,7 +81,7 @@ class Admin::MachinesController < ApplicationController
 
   # 削除処理の開始し管理者削除を防ぐロジックはmodelで行う
   def destroy
-    # binding.irb
+
     @machine = Machine.find(params[:id])
     if @machine.destroy
       # ココ(削除実行直前)でmodelに定義したコールバックが呼ばれる
@@ -128,7 +126,7 @@ class Admin::MachinesController < ApplicationController
         }
       }
     end.flatten.to_json
-    # binding.irb
+
   end
 
   def orders

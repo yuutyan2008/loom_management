@@ -58,11 +58,14 @@
                 <% machines = Machine.where(id: machine_ids) %>
                 <% machines.each do |machine| %>
                 <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
+                <% current_status %>
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border-b text-gray-900"><%= machine.name %></td>
                     <td class="px-4 py-2 border-b text-gray-900">
-                    <%= hidden_field_tag "order[machine_statuses][][machine_id]", machine.id %>
-                    <%= select_tag "order[machine_statuses][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
+                    <% machine_assignment = machine.machine_assignments.order(:created_at).last %>
+                    <%= hidden_field_tag "order[machine_assignments_attributes][][id]", machine_assignment&.id %>
+                    <%= hidden_field_tag "order[machine_assignments_attributes][][machine_id]", machine.id %>
+                    <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
                     </td>
                 </tr>
                 <% end %>
@@ -80,10 +83,10 @@
             <tbody>
             <tr class="hover:bg-gray-100">
                 <td class="px-4 py-2 border-b text-gray-900">
-                <%= select_tag "order[new_machine_assignments][][machine_id]", options_from_collection_for_select(current_user.company.machines, :id, :name), { prompt: "織機を選択してください", class: "form-control" } %>
+                <%= select_tag "order[machine_assignments][][machine_id]", options_from_collection_for_select(current_user.company.machines, :id, :name), { prompt: "織機を選択してください", class: "form-control" } %>
                 </td>
                 <td class="px-4 py-2 border-b text-gray-900">
-                <%= select_tag "order[new_machine_assignments][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
+                <%= select_tag "order[machine_assignments][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
                 </td>
             </tr>
             </tbody>

@@ -3,6 +3,8 @@ class OrdersController < ApplicationController
   before_action :require_login
   before_action :set_order, only: [:show, :edit, :update, :destroy]
   before_action :authorize_order, only: [:show, :destroy]
+  # 追記：parameterの型変換(accept_nested_attributes_for使用のため)
+  before_action :convert_work_processes_params, only: [:update]
 
   def index
     @company = current_user&.company
@@ -48,19 +50,73 @@ class OrdersController < ApplicationController
     build_missing_machine_assignments
   end
 
+  #追記： ハッシュ形式にすることでネストデータを更新
+  def convert_work_processes_params
+    if params[:order][:work_processes].present?
+      # 空のハッシュを用意
+      work_processes_attributes = {}
+
+      # work_processes 配列を work_processes_attributes ハッシュに変換
+      params[:order][:work_processes].each_with_index do |work_process, index|
+        work_processes_attributes[index.to_s] = work_process
+      end
+
+      # 変換したデータを params[:order][:work_processes_attributes] に代入
+      params[:order][:work_processes_attributes] = work_processes_attributes
+
+      # 元の work_processes を削除しておく
+      params[:order].delete(:work_processes)
+    end
+  end
+
   def update
     ActiveRecord::Base.transaction do
-      if @order.update(order_params)
-        update_related_models
-        create_new_machine_assignments if params[:order][:new_machine_assignments].present?
-        redirect_to @order, notice: '受注が正常に更新されました。'
+      # 追記：作業完了日入力時の更新
+      order_work_processes = update_order_params.except(:machine_assignments_attributes)
+
+      # 完了日の取得
+      workprocesses = order_work_processes[:work_processes_attributes].values
+
+      next_start_date = nil
+
+      workprocesses.each_with_index do |workprocess, index|
+
+        if index == 0
+          start_date = workprocess["start_date"]
+        else
+          start_date = next_start_date
+        end
+
+        # 見込み完了日、作業開始日更新
+        actual_completion_date = workprocess["actual_completion_date"]
+
+        # 開始日、見込み完了日置き換え
+        updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
+
+        # 更新された値を反映
+        workprocess[:start_date] = updated_date[:start_date]
+        workprocess[:latest_estimated_completion_date] = updated_date[:latest_estimated_completion_date]
+        workprocess[:earliest_estimated_completion_date] = updated_date[:earliest_estimated_completion_date]
+      end
+      # Orderの更新
+      if @order.update!(update_order_params)
+        # MachineAssignmentの更新
+        machine_assignment = update_order_params[:machine_assignments_attributes]
+
+        machine_id = machine_assignment[0][:machine_id].to_i
+        target_machine_assignments = MachineAssignment.where(work_process_id: @order.work_processes.pluck(:id))
+        target_machine_assignments.update_all(machine_id: machine_id)
+        machine_assignment
+
       else
-        render :edit
+        redirect_to admin_order_path(@order)
       end
     end
-  rescue ActiveRecord::RecordInvalid => e
-    flash.now[:alert] = "更新に失敗しました: #{e.message}"
-    render :edit
+    redirect_to admin_order_path(@order), notice: "作業工程が更新されました。"
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    # トランザクション内でエラーが発生した場合はロールバックされる
+    flash[:alert] = "更新に失敗しました: #{e.message}"
+    redirect_to admin_order_path(@order)
   end
 
   def destroy
@@ -88,6 +144,33 @@ class OrdersController < ApplicationController
       :roll_count,
       :quantity,
       :start_date
+    )
+  end
+
+  #追記：作業完了日入力時の更新
+  def update_order_params
+    params.require(:order).permit(
+      :company_id,
+      :product_number_id,
+      :color_number_id,
+      :roll_count,
+      :quantity,
+      # :machine_status_id,
+      machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
+      work_processes_attributes: [ # accepts_nested_attributes_forに対応
+        :id,
+        :process_estimate_id,
+        :work_process_definition_id,
+        :work_process_status_id,
+        :factory_estimated_completion_date,
+        :earliest_estimated_completion_date,
+        :latest_estimated_completion_date,
+        :actual_completion_date,
+        :start_date,
+        # process_estimate: [ :machine_type_id ],
+
+        # machine_assignments_attributes: [:id, :machine_id, :machine_status_id]
+      ]
     )
   end
 
