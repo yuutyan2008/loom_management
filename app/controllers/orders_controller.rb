@@ -143,26 +143,15 @@ class OrdersController < ApplicationController
 
   def create_new_machine_assignments
     params[:order][:new_machine_assignments].each do |ma_param|
-      work_process_ids = determine_work_process_ids_for_new_assignment
-      work_process_ids.each do |wp_id|
-        # 各作業工程に対して MachineAssignment を作成
-        MachineAssignment.create!(
-          machine_id: ma_param[:machine_id],
-          machine_status_id: ma_param[:machine_status_id],
-          work_process_id: wp_id
-        )
-      end
-    end
-  end
-
-  def determine_work_process_ids_for_new_assignment
-    current_wp = find_current_work_process(@order.work_processes)
-    if current_wp
-      # current_wp に紐づくすべての作業工程の ID を取得
-      associated_work_processes = @order.work_processes.where(work_process_definition_id: current_wp.work_process_definition_id)
-      associated_work_processes.pluck(:id)
-    else
-      []
+      machine_id = ma_param[:machine_id]
+      machine_status_id = ma_param[:machine_status_id]
+      work_process_id = ma_param[:work_process_id]
+      # 各WorkProcessに対してMachineAssignmentを作成
+      MachineAssignment.create!(
+        machine_id: machine_id,
+        machine_status_id: machine_status_id,
+        work_process_id: work_process_id
+      )
     end
   end
 
