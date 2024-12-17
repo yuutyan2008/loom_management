@@ -104,8 +104,8 @@
     </div>
   </header>
 
-  <main class="flex-grow container py-6">
-    <div class="px-4 py-6 mx-auto shadow-md bg-white">
+  <main class="flex-grow container py-6 lg:px-16">
+    <div class="px-4 py-6 shadow-md bg-white">
       <%# Flashメッセージのデザインをカスタムクラスで適用 %>
       <% flash.each do |key, value| %>
         <div class="flash-message <%= key %> flex items-center justify-between px-4 py-3 rounded-md shadow-md mb-4
@@ -126,7 +126,7 @@
 
 
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    window.addEventListener('turbo:load', function () {
       const button = document.getElementById('mobile-menu-button');
       const menu = document.getElementById('mobile-menu');
 
