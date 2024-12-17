@@ -1,94 +1,99 @@
 <%= form_with(model: @order, local: true) do |form| %>
-<% if @order.errors.any? %>
-<div class="alert alert-danger">
-    <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
-    <ul>
-        <% @order.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-        <% end %>
-    </ul>
-</div>
-<% end %>
+    <% if @order.errors.any? %>
+        <div class="alert alert-danger">
+            <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
+            <ul>
+                <% @order.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                <% end %>
+            </ul>
+        </div>
+    <% end %>
 
 <!-- 受注の基本情報 開始日のみの編集セクション -->
-<section class="mb-12">
-    <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">基本情報</h2>
-    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
-        <table class="min-w-full border border-gray-300 bg-gray-50">
-            <tbody>
-                <tr class="bg-gray-100 border-b">
-                    <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :product_number_id, "品番" %></th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.product_number&.number %></td>
-                </tr>
-                <tr class="bg-gray-100 border-b">
-                    <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :color_number_id, "色番" %></th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.color_number&.color_code %></td>
-                </tr>
-                <tr class="bg-gray-100 border-b">
-                    <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :roll_count, "ロール数" %></th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.roll_count %></td>
-                </tr>
-                <tr class="bg-gray-100 border-b">
-                    <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :quantity, "数量" %></th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.quantity %></td>
-                </tr>
-                <tr class="bg-gray-100 border-b">
-                    <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :start_date, "開始日" %></th>
-                    <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date %></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
+    <section class="mb-12">
+        <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">基本情報</h2>
+        <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+            <table class="min-w-full border border-gray-300 bg-gray-50">
+                <tbody>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :product_number_id, "品番" %></th>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.product_number&.number %></td>
+                    </tr>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :color_number_id, "色番" %></th>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.color_number&.color_code %></td>
+                    </tr>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :roll_count, "ロール数" %></th>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.roll_count %></td>
+                    </tr>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :quantity, "数量" %></th>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.quantity %></td>
+                    </tr>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :start_date, "開始日" %></th>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date %></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
 <!-- 織機の稼働状況 一括編集セクション -->
 <section class="mb-12">
     <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">織機の稼働状況</h2>
     <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
         <table class="min-w-full border text-left border-gray-300">
+            <% machine_all = @order.company&.machines %>
             <% machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
             <% if machine_ids.any? %>
-            <thead class="bg-gray-200">
-                <tr class="bg-gray-100">
-                <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機名</th>
-                <th class="w-1/4 px-4 py-2 text-gray-700 border-b">稼働状況</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% machines = Machine.where(id: machine_ids) %>
-                <% machines.each do |machine| %>
-                <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
-                <tr class="hover:bg-gray-100">
-                    <td class="px-4 py-2 border-b text-gray-900"><%= machine.name %></td>
-                    <td class="px-4 py-2 border-b text-gray-900">
-                    <%= hidden_field_tag "order[machine_statuses][][machine_id]", machine.id %>
-                    <%= select_tag "order[machine_statuses][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
-                    </td>
-                </tr>
-                <% end %>
-            </tbody>
+                <thead class="bg-gray-200">
+                    <tr class="bg-gray-100">
+                        <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機名</th>
+                        <th class="w-1/4 px-4 py-2 text-gray-700 border-b">稼働状況</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% machines = Machine.where(id: machine_ids) %>
+                    <% machines.each do |machine| %>
+                    <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
+                    <% machine_assignment = machine.machine_assignments.order(:created_at).last %>
+                    <%= hidden_field_tag "order[machine_assignments_attributes][][id]", machine_assignment&.id %>
+                    <tr class="hover:bg-gray-100">
+                        <td class="px-4 py-2 border-b text-gray-900">
+                            <%= select_tag "order[machine_assignments_attributes][][machine_id]", options_from_collection_for_select(machine_all, :id, :name, machine.id), { prompt: "選択してください", class: "form-control" } %>
+                        </td>
+                        <td class="px-4 py-2 border-b text-gray-900">
+                            <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
+                        </td>
+                    </tr>
+                    <% end %>
+                </tbody>
+            <% else %>
+            <p>この受注にはまだ織機が割り当てられていません。織機と稼働状況を割り当ててください。</p>
         </table>
-        <% else %>
-        <p class="px-4 py-2">この受注にはまだ織機が割り当てられていません。織機と稼働状況を割り当ててください。</p>
         <table class="table table-sm table-bordered">
             <thead>
             <tr class="bg-gray-100">
-                <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機</th>
+                <th class="w-1/4 px-4 py-2 text-gray-700 border-b">織機名</th>
                 <th class="w-1/4 px-4 py-2 text-gray-700 border-b">稼働状況</th>
             </tr>
             </thead>
             <tbody>
             <tr class="hover:bg-gray-100">
                 <td class="px-4 py-2 border-b text-gray-900">
-                    <%= select_tag "order[new_machine_assignments][][machine_id]", options_from_collection_for_select(current_user.company.machines, :id, :name), { prompt: "織機を選択してください", class: "form-control" } %>
+                <% machines = Machine.where(id: machine_ids) %>
+                <%= select_tag "order[machine_assignments_attributes][][machine_id]", options_from_collection_for_select(machine_all, :id, :name), { prompt: "織機を選択してください", class: "form-control" } %>
                 </td>
                 <td class="px-4 py-2 border-b text-gray-900">
-                    <%= select_tag "order[new_machine_assignments][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
+                <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
                 </td>
             </tr>
             </tbody>
-        </table>
         <% end %>
+        </table>
     </div>
 </section>
 
