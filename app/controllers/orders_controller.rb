@@ -50,7 +50,7 @@ class OrdersController < ApplicationController
     build_missing_machine_assignments
   end
 
-  #追記： ハッシュ形式にすることでネストデータを更新
+  # 追記：ハッシュ形式にすることでネストデータを更新
   def convert_work_processes_params
     if params[:order][:work_processes].present?
       # 空のハッシュを用意
@@ -77,7 +77,6 @@ class OrdersController < ApplicationController
       # 完了日の取得
       workprocesses = order_work_processes[:work_processes_attributes].values
 
-
       next_start_date = nil
       workprocesses.each_with_index do |workprocess, index|
         work_process_record = WorkProcess.find(workprocess["id"])
@@ -96,13 +95,12 @@ class OrdersController < ApplicationController
 
         # 更新された値を反映
         work_process_record.update!(updated_date)
-
       end
       # MachineAssignmentの更新
       machine_assignments_params = update_order_params[:machine_assignments_attributes]
       machine_id = machine_assignments_params[0][:machine_id].to_i
       machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
-        # フォームで送られた ID に基づき MachineAssignment を取得
+      # フォームで送られた ID に基づき MachineAssignment を取得
       machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
       if machine_ids.any?
         @order.machine_assignments.each do |assignment|
@@ -243,26 +241,15 @@ class OrdersController < ApplicationController
 
   def create_new_machine_assignments
     params[:order][:new_machine_assignments].each do |ma_param|
-      work_process_ids = determine_work_process_ids_for_new_assignment
-      work_process_ids.each do |wp_id|
-        # 各作業工程に対して MachineAssignment を作成
-        MachineAssignment.create!(
-          machine_id: ma_param[:machine_id],
-          machine_status_id: ma_param[:machine_status_id],
-          work_process_id: wp_id
-        )
-      end
-    end
-  end
-
-  def determine_work_process_ids_for_new_assignment
-    current_wp = find_current_work_process(@order.work_processes)
-    if current_wp
-      # current_wp に紐づくすべての作業工程の ID を取得
-      associated_work_processes = @order.work_processes.where(work_process_definition_id: current_wp.work_process_definition_id)
-      associated_work_processes.pluck(:id)
-    else
-      []
+      machine_id = ma_param[:machine_id]
+      machine_status_id = ma_param[:machine_status_id]
+      work_process_id = ma_param[:work_process_id]
+      # 各WorkProcessに対してMachineAssignmentを作成
+      MachineAssignment.create!(
+        machine_id: machine_id,
+        machine_status_id: machine_status_id,
+        work_process_id: work_process_id
+      )
     end
   end
 
