@@ -8,7 +8,7 @@ class Order < ApplicationRecord
   # 未完了の作業工程を持つ注文を簡単に参照できるアソシエーション
   has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: 'WorkProcess'
 
-  accepts_nested_attributes_for :machine_assignments
+  # accepts_nested_attributes_for :machine_assignments
 
   # すべての作業工程が完了している注文を取得
   scope :completed, -> {
