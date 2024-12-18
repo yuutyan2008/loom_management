@@ -166,7 +166,7 @@ before_action :admin_user
         @order.update!(update_order)
       end
     end
-    redirect_to order_path(@order), notice: "更新されました。"
+    redirect_to admin_order_path(@order), notice: "更新されました。"
 
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     # トランザクション内でエラーが発生した場合はロールバックされる
@@ -218,7 +218,7 @@ before_action :admin_user
       :color_number_id,
       :roll_count,
       :quantity,
-      # :machine_status_id,
+      process_estimate: [ :machine_type_id ],
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応
         :id,
@@ -230,7 +230,7 @@ before_action :admin_user
         :latest_estimated_completion_date,
         :actual_completion_date,
         :start_date,
-      process_estimate: [ :machine_type_id ]
+
       ]
     )
   end
