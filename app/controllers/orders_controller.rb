@@ -131,7 +131,7 @@ class OrdersController < ApplicationController
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     # トランザクション内でエラーが発生した場合はロールバックされる
     flash[:alert] = "更新に失敗しました: #{e.message}"
-    redirect_to admin_order_path(@order)
+    render :edit
   end
 
   def destroy
