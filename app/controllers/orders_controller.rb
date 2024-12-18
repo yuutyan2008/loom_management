@@ -78,7 +78,7 @@ class OrdersController < ApplicationController
     redirect_to order_path(@order), notice: "更新されました。"
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     flash[:alert] = "更新に失敗しました: #{e.message}"
-    redirect_to edit_order_path(@order)
+    render :edit
   end
 
   def destroy
