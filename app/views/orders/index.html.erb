@@ -6,6 +6,9 @@
     </div>
 </section>
 
+<%
+=begin
+%>
 
 <%= form_with(url: orders_path, method: :get, local: true) do |f| %>
     <div class="px-4 mb-4">
@@ -36,6 +39,10 @@
     </section>
 <% end %>
 
+<%
+=end
+%>
+
 <section class="mb-12">
     <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
     <% if @orders.any? %>
@@ -61,8 +68,8 @@
                     <td scope="row" class="py-2 px-4 border-b"><%= order&.product_number&.number %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_name(order) %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_status(order) %></td>
-                    <td class="py-2 px-4 border-b"><%= machine_names(order) %></td>
-                    <td class="py-2 px-4 border-b"><%= order&.latest_machine_assignment&.machine_status&.name %></td>
+                    <td class="py-2 px-4 border-b"><%= order&.latest_machine_assignment&.machine&.name || 'N/A' %></td>
+                    <td class="py-2 px-4 border-b"><%= order&.latest_machine_assignment&.machine_status&.name || 'N/A' %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_start_date(order) %></td>
                     <td class="py-2 px-4 border-b"><%= work_process_factory_estimated_completion_date(order) %></td>
                     <td class="py-2 px-4 border-b">
