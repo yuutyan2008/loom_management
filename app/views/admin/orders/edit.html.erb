@@ -36,6 +36,12 @@
             <%= f.number_field :quantity, placeholder: "新しいロール数を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
           </td>
         </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+            <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, placeholder: "織機の種類を入力" %>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>

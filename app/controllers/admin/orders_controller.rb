@@ -103,9 +103,6 @@ before_action :admin_user
     @work_processes = @order.work_processes.ordered
 
     @work_processes.map { |work_process| work_process.machines }.flatten.uniq
-
-
-
   end
 
   def update
@@ -166,7 +163,7 @@ before_action :admin_user
         @order.update!(update_order)
       end
     end
-    redirect_to order_path(@order), notice: "更新されました。"
+    redirect_to admin_order_path(@order), notice: "更新されました。"
 
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     # トランザクション内でエラーが発生した場合はロールバックされる
@@ -185,7 +182,7 @@ before_action :admin_user
       # .join(", "): 配列内の全てのエラーメッセージをカンマ区切り（, ）で連結
       flash[:alert] = @order.errors.full_messages.join(", ")
     end
-    redirect_to admin_orders_path
+    redirect_to admin_order_path
   end
 
   private
