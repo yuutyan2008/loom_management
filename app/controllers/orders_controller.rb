@@ -5,6 +5,8 @@ class OrdersController < ApplicationController
   before_action :authorize_order, only: [:show, :destroy]
   # 追記：parameterの型変換(accept_nested_attributes_for使用のため)
   before_action :convert_work_processes_params, only: [:update]
+  # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
+  before_action :sanitize_machine_assignments_params, only: [:update]
 
   def index
     @company = current_user&.company
@@ -71,66 +73,14 @@ class OrdersController < ApplicationController
 
   def update
     ActiveRecord::Base.transaction do
-      # 追記：作業完了日入力時の更新
-      order_work_processes = update_order_params.except(:machine_assignments_attributes)
-
-      # 完了日の取得
-      workprocesses = order_work_processes[:work_processes_attributes].values
-
-      next_start_date = nil
-      workprocesses.each_with_index do |workprocess, index|
-        work_process_record = WorkProcess.find(workprocess["id"])
-
-        if index == 0
-          start_date = workprocess["start_date"]
-        else
-          start_date = next_start_date
-        end
-
-        # 見込み完了日、作業開始日更新
-        actual_completion_date = workprocess["actual_completion_date"]
-
-        # 開始日、見込み完了日置き換え
-        updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
-
-        # 更新された値を反映
-        work_process_record.update!(updated_date)
-      end
-      # MachineAssignmentの更新
-      machine_assignments_params = update_order_params[:machine_assignments_attributes]
-      machine_id = machine_assignments_params[0][:machine_id].to_i
-      machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
-      # フォームで送られた ID に基づき MachineAssignment を取得
-      machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
-      if machine_ids.any?
-        @order.machine_assignments.each do |assignment|
-          assignment.update!(
-            machine_id: machine_id,
-            machine_status_id: machine_status_id
-          )
-        end
-      else
-        # 存在しない場合は新規作成し、@order に関連付ける
-        @order.work_processes.each do |work_process|
-          work_process.machine_assignments.create!(
-            machine_id: machine_id,
-            machine_status_id: machine_status_id
-          )
-        end
-      end
-      # binding.irb
-
-      # Orderの更新
-      update_order = update_order_params.except(:machine_assignments_attributes, :work_processes_attributes)
-      if update_order.present?
-        @order.update!(update_order)
-      end
+      update_work_processes
+      update_machine_assignments if machine_assignments_present?
+      update_order_details
     end
     redirect_to order_path(@order), notice: "更新されました。"
-
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
-    # トランザクション内でエラーが発生した場合はロールバックされる
-    flash[:alert] = "更新に失敗しました: #{e.message}"
+    flash.now[:alert] = "更新に失敗しました: #{e.message}"
+    Rails.logger.debug "Flash alert set: 更新に失敗しました: #{e.message}"
     render :edit
   end
 
@@ -158,11 +108,11 @@ class OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      :start_date
+      :start_date,
     )
   end
 
-  #追記：作業完了日入力時の更新
+  # 追記：作業完了日入力時の更新
   def update_order_params
     params.require(:order).permit(
       :company_id,
@@ -250,6 +200,84 @@ class OrdersController < ApplicationController
         machine_status_id: machine_status_id,
         work_process_id: work_process_id
       )
+    end
+  end
+
+  # WorkProcess の更新を担当
+  def update_work_processes
+    order_work_processes = update_order_params.except(:machine_assignments_attributes)
+    work_processes = order_work_processes[:work_processes_attributes].values
+
+    next_start_date = nil
+    work_processes.each_with_index do |work_process, index|
+      work_process_record = WorkProcess.find(work_process["id"])
+
+      if index == 0
+        start_date = work_process["start_date"]
+      else
+        start_date = next_start_date
+      end
+
+      actual_completion_date = work_process["actual_completion_date"]
+
+      updated_date, next_start_date = WorkProcess.check_current_work_process(work_process, start_date, actual_completion_date)
+      work_process_record.update!(updated_date)
+    end
+  end
+
+  # MachineAssignmentの存在を確認
+  def machine_assignments_present?
+    update_order_params[:machine_assignments_attributes].present?
+  end
+
+  # MachineAssignmentの更新
+  def update_machine_assignments
+    # MachineAssignmentの更新
+    machine_assignments_params = update_order_params[:machine_assignments_attributes]
+    machine_id = machine_assignments_params[0][:machine_id].to_i
+    machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
+    # フォームで送られた ID に基づき MachineAssignment を取得
+    machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
+    if machine_ids.any?
+      @order.machine_assignments.each do |assignment|
+        assignment.update!(
+          machine_id: machine_id,
+          machine_status_id: machine_status_id
+        )
+      end
+    else
+      # 存在しない場合は新規作成し、@order に関連付ける
+      @order.work_processes.each do |work_process|
+        work_process.machine_assignments.create!(
+          machine_id: machine_id,
+          machine_status_id: machine_status_id
+        )
+      end
+    end
+  end
+
+  # Order のその他の詳細を更新
+  def update_order_details
+    update_order = update_order_params.except(:machine_assignments_attributes, :work_processes_attributes)
+    @order.update!(update_order) if update_order.present?
+  end
+
+  # machine_assignments_attributesが配列で来た場合にも対応
+  def sanitize_machine_assignments_params
+    return unless params[:order].present?
+
+    if params[:order][:machine_assignments_attributes].present?
+      # params[:order][:machine_assignments_attributes]が配列の場合、以下のように処理
+      # rejectで織機IDもステータスIDも空文字の場合は削除
+      cleaned = params[:order][:machine_assignments_attributes].reject do |ma|
+        ma[:machine_id].blank? && ma[:machine_status_id].blank?
+      end
+
+      if cleaned.empty?
+        params[:order].delete(:machine_assignments_attributes)
+      else
+        params[:order][:machine_assignments_attributes] = cleaned
+      end
     end
   end
 
