@@ -116,41 +116,74 @@ before_action :admin_user
       workprocesses = order_work_processes[:work_processes_attributes].values
 
       estimate_workprocess = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
-      binding.irb
+      # 変更があった場合の新しいナレッジ
+      process_estimates = ProcessEstimate.where(machine_type_id: params[:machine_type_id])
+      # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
+      machine = Machine.find_by(id: order_params[:machine_assignments_attributes][0][:machine_id])
+      unless machine&.machine_type == process_estimates.first.machine_type
+        # type不一致です
+      end
+
+      current_work_processes = @order.work_processes
       next_start_date = nil
 
-      estimate_workprocess.each_with_index do |workprocess, index|
-        # 追記
-        work_process_record = WorkProcess.find(workprocess["id"])
+      # process_estimates.each_with_index do |estimate, index|
+      workprocesses.each_with_index do |workprocess_params, index|
 
+        target_work_prcess = current_work_processes.find(workprocess_params[:id])
         if index == 0
-          start_date = workprocess["start_date"]
+          start_date = target_work_prcess["start_date"]
         else
           start_date = next_start_date
         end
 
-        # 見込み完了日、作業開始日更新
-        actual_completion_date = workprocess["actual_completion_date"]
+        actual_completion_date =  workprocess_params[:actual_completion_date]
+        unless machine&.machine_type == process_estimates.first.machine_type
+          estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+          target_work_prcess.process_estimate = estimate
+        end
 
-        # 開始日、見込み完了日置き換え
-        updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
+        target_work_prcess.save
+        _, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
 
-        # 更新された値を反映
-        work_process_record.update!(updated_date)
+        target_work_prcess.save
 
       end
 
+      # next_start_date = nil
+
+      # estimate_workprocess.each_with_index do |workprocess, index|
+      #   # 追記
+      #   work_process_record = WorkProcess.find(workprocess["id"])
+
+      #   if index == 0
+      #     start_date = workprocess["start_date"]
+      #   else
+      #     start_date = next_start_date
+      #   end
+
+      #   # 見込み完了日、作業開始日更新
+      #  actual_completion_date = workprocess["actual_completion_date"]
+
+      #   # 開始日、見込み完了日置き換え
+      #   updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
+
+      #   # 更新された値を反映
+      #   work_process_record.update!(updated_date)
+
+      # end
+
       # MachineAssignmentの更新
       machine_assignments_params = order_params[:machine_assignments_attributes]
-      machine_id = machine_assignments_params[0][:machine_id].to_i
-      machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
+      machine_id = machine_assignments_params[0][:machine_id]
+      machine_status_id = machine_assignments_params[0][:machine_status_id]
         # フォームで送られた ID に基づき MachineAssignment を取得
       machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
       if machine_ids.any?
         @order.machine_assignments.each do |assignment|
           assignment.update!(
-            machine_id: machine_id,
-            machine_status_id: machine_status_id
+            machine_id: machine_id.present? ? machine_id : nil ,
+            machine_status_id: machine_status_id.present? ? machine_status_id : nil
           )
         end
       else
@@ -168,6 +201,8 @@ before_action :admin_user
       if update_order.present?
         @order.update!(update_order)
       end
+
+
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
 
@@ -222,19 +257,17 @@ before_action :admin_user
       :roll_count,
       :quantity,
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
-      process_estimate_attributes: [:machine_type_id],
+      # process_estimate_attributes: [:machine_type_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応
         :id,
-        :process_estimate_id,
-        :work_process_definition_id,
+        # :process_estimate_id,
+        # :work_process_definition_id,
         :work_process_status_id,
         :factory_estimated_completion_date,
-        :earliest_estimated_completion_date,
-        :latest_estimated_completion_date,
+        # :earliest_estimated_completion_date,
+        # :latest_estimated_completion_date,
         :actual_completion_date,
-        :start_date,
-
-
+        :start_date
       ]
     )
   end
