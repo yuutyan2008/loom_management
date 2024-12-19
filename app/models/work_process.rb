@@ -1,10 +1,11 @@
 class WorkProcess < ApplicationRecord
   belongs_to :order
-  belongs_to :process_estimate, optional: true # null allow
   belongs_to :work_process_definition
   belongs_to :work_process_status
   has_many :machine_assignments
   accepts_nested_attributes_for :machine_assignments
+  belongs_to :process_estimate, optional: true # null allow
+  accepts_nested_attributes_for :process_estimate
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :machines, through: :machine_assignments
 
@@ -78,7 +79,7 @@ class WorkProcess < ApplicationRecord
       end
     elsif machine_type_id == 2
       workprocesses.each do |process|
-        process[:process_estimate_id] = process[:work_process_definition_id] + 5
+        process[:process_estimate_id] = process[:work_process_definition_id].to_i + 5
       end
     end
   end

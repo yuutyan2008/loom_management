@@ -33,15 +33,15 @@
         <tr class="bg-gray-100 border-b">
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
-            <%= f.number_field :quantity, placeholder: "新しいロール数を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+            <%= f.number_field :quantity, placeholder: "新しい数量を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
           </td>
         </tr>
         <tr class="bg-gray-100 border-b">
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
-            <%= select_tag "order[work_processes_attributes][process_estimate][machine_type_id]",
-                          options_from_collection_for_select(MachineType.all, :id, :name),
-                          prompt: "機械の種類を選択してください" %>
+            <% machine_type_name = @order.work_processes.joins(process_estimate: :machine_type).pluck("machine_types.id").uniq %>
+            <%= select_tag "order[process_estimate_attributes][machine_type_id]",
+                          options_from_collection_for_select(MachineType.all, :id, :name, machine_type_name), {prompt: "機械の種類を選択してください"} %>
           </td>
         </tr>
       </tbody>

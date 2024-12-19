@@ -103,21 +103,23 @@ before_action :admin_user
     @work_processes = @order.work_processes.ordered
 
     @work_processes.map { |work_process| work_process.machines }.flatten.uniq
-
-
-
   end
 
   def update
     ActiveRecord::Base.transaction do
       order_work_processes = order_params.except(:machine_assignments_attributes)
 
+
+      machine_type_id = order_work_processes.dig(:"process_estimate_attributes", :"machine_type_id").to_i
+
       # 完了日の取得
       workprocesses = order_work_processes[:work_processes_attributes].values
 
+      estimate_workprocess = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
+      binding.irb
       next_start_date = nil
 
-      workprocesses.each_with_index do |workprocess, index|
+      estimate_workprocess.each_with_index do |workprocess, index|
         # 追記
         work_process_record = WorkProcess.find(workprocess["id"])
 
@@ -137,6 +139,7 @@ before_action :admin_user
         work_process_record.update!(updated_date)
 
       end
+
       # MachineAssignmentの更新
       machine_assignments_params = order_params[:machine_assignments_attributes]
       machine_id = machine_assignments_params[0][:machine_id].to_i
@@ -218,8 +221,8 @@ before_action :admin_user
       :color_number_id,
       :roll_count,
       :quantity,
-      process_estimate: [ :machine_type_id ],
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
+      process_estimate_attributes: [:machine_type_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応
         :id,
         :process_estimate_id,
@@ -230,6 +233,7 @@ before_action :admin_user
         :latest_estimated_completion_date,
         :actual_completion_date,
         :start_date,
+
 
       ]
     )
