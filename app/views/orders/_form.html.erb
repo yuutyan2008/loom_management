@@ -1,4 +1,4 @@
-<%= form_with(model: @order, local: true) do |form| %>
+<%= form_with(model: @order, url: order_path(@order), method: :patch, local: true) do |form| %>
     <% if @order.errors.any? %>
         <div class="alert alert-danger">
             <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
@@ -34,7 +34,11 @@
                     </tr>
                     <tr class="bg-gray-100 border-b">
                         <th class="w-1/3 px-4 py-2 text-center text-gray-700"><%= form.label :start_date, "開始日" %></th>
-                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.start_date %></td>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.work_processes&.first&.start_date %></td>
+                    </tr>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.work_processes&.first&.process_estimate&.machine_type&.name || 'N/A' %></td>
                     </tr>
                 </tbody>
             </table>
@@ -45,8 +49,8 @@
     <section class="mb-12">
         <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">織機の稼働状況</h2>
         <div class="px-4 overflow-x-auto whitespace-nowrap">
-            <% machine_all = @order.company&.machines %>
-            <% machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
+            <% machine_all = @order&.company&.machines %>
+            <% machine_ids = @order&.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
             <% if machine_ids.any? %>
                 <table class="min-w-full border text-left border-gray-300">
                     <thead class="bg-gray-200">
@@ -63,7 +67,13 @@
                             <%= hidden_field_tag "order[machine_assignments_attributes][][id]", machine_assignment&.id %>
                             <tr class="hover:bg-gray-100">
                                 <td class="px-4 py-2 border-b text-gray-900">
-                                    <%= select_tag "order[machine_assignments_attributes][][machine_id]", options_from_collection_for_select(machine_all, :id, :name, machine.id), { prompt: "選択してください", class: "form-control" } %>
+                                    <%= select_tag "order[machine_assignments_attributes][][machine_id]",
+                                        options_for_select(
+                                            machine_all.map { |m| ["#{m.name}（#{m.machine_type.name}）", m.id] },
+                                            machine.id
+                                        ),
+                                        { prompt: "選択してください", class: "form-control" }
+                                    %>
                                 </td>
                                 <td class="px-4 py-2 border-b text-gray-900">
                                     <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
@@ -85,10 +95,16 @@
                         <tr class="hover:bg-gray-100">
                             <td class="px-4 py-2 border-b text-gray-900">
                                 <% machines = Machine.where(id: machine_ids) %>
-                            <%= select_tag "order[machine_assignments_attributes][0][machine_id]", options_from_collection_for_select(machine_all, :id, :name), { prompt: "織機を選択してください", class: "form-control" } %>
+                                <%= select_tag "order[machine_assignments_attributes][][machine_id]",
+                                    options_for_select(
+                                        machine_all.map { |m| ["#{m.name}（#{m.machine_type.name}）", m.id] },
+                                        nil
+                                    ),
+                                    { prompt: "織機を選択してください", class: "form-control" }
+                                %>
                             </td>
                             <td class="px-4 py-2 border-b text-gray-900">
-                                <%= select_tag "order[machine_assignments_attributes][0][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
+                                <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
                             </td>
                         </tr>
                     </tbody>
@@ -112,27 +128,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <% @order.work_processes.each do |wp| %>
-                    <% machine_assignment = wp&.machine_assignments.first %>
-                    <tr class="nested-fields">
-                        <td class="px-4 py-2 border-b text-gray-900">
-                            <%= wp&.work_process_definition&.name %>
-                            <%= hidden_field_tag "order[work_processes][][id]", wp.id %>
-                            <%= hidden_field_tag "order[work_processes][][work_process_definition_id]", wp.work_process_definition_id %>
-                        </td>
-                        <td class="px-4 py-2 border-b text-gray-900">
-                            <%= date_field_tag "order[work_processes][][start_date]", wp.start_date&.strftime('%Y-%m-%d'), class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-                        </td>
-                        <td class="px-4 py-2 border-b text-gray-900">
-                            <%= date_field_tag "order[work_processes][][factory_estimated_completion_date]", wp.factory_estimated_completion_date&.strftime('%Y-%m-%d'), class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-                        </td>
-                        <td class="px-4 py-2 border-b text-gray-900">
-                            <%= date_field_tag "order[work_processes][][actual_completion_date]", wp.actual_completion_date&.strftime('%Y-%m-%d'), class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-                        </td>
-                        <td class="px-4 py-2 border-b text-gray-900">
-                            <%= select_tag "order[work_processes][][work_process_status_id]", options_from_collection_for_select(WorkProcessStatus.all, :id, :name, wp.work_process_status_id), { prompt: "選択してください", class: "form-control" } %>
-                        </td>
-                    </tr>
+                    <%= form.fields_for :work_processes do |wp_form| %>
+                        <tr class="hover:bg-gray-100">
+                            <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.work_process_definition&.name || "N/A" %></td>
+                                <%= wp_form.hidden_field :start_date, value: wp_form.object&.start_date %>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= wp_form.date_field :start_date, placeholder: "開始日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= wp_form.date_field :actual_completion_date, placeholder: "機屋の完了日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                            </td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= wp_form.collection_select :work_process_status_id,
+                                WorkProcessStatus.all, :id, :name,
+                                selected: wp_form.object&.work_process_status_id,
+                                include_blank: "選択してください" %>
+                            </td>
+                        </tr>
                     <% end %>
                 </tbody>
             </table>
