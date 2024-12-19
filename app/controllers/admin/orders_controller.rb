@@ -110,25 +110,31 @@ before_action :admin_user
       order_work_processes = order_params.except(:machine_assignments_attributes)
 
 
-      machine_type_id = order_work_processes.dig(:"process_estimate_attributes", :"machine_type_id").to_i
+      # machine_type_id = order_work_processes.dig(:"process_estimate_attributes", :"machine_type_id").to_i
 
       # 完了日の取得
-      workprocesses = order_work_processes[:work_processes_attributes].values
+      workprocesses_params = order_work_processes[:work_processes_attributes].values
 
-      estimate_workprocess = WorkProcess.decide_machine_type(workprocesses, machine_type_id)
+
+      # 織機の種類変更がある場合
+      # WorkProcessのprocess_estimate_idを更新
+      # estimate_workprocesses = WorkProcess.decide_machine_type(workprocesses_params, machine_type_id)
       # 変更があった場合の新しいナレッジ
       process_estimates = ProcessEstimate.where(machine_type_id: params[:machine_type_id])
       # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
       machine = Machine.find_by(id: order_params[:machine_assignments_attributes][0][:machine_id])
       unless machine&.machine_type == process_estimates.first.machine_type
         # type不一致です
+        flash[:notice] = "織機の種類が一致していないため、更新できません"
+        Rails.logger.debug "Flash Notice: #{flash[:notice]}"
+        render :edit and return
       end
 
       current_work_processes = @order.work_processes
+
       next_start_date = nil
 
-      # process_estimates.each_with_index do |estimate, index|
-      workprocesses.each_with_index do |workprocess_params, index|
+      workprocesses_params.each_with_index do |workprocess_params, index|
 
         target_work_prcess = current_work_processes.find(workprocess_params[:id])
         if index == 0
@@ -138,21 +144,25 @@ before_action :admin_user
         end
 
         actual_completion_date =  workprocess_params[:actual_completion_date]
-        unless machine&.machine_type == process_estimates.first.machine_type
+
+        # 織機詳細変更した場合
+        unless machine&.machine_type != process_estimates.first.machine_type
           estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+          # 置き換え
           target_work_prcess.process_estimate = estimate
         end
 
         target_work_prcess.save
-        _, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
+        # 全行程の日時の更新処理の呼び出し
+        new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
 
-        target_work_prcess.save
+        new_target_work_prcess.save
 
       end
-
+    # binding.irb
       # next_start_date = nil
 
-      # estimate_workprocess.each_with_index do |workprocess, index|
+      # target_work_prcess.each_with_index do |workprocess, index|
       #   # 追記
       #   work_process_record = WorkProcess.find(workprocess["id"])
 
@@ -201,7 +211,6 @@ before_action :admin_user
       if update_order.present?
         @order.update!(update_order)
       end
-
 
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
