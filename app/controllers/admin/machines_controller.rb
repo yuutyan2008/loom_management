@@ -16,7 +16,7 @@ class Admin::MachinesController < ApplicationController
       .search_by_company(params[:company_id])
       .search_by_machine(params[:machine_id])
       .search_by_product_number(params[:product_number_id])
-      .search_by_work_process_definitios(params[:work_process_definitions_id])
+      .search_by_work_process_definitions(params[:work_process_definitions_id])
   end
 
   def search_params
@@ -81,7 +81,6 @@ class Admin::MachinesController < ApplicationController
 
   # 削除処理の開始し管理者削除を防ぐロジックはmodelで行う
   def destroy
-
     @machine = Machine.find(params[:id])
     if @machine.destroy
       # ココ(削除実行直前)でmodelに定義したコールバックが呼ばれる
@@ -126,7 +125,6 @@ class Admin::MachinesController < ApplicationController
         }
       }
     end.flatten.to_json
-
   end
 
   def orders
@@ -210,7 +208,7 @@ class Admin::MachinesController < ApplicationController
         # マシンへのリンクを作成
         link = view_context.link_to("会社名: #{machine.company.name}, 織機名: #{machine.name}, ステータス: #{assignment_messages}", admin_machine_path(machine), class: "underline")
         "<li>#{link}</li>"
-      end.join("<br>").html_safe
+      end.join("br").html_safe
 
       flash.now[:alert] = <<-HTML.html_safe
         <strong>予定納期を超えて '稼働中' ではない織機が #{total_problematic_machines} 台あります。</strong>

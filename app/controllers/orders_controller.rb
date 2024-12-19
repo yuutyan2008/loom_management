@@ -75,6 +75,7 @@ class OrdersController < ApplicationController
     ActiveRecord::Base.transaction do
       update_work_processes
       update_machine_assignments if machine_assignments_present?
+      handle_machine_assignment_updates if machine_assignments_present?
       update_order_details
     end
     redirect_to order_path(@order), notice: "更新されました。"
@@ -120,9 +121,10 @@ class OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      # :machine_status_id,
+      # accepts_nested_attributes_forに対応
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
-      work_processes_attributes: [ # accepts_nested_attributes_forに対応
+      # accepts_nested_attributes_forに対応
+      work_processes_attributes: [
         :id,
         :process_estimate_id,
         :work_process_definition_id,
@@ -132,42 +134,24 @@ class OrdersController < ApplicationController
         :latest_estimated_completion_date,
         :actual_completion_date,
         :start_date,
-        # process_estimate: [ :machine_type_id ],
-
-        # machine_assignments_attributes: [:id, :machine_id, :machine_status_id]
       ]
     )
   end
 
+  # ↓↓ showアクションに必要なメソッド ↓↓
+  def load_machine_assignments_and_machines
+    @current_machine_assignments = @current_work_process&.machine_assignments&.includes(:machine) || []
+    @machines = @current_machine_assignments.map(&:machine).uniq
+  end
+
+  # ↓↓ editアクションに必要なメソッド ↓↓
   def build_missing_machine_assignments
     @order.work_processes.each do |wp|
       wp.machine_assignments.build if wp.machine_assignments.empty?
     end
   end
 
-  def load_machine_assignments_and_machines
-    @current_machine_assignments = @current_work_process&.machine_assignments&.includes(:machine) || []
-    @machines = @current_machine_assignments.map(&:machine).uniq
-  end
-
-  def update_related_models
-    update_work_processes if params[:order][:work_processes].present?
-    update_machine_assignments if params[:order][:machine_assignments].present?
-    update_machine_statuses if params[:order][:machine_statuses].present?
-  end
-
-  def update_work_processes
-    params[:order][:work_processes].each do |wp_param|
-      wp = @order.work_processes.find(wp_param[:id])
-      wp.update!(
-        start_date: wp_param[:start_date],
-        factory_estimated_completion_date: wp_param[:factory_estimated_completion_date],
-        actual_completion_date: wp_param[:actual_completion_date],
-        work_process_status_id: wp_param[:work_process_status_id]
-      )
-    end
-  end
-
+  # ↓↓ updateアクションに必要なメソッド ↓↓
   def update_machine_assignments
     params[:order][:machine_assignments].each do |ma_param|
       ma = MachineAssignment.find(ma_param[:id])
@@ -186,20 +170,6 @@ class OrdersController < ApplicationController
       assignments.each do |assignment|
         assignment.update!(machine_status_id: new_status_id)
       end
-    end
-  end
-
-  def create_new_machine_assignments
-    params[:order][:new_machine_assignments].each do |ma_param|
-      machine_id = ma_param[:machine_id]
-      machine_status_id = ma_param[:machine_status_id]
-      work_process_id = ma_param[:work_process_id]
-      # 各WorkProcessに対してMachineAssignmentを作成
-      MachineAssignment.create!(
-        machine_id: machine_id,
-        machine_status_id: machine_status_id,
-        work_process_id: work_process_id
-      )
     end
   end
 
@@ -248,10 +218,11 @@ class OrdersController < ApplicationController
     else
       # 存在しない場合は新規作成し、@order に関連付ける
       @order.work_processes.each do |work_process|
-        work_process.machine_assignments.create!(
-          machine_id: machine_id,
-          machine_status_id: machine_status_id
-        )
+        # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
+        ma = MachineAssignment.find_or_initialize_by(work_process_id: work_process.id)
+        ma.machine_id = machine_id
+        ma.machine_status_id = machine_status_id
+        ma.save!
       end
     end
   end
@@ -281,6 +252,40 @@ class OrdersController < ApplicationController
     end
   end
 
+  def handle_machine_assignment_updates
+    relevant_work_process_definition_ids = [1, 2, 3, 4]
+
+    # 対象のWorkProcess群を取得
+    relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
+    target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
+
+    # 条件: 全てがstatus_id=3の場合のみ処理
+    if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
+      machine_id = update_order_params[:machine_assignments_attributes][0][:machine_id].to_i
+
+      if machine_id.present?
+        # 全WorkProcessを取得(5などその他も含む場合)
+        all_work_process_ids = @order.work_processes.pluck(:id)
+
+        # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
+        MachineAssignment.where(
+          machine_id: machine_id,
+          work_process_id: all_work_process_ids
+        ).update_all(machine_id: nil, machine_status_id: nil)
+
+        # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
+        # 既存があればそれを使い、新たなcreateは行わない
+        assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
+        if assignment.new_record?
+          # 新規の場合のみ作成
+          assignment.machine_status_id = 1
+          assignment.save!
+        end
+      end
+    end
+  end
+
+  # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   ## 追加: indexアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_index(orders)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')

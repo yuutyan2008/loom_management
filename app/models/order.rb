@@ -6,7 +6,7 @@ class Order < ApplicationRecord
   has_many :machine_assignments, through: :work_processes
 
   # 未完了の作業工程を持つ注文を簡単に参照できるアソシエーション
-  has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: 'WorkProcess'
+  has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: "WorkProcess"
 
   # accepts_nested_attributes_for :machine_assignments
 
@@ -44,7 +44,7 @@ class Order < ApplicationRecord
   }
 
   # 現在の工程
-  scope :search_by_work_process_definitios, ->(work_process_definition_id) {
+  scope :search_by_work_process_definitions, ->(work_process_definition_id) {
     joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
   }
 
