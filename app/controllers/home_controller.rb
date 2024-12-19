@@ -6,15 +6,9 @@ class HomeController < ApplicationController
     # 会社に紐づく全Machineを取得し、関連情報をプリロード
     @machines = @company&.machines&.machine_associations
     if @company&.orders.exists?
-      @orders = @company&.orders.includes(:work_processes)
+      @orders = @company&.orders.includes(:work_processes, :machine_assignments)
       check_overdue_work_processes_index(@orders)
-      # machine_id: 2のMachineAssignmentを想定例として取得
-      # 実際には複数のMachineAssignmentを取得し、配列で表示する場合
-      # @machine_assignments = MachineAssignment.includes(machine: { company: {} }, work_process: :work_process_definition)
-      #                                         .where(machine: { company_id: @company.id }) # 条件は実際の要件に合わせる
-      #                                         .order(created_at: :desc)
-      # 複数のmachine_idに対応する場合はwhere(machine_id: [リスト])など
-      # @machine_assignments = all_assignments.group_by(&:machine_id).map { |_, assignments| assignments.first }
+      check_missing_machine_assignments(@orders) # 追加: 織機の割り当てができていない受注をチェック
     else
       @orders = []
       @no_orders_message = "現在受注している商品はありません"
@@ -59,7 +53,7 @@ class HomeController < ApplicationController
 
   private
 
-  # 追加: indexアクション用のWorkProcess遅延チェックメソッド
+  # 既存: indexアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_index(orders)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
@@ -95,6 +89,33 @@ class HomeController < ApplicationController
       # フラッシュメッセージにリンクを含めて設定
       flash.now[:alert] = <<-HTML.html_safe
         <strong>予定納期が過ぎている受注が #{total_overdue_orders} 件あります。</strong>
+        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
+          <li>#{message}</li>
+        </ul>
+      HTML
+    end
+  end
+
+  # 追加: 織機の割り当てができていない受注をチェックするメソッド
+  def check_missing_machine_assignments(orders)
+    # MachineAssignmentが存在しないOrderを特定
+    # ここでは、各Orderに関連するMachineAssignmentが存在しない場合を想定
+    # 実際の関連に応じて調整が必要です
+    orders_without_assignment = orders.left_outer_joins(:machine_assignments)
+                                      .where(machine_assignments: { id: nil })
+                                      .distinct
+
+    if orders_without_assignment.exists?
+
+      # メッセージリストを作成
+      message = orders_without_assignment.map do |order|
+        # 受注IDごとにリンクを生成
+        view_context.link_to "受注 ID:#{order.id} の編集へ移動", edit_order_path(order), class: "underline"
+      end.join("<br>").html_safe
+
+      # フラッシュメッセージにリンクを含めて設定
+      flash.now[:alert] = <<-HTML.html_safe
+        <strong>以下の受注は織機の割り当てができていません。</strong>
         <ul class="text-red-700 list-disc ml-4 px-4 py-2">
           <li>#{message}</li>
         </ul>

@@ -5,6 +5,8 @@ class OrdersController < ApplicationController
   before_action :authorize_order, only: [:show, :destroy]
   # 追記：parameterの型変換(accept_nested_attributes_for使用のため)
   before_action :convert_work_processes_params, only: [:update]
+  # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
+  before_action :sanitize_machine_assignments_params, only: [:update]
 
   def index
     @company = current_user&.company
@@ -77,7 +79,8 @@ class OrdersController < ApplicationController
     end
     redirect_to order_path(@order), notice: "更新されました。"
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
-    flash[:alert] = "更新に失敗しました: #{e.message}"
+    flash.now[:alert] = "更新に失敗しました: #{e.message}"
+    Rails.logger.debug "Flash alert set: 更新に失敗しました: #{e.message}"
     render :edit
   end
 
@@ -105,11 +108,11 @@ class OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      :start_date
+      :start_date,
     )
   end
 
-  #追記：作業完了日入力時の更新
+  # 追記：作業完了日入力時の更新
   def update_order_params
     params.require(:order).permit(
       :company_id,
@@ -229,34 +232,26 @@ class OrdersController < ApplicationController
 
   # MachineAssignmentの更新
   def update_machine_assignments
-    # ストロングパラメータから machine_assignments_attributes を取得
+    # MachineAssignmentの更新
     machine_assignments_params = update_order_params[:machine_assignments_attributes]
-
-    # 各 MachineAssignment のパラメータをループ処理
-    machine_assignments_params.each do |_, ma|
-      # machine_id と machine_status_id が存在するか確認。存在しなければ次のループへ
-      next unless ma[:machine_id].present? && ma[:machine_status_id].present?
-
-      # machine_id と machine_status_id を整数に変換
-      machine_id = ma[:machine_id].to_i
-      machine_status_id = ma[:machine_status_id].to_i
-
-      # machine_id または machine_status_id が 0 の場合は無効と判断し、次のループへ
-      next if machine_id.zero? || machine_status_id.zero?
-
-      if ma[:id].present?
-        # 既存のMachineAssignmentをIDで検索
-        assignment = MachineAssignment.find(ma[:id])
-        # machine_id と machine_status_id を更新
-        assignment.update!(machine_id: machine_id, machine_status_id: machine_status_id)
-      else
-        # 新規のMachineAssignmentを各WorkProcessに関連付けて作成
-        @order.work_processes.each do |work_process|
-          work_process.machine_assignments.create!(
-            machine_id: machine_id,
-            machine_status_id: machine_status_id
-          )
-        end
+    machine_id = machine_assignments_params[0][:machine_id].to_i
+    machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
+    # フォームで送られた ID に基づき MachineAssignment を取得
+    machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
+    if machine_ids.any?
+      @order.machine_assignments.each do |assignment|
+        assignment.update!(
+          machine_id: machine_id,
+          machine_status_id: machine_status_id
+        )
+      end
+    else
+      # 存在しない場合は新規作成し、@order に関連付ける
+      @order.work_processes.each do |work_process|
+        work_process.machine_assignments.create!(
+          machine_id: machine_id,
+          machine_status_id: machine_status_id
+        )
       end
     end
   end
@@ -265,6 +260,25 @@ class OrdersController < ApplicationController
   def update_order_details
     update_order = update_order_params.except(:machine_assignments_attributes, :work_processes_attributes)
     @order.update!(update_order) if update_order.present?
+  end
+
+  # machine_assignments_attributesが配列で来た場合にも対応
+  def sanitize_machine_assignments_params
+    return unless params[:order].present?
+
+    if params[:order][:machine_assignments_attributes].present?
+      # params[:order][:machine_assignments_attributes]が配列の場合、以下のように処理
+      # rejectで織機IDもステータスIDも空文字の場合は削除
+      cleaned = params[:order][:machine_assignments_attributes].reject do |ma|
+        ma[:machine_id].blank? && ma[:machine_status_id].blank?
+      end
+
+      if cleaned.empty?
+        params[:order].delete(:machine_assignments_attributes)
+      else
+        params[:order][:machine_assignments_attributes] = cleaned
+      end
+    end
   end
 
   ## 追加: indexアクション用のWorkProcess遅延チェックメソッド
