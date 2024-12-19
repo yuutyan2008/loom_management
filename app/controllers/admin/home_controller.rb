@@ -77,7 +77,7 @@ class Admin::HomeController < ApplicationController
 
   def build_flash_message(orders)
     messages = orders.map do |order|
-      "#{order.company.name} で織機の割り当てができていない受注があります。" +
+      "#{order.company.name} で織機の割り当てができていない受注 (ID: #{order.id}) があります。" +
       "詳しくは #{view_context.link_to('編集', edit_admin_order_path(order), class: 'text-blue-500 underline')} や #{view_context.link_to('詳細', admin_order_path(order), class: 'text-blue-500 underline')} をご確認ください。"
     end
     messages.join("<br>").html_safe

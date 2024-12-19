@@ -40,24 +40,22 @@
           <% if logged_in? %>
             <% if current_user.admin? %>
               <%# 管理者用ナビゲーション %>
-              <p><%= link_to "織機一覧", admin_machines_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "織機の登録", new_admin_machine_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "発注一覧", admin_orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "発注する", new_admin_order_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "ユーザー情報", admin_users_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "ユーザー追加", new_admin_user_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "織機一覧", admin_machines_path, id: "admin-machines-index", class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "発注一覧", admin_orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "発注する", new_admin_order_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "ユーザー情報", admin_users_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
             <% else %>
               <%# 一般ユーザー用ナビゲーション %>
-              <p><%= link_to "織機一覧", machines_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "織機の登録", new_machine_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "受注一覧", orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "ユーザー情報", user_path(current_user), class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "織機一覧", machines_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "織機の登録", new_machine_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+              <p><%= link_to "ユーザー情報", user_path(current_user), class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
             <% end %>
-          <p><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-3 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></p>
+          <p><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-2 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></p>
           <% else %>
             <%# 未ログイン時のナビゲーション %>
-            <p><%= link_to "ログイン", login_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <p><%= link_to "ログイン", login_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
           <% end %>
         </div>
 
@@ -76,29 +74,30 @@
 
     <!-- モバイルメニュー -->
     <div id="mobile-menu" class="hidden md:hidden">
-      <ul class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+      <ul class="px-2 pt-2 pb-3 space-y-1 sm:px-2">
         <% if logged_in? %>
           <% if current_user.admin? %>
             <%# 管理者用ナビゲーション %>
-            <li><%= link_to "ホーム", admin_root_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "機械一覧", admin_machines_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index", class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "発注一覧", admin_orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "発注する", new_admin_order_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <p><%= link_to "ユーザー情報", admin_users_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-              <p><%= link_to "ユーザー追加", admin_users_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <li><%= link_to "ホーム", admin_root_path, id: "admin-machines-index", class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "機械一覧", admin_machines_path, id: "admin-machines-index", class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "機械の登録", new_admin_machine_path, id: "admin-machines-index", class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "発注一覧", admin_orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "発注する", new_admin_order_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "納期の予想", admin_process_estimates_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "ユーザー情報", admin_users_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "ユーザー追加", admin_users_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
           <% else %>
             <%# 一般ユーザー用ナビゲーション %>
-            <li><%= link_to "ホーム", root_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-            <li><%= link_to "織機一覧", machines_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "受注一覧", orders_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-            <li><%= link_to "ユーザー情報", user_path(current_user), class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "ホーム", root_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+            <li><%= link_to "織機一覧", machines_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "機械の登録", new_machine_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+            <li><%= link_to "ユーザー情報", user_path(current_user), class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
           <% end %>
-        <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-3 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></li>
+        <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-2 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></li>
         <% else %>
           <%# 未ログイン時のナビゲーション %>
-          <li><%= link_to "ログイン", login_path, class: "block px-3 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+          <li><%= link_to "ログイン", login_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
         <% end %>
       </ul>
     </div>

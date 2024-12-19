@@ -141,7 +141,7 @@ class Admin::OrdersController < ApplicationController
         machine_assignments_params = order_params[:machine_assignments_attributes]
         machine_id = machine_assignments_params[0][:machine_id].to_i
         machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
-          # フォームで送られた ID に基づき MachineAssignment を取得
+        # フォームで送られた ID に基づき MachineAssignment を取得
         machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
         if machine_ids.any?
           @order.machine_assignments.each do |assignment|
@@ -153,10 +153,11 @@ class Admin::OrdersController < ApplicationController
         else
           # 存在しない場合は新規作成し、@order に関連付ける
           @order.work_processes.each do |work_process|
-            work_process.machine_assignments.create!(
-              machine_id: machine_id,
-              machine_status_id: machine_status_id
-            )
+            # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
+            ma = MachineAssignment.find_or_initialize_by(work_process_id: work_process.id)
+            ma.machine_id = machine_id
+            ma.machine_status_id = machine_status_id
+            ma.save!
           end
         end
       end
@@ -166,6 +167,7 @@ class Admin::OrdersController < ApplicationController
       if update_order.present?
         @order.update!(update_order)
       end
+      handle_machine_assignment_updates if machine_assignments_present?
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
 
@@ -247,6 +249,11 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
+  # MachineAssignmentの存在を確認
+  def machine_assignments_present?
+    order_params[:machine_assignments_attributes].present?
+  end
+
   # machine_assignments_attributesが配列で来た場合にも対応
   def sanitize_machine_assignments_params
     return unless params[:order].present?
@@ -262,6 +269,39 @@ class Admin::OrdersController < ApplicationController
         params[:order].delete(:machine_assignments_attributes)
       else
         params[:order][:machine_assignments_attributes] = cleaned
+      end
+    end
+  end
+
+  def handle_machine_assignment_updates
+    relevant_work_process_definition_ids = [1, 2, 3, 4]
+
+    # 対象のWorkProcess群を取得
+    relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
+    target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
+
+    # 条件: 全てがstatus_id=3の場合のみ処理
+    if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
+      machine_id = update_order_params[:machine_assignments_attributes][0][:machine_id].to_i
+
+      if machine_id.present?
+        # 全WorkProcessを取得(5などその他も含む場合)
+        all_work_process_ids = @order.work_processes.pluck(:id)
+
+        # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
+        MachineAssignment.where(
+          machine_id: machine_id,
+          work_process_id: all_work_process_ids
+        ).update_all(machine_id: nil, machine_status_id: nil)
+
+        # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
+        # 既存があればそれを使い、新たなcreateは行わない
+        assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
+        if assignment.new_record?
+          # 新規の場合のみ作成
+          assignment.machine_status_id = 1
+          assignment.save!
+        end
       end
     end
   end
