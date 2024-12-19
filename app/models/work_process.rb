@@ -208,5 +208,4 @@ class WorkProcess < ApplicationRecord
       order(:start_date).first
     end
   end
-
 end

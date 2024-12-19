@@ -1,12 +1,14 @@
 class Admin::OrdersController < ApplicationController
   # 定義された関数の使用
   include ApplicationHelper
-before_action :order_params, only: [ :update ]
-before_action :create_order_params, only: [ :create ]
+  before_action :order_params, only: [ :update ]
+  before_action :create_order_params, only: [ :create ]
 
-before_action :set_order, only: [ :edit, :show, :update, :destroy ]
-# before_action :work_process_params, only: [:create, :update]
-before_action :admin_user
+  before_action :set_order, only: [ :edit, :show, :update, :destroy ]
+  # before_action :work_process_params, only: [:create, :update]
+  before_action :admin_user
+  # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
+  before_action :sanitize_machine_assignments_params, only: [:update]
 
   def index
     @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
@@ -134,26 +136,28 @@ before_action :admin_user
         work_process_record.update!(updated_date)
 
       end
-      # MachineAssignmentの更新
-      machine_assignments_params = order_params[:machine_assignments_attributes]
-      machine_id = machine_assignments_params[0][:machine_id].to_i
-      machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
-        # フォームで送られた ID に基づき MachineAssignment を取得
-      machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
-      if machine_ids.any?
-        @order.machine_assignments.each do |assignment|
-          assignment.update!(
-            machine_id: machine_id,
-            machine_status_id: machine_status_id
-          )
-        end
-      else
-        # 存在しない場合は新規作成し、@order に関連付ける
-        @order.work_processes.each do |work_process|
-          work_process.machine_assignments.create!(
-            machine_id: machine_id,
-            machine_status_id: machine_status_id
-          )
+      if order_params[:machine_assignments_attributes].present?
+        # MachineAssignmentの更新
+        machine_assignments_params = order_params[:machine_assignments_attributes]
+        machine_id = machine_assignments_params[0][:machine_id].to_i
+        machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
+          # フォームで送られた ID に基づき MachineAssignment を取得
+        machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
+        if machine_ids.any?
+          @order.machine_assignments.each do |assignment|
+            assignment.update!(
+              machine_id: machine_id,
+              machine_status_id: machine_status_id
+            )
+          end
+        else
+          # 存在しない場合は新規作成し、@order に関連付ける
+          @order.work_processes.each do |work_process|
+            work_process.machine_assignments.create!(
+              machine_id: machine_id,
+              machine_status_id: machine_status_id
+            )
+          end
         end
       end
 
@@ -240,6 +244,25 @@ before_action :admin_user
   def admin_user
     unless current_user&.admin?
       redirect_to orders_path, alert: "管理者以外アクセスできません"
+    end
+  end
+
+  # machine_assignments_attributesが配列で来た場合にも対応
+  def sanitize_machine_assignments_params
+    return unless params[:order].present?
+
+    if params[:order][:machine_assignments_attributes].present?
+      # params[:order][:machine_assignments_attributes]が配列の場合、以下のように処理
+      # rejectで織機IDもステータスIDも空文字の場合は削除
+      cleaned = params[:order][:machine_assignments_attributes].reject do |ma|
+        ma[:machine_id].blank? && ma[:machine_status_id].blank?
+      end
+
+      if cleaned.empty?
+        params[:order].delete(:machine_assignments_attributes)
+      else
+        params[:order][:machine_assignments_attributes] = cleaned
+      end
     end
   end
 
