@@ -118,13 +118,9 @@ class Admin::OrdersController < ApplicationController
     ActiveRecord::Base.transaction do
       order_work_processes = order_params.except(:machine_assignments_attributes)
 
-
-      # machine_type_id = order_work_processes.dig(:"process_estimate_attributes", :"machine_type_id").to_i
-
       # 完了日の取得
       workprocesses_params = order_work_processes[:work_processes_attributes].values
       machine = nil
-
 
       # 織機の種類変更がある場合
       # WorkProcessのprocess_estimate_idを更新
@@ -135,11 +131,11 @@ class Admin::OrdersController < ApplicationController
         machine = Machine.find_by(id: order_params[:machine_assignments_attributes][0][:machine_id])
       end
 
-      unless machine&.machine_type == process_estimates.first.machine_type
-        # type不一致です
-        flash[:notice] = "織機の種類が一致していないため、更新できません"
-        render :edit and return
-      end
+      # unless machine&.machine_type == process_estimates.first.machine_type
+      #   # type不一致です
+      #   flash[:notice] = "織機の種類が一致していないため、更新できません"
+      #   render :edit and return
+      # end
 
       current_work_processes = @order.work_processes
 
@@ -163,16 +159,16 @@ class Admin::OrdersController < ApplicationController
         actual_completion_date =  workprocess_params[:actual_completion_date]
 
         # 織機の種類を変更した場合
-        unless machine&.machine_type != process_estimates.first.machine_type
+        # 選択されたmachine_type_id params[:machine_type_id]
+
+        if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
           estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
           # ナレッジ置き換え
           target_work_prcess.process_estimate = estimate
-
         end
         target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
-        target_work_prcess[:factory_estimated_completion_date] = workprocess_params[:factory_estimated_completion_date]
+        target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
         target_work_prcess.save
-        # binding.irb
         # 更新したナレッジで全行程の日時の更新処理の呼び出し
         new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
         # 開始日の方が新しい場合は置き換え
