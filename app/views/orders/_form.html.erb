@@ -66,7 +66,7 @@
                                     %>
                                 </td>
                                 <td class="px-4 py-2 border-b text-gray-900">
-                                    <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
+                                    <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(@machine_statuses_for_form, :id, :name, current_status), { prompt: "選択してください", class: "form-control" } %>
                                 </td>
                             </tr>
                         <% end %>
