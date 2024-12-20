@@ -7,6 +7,7 @@ class OrdersController < ApplicationController
   before_action :convert_work_processes_params, only: [:update]
   # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
   before_action :sanitize_machine_assignments_params, only: [:update]
+  before_action :set_machine_statuses_for_form, only: [:edit, :update]
 
   def index
     @company = current_user&.company
@@ -82,8 +83,10 @@ class OrdersController < ApplicationController
     ActiveRecord::Base.transaction do
       update_work_processes
       set_work_process_status_completed
-      update_machine_assignments if machine_assignments_present?
-      handle_machine_assignment_updates if machine_assignments_present?
+      if machine_assignments_present?
+        update_machine_assignments
+        handle_machine_assignment_updates
+      end
       update_order_details
     end
     redirect_to order_path(@order), notice: "更新されました。"
@@ -160,26 +163,26 @@ class OrdersController < ApplicationController
   end
 
   # ↓↓ updateアクションに必要なメソッド ↓↓
-  def update_machine_assignments
-    params[:order][:machine_assignments].each do |ma_param|
-      ma = MachineAssignment.find(ma_param[:id])
-      ma.update!(machine_status_id: ma_param[:machine_status_id])
-    end
-  end
+  # def update_machine_assignments
+  #   params[:order][:machine_assignments].each do |ma_param|
+  #     ma = MachineAssignment.find(ma_param[:id])
+  #     ma.update!(machine_status_id: ma_param[:machine_status_id])
+  #   end
+  # end
 
-  def update_machine_statuses
-    params[:order][:machine_statuses].each do |ms_param|
-      machine_id = ms_param[:machine_id]
-      new_status_id = ms_param[:machine_status_id]
+  # def update_machine_statuses
+  #   params[:order][:machine_statuses].each do |ms_param|
+  #     machine_id = ms_param[:machine_id]
+  #     new_status_id = ms_param[:machine_status_id]
 
-      # 関連するMachineAssignmentを取得
-      assignments = MachineAssignment.where(machine_id: machine_id)
+  #     # 関連するMachineAssignmentを取得
+  #     assignments = MachineAssignment.where(machine_id: machine_id)
 
-      assignments.each do |assignment|
-        assignment.update!(machine_status_id: new_status_id)
-      end
-    end
-  end
+  #     assignments.each do |assignment|
+  #       assignment.update!(machine_status_id: new_status_id)
+  #     end
+  #   end
+  # end
 
   # WorkProcess の更新を担当
   def update_work_processes
@@ -201,6 +204,16 @@ class OrdersController < ApplicationController
       updated_date, next_start_date = WorkProcess.check_current_work_process(work_process, start_date, actual_completion_date)
       work_process_record.update!(updated_date)
     end
+  end
+
+  # machine_status_id:1をselect_tagに出さないためのメソッド
+  def set_machine_statuses_for_form
+    @machine_statuses_for_form = filter_machine_statuses
+  end
+
+  def filter_machine_statuses
+    # machine_status_id:1を除外
+    MachineStatus.where.not(id: 1)
   end
 
   # MachineAssignmentの存在を確認
@@ -227,9 +240,11 @@ class OrdersController < ApplicationController
       # 存在しない場合は新規作成し、@order に関連付ける
       @order.work_processes.each do |work_process|
         # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
-        ma = MachineAssignment.find_or_initialize_by(work_process_id: work_process.id)
-        ma.machine_id = machine_id
-        ma.machine_status_id = machine_status_id
+        ma = MachineAssignment.find_or_initialize_by(
+          work_process_id: work_process.id,
+          machine_id: machine_id,
+          machine_status_id: 2
+        )
         ma.save!
       end
     end
