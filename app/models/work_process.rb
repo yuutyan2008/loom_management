@@ -129,15 +129,17 @@ class WorkProcess < ApplicationRecord
       if actual_completion_date.present?
         process[:latest_estimated_completion_date] = actual_completion_date
         process[:earliest_estimated_completion_date] = actual_completion_date
-
-        start_date = process[:start_date]
-
+        # start_date = process[:start_date]
+        # 追記
+        process[:start_date] = start_date
       else
       # 開始日の更新が必要
+
         process[:start_date] = start_date
         # 更新された開始日からナレッジを再計算
         self.calc_process_estimate(process, start_date)
       end
+      # process[:start_date] = start_date
     end
     if process[:work_process_definition_id].to_i == 1
       if actual_completion_date.present?
@@ -196,5 +198,4 @@ class WorkProcess < ApplicationRecord
       order(:start_date).first
     end
   end
-
 end

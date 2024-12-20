@@ -48,5 +48,8 @@ class Order < ApplicationRecord
     joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
   }
 
-
+  # 注文が1週間以内に作成されたかを判定するメソッド
+  def recent?
+    created_at >= 1.weeks.ago
+  end
 end

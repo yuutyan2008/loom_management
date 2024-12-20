@@ -2,6 +2,7 @@ class SessionsController < ApplicationController
   def new
   end
 
+  # 修正対象
   def create
     user = User.find_by(email: params[:session][:email].downcase)
     if user && user.authenticate(params[:session][:password])
@@ -13,6 +14,7 @@ class SessionsController < ApplicationController
     end
   end
 
+  # 修正対象
   def destroy
     session[:user_id] = nil
     @current_user = nil
