@@ -80,6 +80,7 @@ class OrdersController < ApplicationController
 
     ActiveRecord::Base.transaction do
       update_work_processes
+      set_work_process_status_completed
       update_machine_assignments if machine_assignments_present?
       handle_machine_assignment_updates if machine_assignments_present?
       update_order_details
@@ -242,14 +243,12 @@ class OrdersController < ApplicationController
   # machine_assignments_attributesが配列で来た場合にも対応
   def sanitize_machine_assignments_params
     return unless params[:order].present?
-
     if params[:order][:machine_assignments_attributes].present?
       # params[:order][:machine_assignments_attributes]が配列の場合、以下のように処理
       # rejectで織機IDもステータスIDも空文字の場合は削除
       cleaned = params[:order][:machine_assignments_attributes].reject do |ma|
         ma[:machine_id].blank? && ma[:machine_status_id].blank?
       end
-
       if cleaned.empty?
         params[:order].delete(:machine_assignments_attributes)
       else
@@ -282,6 +281,15 @@ class OrdersController < ApplicationController
           assignment.machine_status_id = 1
           assignment.save!
         end
+      end
+    end
+  end
+
+  # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
+  def set_work_process_status_completed
+    @order.work_processes.each do |work_process|
+      if work_process.actual_completion_date.present? && work_process.work_process_status_id != 3
+        work_process.update!(work_process_status_id: 3)
       end
     end
   end
@@ -365,11 +373,14 @@ class OrdersController < ApplicationController
 
     selected_machine_id = machine_assignments_params[0][:machine_id].to_i
     selected_machine = Machine.find_by(id: selected_machine_id)
-    return true unless selected_machine # 存在しない織機なら別エラーになるはずだが、とりあえずtrueでスキップ
 
-    # 1. 織機タイプのチェック
+    # 存在しない織機の場合は特にチェックしない（別エラーになるはず）
+    return true unless selected_machine
+
     order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
     selected_machine_type_name = selected_machine.machine_type.name
+
+    # 1. 織機タイプのチェック
     if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
       flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
       return false
@@ -385,6 +396,16 @@ class OrdersController < ApplicationController
       .where.not(id: @order.id) # 自分自身は除外
     if incomplete_orders_using_machine.exists?
       flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
+      return false
+    end
+
+    # 条件3: machine_status_idが4（使用できない状態）の場合
+    current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
+    current_machine_status_id = current_assignment&.machine_status_id
+    # binding.irb
+    # current_machine_status_idが4ならエラーメッセージを表示する例
+    if current_machine_status_id == 4
+      flash.now[:alert] = "選択した織機は現在故障中です。別の織機を選択してください。"
       return false
     end
 
