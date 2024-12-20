@@ -71,6 +71,7 @@ class OrdersController < ApplicationController
     end
   end
 
+  # 修正対象
   def update
     ActiveRecord::Base.transaction do
       update_work_processes

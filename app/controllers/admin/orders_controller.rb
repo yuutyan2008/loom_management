@@ -111,43 +111,84 @@ class Admin::OrdersController < ApplicationController
     ActiveRecord::Base.transaction do
       order_work_processes = order_params.except(:machine_assignments_attributes)
 
+
+      # machine_type_id = order_work_processes.dig(:"process_estimate_attributes", :"machine_type_id").to_i
+
       # 完了日の取得
-      workprocesses = order_work_processes[:work_processes_attributes].values
+      workprocesses_params = order_work_processes[:work_processes_attributes].values
+      machine = nil
+
+
+      # 織機の種類変更がある場合
+      # WorkProcessのprocess_estimate_idを更新
+      # 変更があった場合の新しいナレッジ
+      process_estimates = ProcessEstimate.where(machine_type_id: params[:machine_type_id])
+      # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
+      if order_params[:machine_assignments_attributes]
+        machine = Machine.find_by(id: order_params[:machine_assignments_attributes][0][:machine_id])
+      end
+
+      unless machine&.machine_type == process_estimates.first.machine_type
+        # type不一致です
+        flash[:notice] = "織機の種類が一致していないため、更新できません"
+        render :edit and return
+      end
+
+      current_work_processes = @order.work_processes
 
       next_start_date = nil
 
-      workprocesses.each_with_index do |workprocess, index|
-        # 追記
-        work_process_record = WorkProcess.find(workprocess["id"])
+      workprocesses_params.each_with_index do |workprocess_params, index|
 
+        target_work_prcess = current_work_processes.find(workprocess_params[:id])
         if index == 0
-          start_date = workprocess["start_date"]
+          start_date = target_work_prcess["start_date"]
         else
-          start_date = next_start_date
+          input_start_date = workprocess_params[:start_date].to_date
+          # 入力された開始日が新しい場合は置き換え
+          start_date = input_start_date > next_start_date ? input_start_date : next_start_date
+          # if input_start_date < next_start_date
+          #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
+          #   render :edit and return
+          # end
         end
 
-        # 見込み完了日、作業開始日更新
-        actual_completion_date = workprocess["actual_completion_date"]
+        actual_completion_date =  workprocess_params[:actual_completion_date]
 
-        # 開始日、見込み完了日置き換え
-        updated_date, next_start_date = WorkProcess.check_current_work_process(workprocess, start_date, actual_completion_date)
+        # 織機の種類を変更した場合
+        unless machine&.machine_type != process_estimates.first.machine_type
+          estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+          # ナレッジ置き換え
+          target_work_prcess.process_estimate = estimate
 
-        # 更新された値を反映
-        work_process_record.update!(updated_date)
+        end
+        target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
+        target_work_prcess[:factory_estimated_completion_date] = workprocess_params[:factory_estimated_completion_date]
+        target_work_prcess.save
+        # binding.irb
+        # 更新したナレッジで全行程の日時の更新処理の呼び出し
+        new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
+        # 開始日の方が新しい場合は置き換え
+        next_start_date = start_date > next_start_date ? start_date : next_start_date
+
+        new_target_work_prcess.actual_completion_date = actual_completion_date
+        new_target_work_prcess.save
 
       end
+
+      # 織機詳細変更した場合
       if order_params[:machine_assignments_attributes].present?
         # MachineAssignmentの更新
         machine_assignments_params = order_params[:machine_assignments_attributes]
-        machine_id = machine_assignments_params[0][:machine_id].to_i
-        machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
+        machine_id = machine_assignments_params[0][:machine_id]
+        machine_status_id = machine_assignments_params[0][:machine_status_id]
           # フォームで送られた ID に基づき MachineAssignment を取得
         machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
         if machine_ids.any?
           @order.machine_assignments.each do |assignment|
             assignment.update!(
-              machine_id: machine_id,
-              machine_status_id: machine_status_id
+              machine_id: machine_id.present? ? machine_id : nil ,
+              machine_status_id: machine_status_id.present? ? machine_status_id : nil
             )
           end
         else
@@ -160,7 +201,6 @@ class Admin::OrdersController < ApplicationController
           end
         end
       end
-
       # Orderの更新
       update_order = order_params.except(:machine_assignments_attributes, :work_processes_attributes)
       if update_order.present?
@@ -186,7 +226,7 @@ class Admin::OrdersController < ApplicationController
       # .join(", "): 配列内の全てのエラーメッセージをカンマ区切り（, ）で連結
       flash[:alert] = @order.errors.full_messages.join(", ")
     end
-    redirect_to admin_order_path
+    redirect_to admin_orders_path
   end
 
   private
@@ -219,25 +259,28 @@ class Admin::OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      # :machine_status_id,
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
+      # process_estimate_attributes: [:machine_type_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応
         :id,
-        :process_estimate_id,
-        :work_process_definition_id,
+        # :process_estimate_id,
+        # :work_process_definition_id,
         :work_process_status_id,
         :factory_estimated_completion_date,
-        :earliest_estimated_completion_date,
-        :latest_estimated_completion_date,
+        # :earliest_estimated_completion_date,
+        # :latest_estimated_completion_date,
         :actual_completion_date,
-        :start_date,
-      process_estimate: [ :machine_type_id ]
+        :start_date
       ]
     )
   end
 
   def set_order
     @order = Order.find(params[:id])
+    unless @order
+      flash[:alert] = "指定された注文が見つかりません。"
+      redirect_to admin_orders_path
+    end
   end
 
   # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
