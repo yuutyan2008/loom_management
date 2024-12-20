@@ -98,8 +98,8 @@ class Admin::MachinesController < ApplicationController
     @orders = Order.includes(:work_processes, :company)
     colors = [ "class-a", "class-b" ]
 
-  # 現在の作業工程を取得
-  current_work_process = WorkProcess.current_work_process
+    # 現在の作業工程を取得
+    current_work_process = WorkProcess.current_work_process
 
     @orders = @orders.map.with_index do |order, order_index|
       # custom_classにクラスを指定して代入
@@ -208,7 +208,7 @@ class Admin::MachinesController < ApplicationController
         # マシンへのリンクを作成
         link = view_context.link_to("会社名: #{machine.company.name}, 織機名: #{machine.name}, ステータス: #{assignment_messages}", admin_machine_path(machine), class: "underline")
         "<li>#{link}</li>"
-      end.join("br").html_safe
+      end.join("<br>").html_safe
 
       flash.now[:alert] = <<-HTML.html_safe
         <strong>予定納期を超えて '稼働中' ではない織機が #{total_problematic_machines} 台あります。</strong>
