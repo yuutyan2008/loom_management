@@ -16,7 +16,7 @@ class Admin::MachinesController < ApplicationController
       .search_by_company(params[:company_id])
       .search_by_machine(params[:machine_id])
       .search_by_product_number(params[:product_number_id])
-      .search_by_work_process_definitions(params[:work_process_definitions_id])
+      # .search_by_work_process_definitions(params[:work_process_definitions_id])
   end
 
   def search_params
