@@ -1,14 +1,4 @@
-<%= form_with(model: @order, url: order_path(@order), method: :patch, local: true) do |form| %>
-    <% if @order.errors.any? %>
-        <div class="alert alert-danger">
-            <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
-            <ul>
-                <% @order.errors.full_messages.each do |message| %>
-                    <li><%= message %></li>
-                <% end %>
-            </ul>
-        </div>
-    <% end %>
+<%= form_with(model: @order, url: order_path(@order), method: :patch, local: true, data: { turbo: false }) do |form| %>
 
 <!-- 受注の基本情報 開始日のみの編集セクション -->
     <section class="mb-12">
