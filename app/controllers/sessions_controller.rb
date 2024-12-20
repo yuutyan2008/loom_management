@@ -2,19 +2,25 @@ class SessionsController < ApplicationController
   def new
   end
 
-  # 修正対象
   def create
-    user = User.find_by(email: params[:session][:email].downcase)
-    if user && user.authenticate(params[:session][:password])
-      log_in(user)
-      completed_login(user)
+    email = params[:session][:email].downcase
+    password = params[:session][:password]
+    user = User.find_by(email: email)
+
+    if user
+      if user.authenticate(password)
+        log_in(user)
+        completed_login(user)
+      else
+        flash.now[:alert] = 'パスワードが間違っています'
+        render 'new'
+      end
     else
-      flash.now[:alert] = '登録できませんでした'
+      flash.now[:alert] = 'メールアドレスが間違っています'
       render 'new'
     end
   end
 
-  # 修正対象
   def destroy
     session[:user_id] = nil
     @current_user = nil
@@ -27,10 +33,9 @@ class SessionsController < ApplicationController
   def completed_login(user)
     if user.admin?
       redirect_to admin_root_path
-      flash[:notice] = 'ログインしました'
     else
       redirect_to root_path
-      flash[:notice] = 'ログインしました'
     end
+    flash[:notice] = 'ログインしました'
   end
 end
