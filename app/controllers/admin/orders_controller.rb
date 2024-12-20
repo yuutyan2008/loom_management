@@ -9,6 +9,7 @@ class Admin::OrdersController < ApplicationController
   before_action :admin_user
   # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
   before_action :sanitize_machine_assignments_params, only: [:update]
+  before_action :set_machine_statuses_for_form, only: [:edit, :update]
 
   def index
     @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
@@ -188,7 +189,7 @@ class Admin::OrdersController < ApplicationController
         machine_assignments_params = order_params[:machine_assignments_attributes]
         machine_id = machine_assignments_params[0][:machine_id]
         machine_status_id = machine_assignments_params[0][:machine_status_id]
-          # フォームで送られた ID に基づき MachineAssignment を取得
+        # フォームで送られた ID に基づき MachineAssignment を取得
         machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
         if machine_ids.any?
           @order.machine_assignments.each do |assignment|
@@ -201,9 +202,11 @@ class Admin::OrdersController < ApplicationController
           # 存在しない場合は新規作成し、@order に関連付ける
           @order.work_processes.each do |work_process|
             # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
-            ma = MachineAssignment.find_or_initialize_by(work_process_id: work_process.id)
-            ma.machine_id = machine_id
-            ma.machine_status_id = machine_status_id
+            ma = MachineAssignment.find_or_initialize_by(
+              work_process_id: work_process.id,
+              machine_id: machine_id,
+              machine_status_id: 2
+            )
             ma.save!
           end
         end
@@ -307,6 +310,16 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
+  # machine_status_id:1をselect_tagに出さないためのメソッド
+  def set_machine_statuses_for_form
+    @machine_statuses_for_form = filter_machine_statuses
+  end
+
+  def filter_machine_statuses
+    # machine_status_id:1を除外
+    MachineStatus.where.not(id: 1)
+  end
+
   # MachineAssignmentの存在を確認
   def machine_assignments_present?
     order_params[:machine_assignments_attributes].present?
@@ -369,7 +382,7 @@ class Admin::OrdersController < ApplicationController
   # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   # 追加: indexアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_index(orders)
-    completed_status = WorkProcessStatus.find_by(name: "\u4F5C\u696D\u5B8C\u4E86")
+    completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
 
     # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
@@ -404,7 +417,7 @@ class Admin::OrdersController < ApplicationController
 
   # 追加: showアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_show(work_processes)
-    completed_status = WorkProcessStatus.find_by(name: "\u4F5C\u696D\u5B8C\u4E86")
+    completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
 
     # 遅延しているWorkProcessを取得
