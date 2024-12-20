@@ -1,14 +1,4 @@
-<%= form_with(model: @order, url: order_path(@order), method: :patch, local: true) do |form| %>
-    <% if @order.errors.any? %>
-        <div class="alert alert-danger">
-            <h4><%= pluralize(@order.errors.count, "error") %> prohibited this order from being saved:</h4>
-            <ul>
-                <% @order.errors.full_messages.each do |message| %>
-                    <li><%= message %></li>
-                <% end %>
-            </ul>
-        </div>
-    <% end %>
+<%= form_with(model: @order, url: order_path(@order), method: :patch, local: true, data: { turbo: false }) do |form| %>
 
 <!-- 受注の基本情報 開始日のみの編集セクション -->
     <section class="mb-12">
@@ -88,7 +78,6 @@
                     <thead>
                     <tr class="bg-gray-100">
                         <th class="w-1/4 px-4 py-2 text-gray-700 border">織機名</th>
-                        <th class="w-1/4 px-4 py-2 text-gray-700 border">稼働状況</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -102,9 +91,6 @@
                                     ),
                                     { prompt: "織機を選択してください", class: "form-control" }
                                 %>
-                            </td>
-                            <td class="px-4 py-2 border-b text-gray-900">
-                                <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
                             </td>
                         </tr>
                     </tbody>
@@ -122,8 +108,8 @@
                     <tr class="bg-gray-100">
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">作業工程定義</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">開始日</th>
-                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">予定納期</th>
-                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">完了日</th>
+                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">完了予定日</th>
+                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">実際の完了日</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">ステータス</th>
                     </tr>
                 </thead>

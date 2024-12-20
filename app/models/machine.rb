@@ -8,11 +8,11 @@ class Machine < ApplicationRecord
   scope :machine_associations, -> {
     includes(
       :machine_assignments,
-      machine_assignments: [:machine_status],
+      machine_assignments: [ :machine_status ],
       work_processes: {
         work_process_status: {},
         work_process_definition: {},
-        order: [:company, :product_number, :color_number]
+        order: [ :company, :product_number, :color_number ]
       }
     )
   }
@@ -32,7 +32,7 @@ class Machine < ApplicationRecord
   }
 
   # 現在の工程
-  scope :search_by_work_process_definitios, ->(work_process_definition_id) {
+  scope :search_by_work_process_definitions, ->(work_process_definition_id) {
     joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
   }
 
