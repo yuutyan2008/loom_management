@@ -20,7 +20,7 @@ class Admin::OrdersController < ApplicationController
     @current_work_processes = {}
     @orders.each do |order|
       if order.work_processes.any?
-        if params[:work_process_definitions_id]
+        if params[:work_process_definitions_id].present?
           is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definitions_id].to_i
           @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
         else
