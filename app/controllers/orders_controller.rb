@@ -72,6 +72,12 @@ class OrdersController < ApplicationController
   end
 
   def update
+    # ここで織機の選択条件を検証
+    unless validate_machine_selection
+      # 条件に合わず更新できない場合はここで処理を終了
+      render :edit and return
+    end
+
     ActiveRecord::Base.transaction do
       update_work_processes
       update_machine_assignments if machine_assignments_present?
@@ -254,25 +260,20 @@ class OrdersController < ApplicationController
 
   def handle_machine_assignment_updates
     relevant_work_process_definition_ids = [1, 2, 3, 4]
-
     # 対象のWorkProcess群を取得
     relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
     target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-
     # 条件: 全てがstatus_id=3の場合のみ処理
     if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
       machine_id = update_order_params[:machine_assignments_attributes][0][:machine_id].to_i
-
       if machine_id.present?
         # 全WorkProcessを取得(5などその他も含む場合)
         all_work_process_ids = @order.work_processes.pluck(:id)
-
         # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
         MachineAssignment.where(
           machine_id: machine_id,
           work_process_id: all_work_process_ids
         ).update_all(machine_id: nil, machine_status_id: nil)
-
         # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
         # 既存があればそれを使い、新たなcreateは行わない
         assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
@@ -355,5 +356,38 @@ class OrdersController < ApplicationController
         </ul>
       HTML
     end
+  end
+
+  # 織機選択時のバリデーションを行うメソッド
+  def validate_machine_selection
+    machine_assignments_params = update_order_params[:machine_assignments_attributes]
+    return true unless machine_assignments_params.present? # 織機が未指定の場合は特にチェックせずスキップ
+
+    selected_machine_id = machine_assignments_params[0][:machine_id].to_i
+    selected_machine = Machine.find_by(id: selected_machine_id)
+    return true unless selected_machine # 存在しない織機なら別エラーになるはずだが、とりあえずtrueでスキップ
+
+    # 1. 織機タイプのチェック
+    order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
+    selected_machine_type_name = selected_machine.machine_type.name
+    if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+      flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
+      return false
+    end
+
+    # 2. 既に割り当てられているかチェック
+    # 他の未完了の受注に同じ織機が割り当てられていないかを確認
+    # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
+    incomplete_orders_using_machine = Order
+      .incomplete
+      .joins(:machine_assignments)
+      .where(machine_assignments: { machine_id: selected_machine_id })
+      .where.not(id: @order.id) # 自分自身は除外
+    if incomplete_orders_using_machine.exists?
+      flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
+      return false
+    end
+
+    true
   end
 end
