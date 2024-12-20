@@ -71,6 +71,7 @@ class OrdersController < ApplicationController
     end
   end
 
+  # 修正対象
   def update
     # ここで織機の選択条件を検証
     unless validate_machine_selection
