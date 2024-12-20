@@ -75,11 +75,26 @@ class Admin::HomeController < ApplicationController
     @company = Company.find(params[:id])
   end
 
+  # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   def build_flash_message(orders)
-    messages = orders.map do |order|
-      "#{order.company.name} で織機の割り当てができていない受注があります。" +
-      "詳しくは #{view_context.link_to('編集', edit_admin_order_path(order), class: 'text-blue-500 underline')} や #{view_context.link_to('詳細', admin_order_path(order), class: 'text-blue-500 underline')} をご確認ください。"
+    orders = Order.all
+    # 基本となるRelationを定義（work_processesとmachine_assignmentsを左外部結合）
+    base_relation = orders.left_outer_joins(:machine_assignments)
+    # 条件1: machine_assignmentsが存在しない
+    condition_no_assignment = base_relation.where(machine_assignments: { id: nil })
+    # 条件2: machine_assignmentsが存在してもmachine_idがnil
+    condition_machine_id_nil = base_relation.where(machine_assignments: { machine_id: nil })
+    # 条件1または条件2を満たすOrderを取得
+    problematic_orders = condition_no_assignment.or(condition_machine_id_nil).distinct
+
+    # フラッシュメッセージを生成
+    messages = problematic_orders.map do |order|
+      "#{order.company.name} で織機の割り当てができていない受注 (ID: #{order.id}) があります。" +
+      "詳しくは #{view_context.link_to('編集', edit_admin_order_path(order), class: 'text-blue-500 underline')} や " +
+      "#{view_context.link_to('詳細', admin_order_path(order), class: 'text-blue-500 underline')} をご確認ください。"
     end
+
+    # メッセージを HTML として安全に結合
     messages.join("<br>").html_safe
   end
 end

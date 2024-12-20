@@ -188,7 +188,7 @@ class WorkProcess < ApplicationRecord
     latest_completed_wp = joins(:work_process_status)
                             .where(work_process_statuses: { name: '作業完了' })
                             .order(start_date: :desc)
-                            .first
+                            .last
 
     if latest_completed_wp
       # 最新の「作業完了」より後の作業工程を取得
@@ -198,4 +198,5 @@ class WorkProcess < ApplicationRecord
       order(:start_date).first
     end
   end
+
 end

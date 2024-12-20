@@ -2,11 +2,11 @@ class MachinesController < ApplicationController
   include ApplicationHelper
   before_action :require_login
   before_action :set_company
-  before_action :set_machine, only: [:show, :edit, :update, :destroy]
-  before_action :authorize_machine, only: [:show, :edit, :update, :destroy]
+  before_action :set_machine, only: [ :show, :edit, :update, :destroy ]
+  before_action :authorize_machine, only: [ :show, :edit, :update, :destroy ]
 
   def index
-    @machines = @company.machines.includes(machine_assignments: [:work_process, :machine_status]).order(:id)
+    @machines = @company.machines.includes(machine_assignments: [ :work_process, :machine_status ]).order(:id)
     @no_machines_message = "現在保有している織機はありません" if @machines.empty?
     @work_processes = WorkProcess.ordered
     check_machine_status_index(@machines)
@@ -16,7 +16,7 @@ class MachinesController < ApplicationController
       .search_by_company(params[:company_id])
       .search_by_machine(params[:machine_id])
       .search_by_product_number(params[:product_number_id])
-      .search_by_work_process_definitios(params[:work_process_definition_id])
+      .search_by_work_process_definitions(params[:work_process_definition_id])
   end
 
   def search_params
@@ -26,7 +26,7 @@ class MachinesController < ApplicationController
   end
 
   def show
-    @work_processes = @machine.work_processes.ordered.includes(machine_assignments: [:machine_status])
+    @work_processes = @machine.work_processes.ordered.includes(machine_assignments: [ :machine_status ])
     check_machine_status_show(@machine)
   end
 
