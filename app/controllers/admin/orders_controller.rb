@@ -108,6 +108,12 @@ class Admin::OrdersController < ApplicationController
   end
 
   def update
+    # ここで織機の選択条件を検証
+    unless validate_machine_selection
+      # 条件に合わず更新できない場合はここで処理を終了
+      render :edit and return
+    end
+
     ActiveRecord::Base.transaction do
       order_work_processes = order_params.except(:machine_assignments_attributes)
 
@@ -167,6 +173,7 @@ class Admin::OrdersController < ApplicationController
       if update_order.present?
         @order.update!(update_order)
       end
+      set_work_process_status_completed
       handle_machine_assignment_updates if machine_assignments_present?
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
@@ -242,6 +249,14 @@ class Admin::OrdersController < ApplicationController
     @order = Order.find(params[:id])
   end
 
+  def set_work_process
+    @work_process = Task.find(params[:id])
+  end
+
+  def set_product_number
+    @product_number = current_user.product_number
+  end
+
   # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
   def admin_user
     unless current_user&.admin?
@@ -257,14 +272,12 @@ class Admin::OrdersController < ApplicationController
   # machine_assignments_attributesが配列で来た場合にも対応
   def sanitize_machine_assignments_params
     return unless params[:order].present?
-
     if params[:order][:machine_assignments_attributes].present?
       # params[:order][:machine_assignments_attributes]が配列の場合、以下のように処理
       # rejectで織機IDもステータスIDも空文字の場合は削除
       cleaned = params[:order][:machine_assignments_attributes].reject do |ma|
         ma[:machine_id].blank? && ma[:machine_status_id].blank?
       end
-
       if cleaned.empty?
         params[:order].delete(:machine_assignments_attributes)
       else
@@ -275,25 +288,20 @@ class Admin::OrdersController < ApplicationController
 
   def handle_machine_assignment_updates
     relevant_work_process_definition_ids = [1, 2, 3, 4]
-
     # 対象のWorkProcess群を取得
     relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
     target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-
     # 条件: 全てがstatus_id=3の場合のみ処理
     if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
-      machine_id = update_order_params[:machine_assignments_attributes][0][:machine_id].to_i
-
+      machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
       if machine_id.present?
         # 全WorkProcessを取得(5などその他も含む場合)
         all_work_process_ids = @order.work_processes.pluck(:id)
-
         # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
         MachineAssignment.where(
           machine_id: machine_id,
           work_process_id: all_work_process_ids
         ).update_all(machine_id: nil, machine_status_id: nil)
-
         # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
         # 既存があればそれを使い、新たなcreateは行わない
         assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
@@ -306,6 +314,16 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
+  # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
+  def set_work_process_status_completed
+    @order.work_processes.each do |work_process|
+      if work_process.actual_completion_date.present? && work_process.work_process_status_id != 3
+        work_process.update!(work_process_status_id: 3)
+      end
+    end
+  end
+
+  # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   # 追加: indexアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_index(orders)
     completed_status = WorkProcessStatus.find_by(name: "\u4F5C\u696D\u5B8C\u4E86")
@@ -376,12 +394,49 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  def set_work_process
-    @work_process = Task.find(params[:id])
-  end
+  # 織機選択時のバリデーションを行うメソッド
+  def validate_machine_selection
+    machine_assignments_params = order_params[:machine_assignments_attributes]
+    return true unless machine_assignments_params.present? # 織機が未指定の場合は特にチェックせずスキップ
 
-  def set_product_number
-    @product_number = current_user.product_number
-  end
+    selected_machine_id = machine_assignments_params[0][:machine_id].to_i
+    selected_machine = Machine.find_by(id: selected_machine_id)
 
+    # 存在しない織機の場合は特にチェックしない（別エラーになるはず）
+    return true unless selected_machine
+
+    order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
+    selected_machine_type_name = selected_machine.machine_type.name
+
+    # 1. 織機タイプのチェック
+    if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+      flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
+      return false
+    end
+
+    # 2. 既に割り当てられているかチェック
+    # 他の未完了の受注に同じ織機が割り当てられていないかを確認
+    # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
+    incomplete_orders_using_machine = Order
+      .incomplete
+      .joins(:machine_assignments)
+      .where(machine_assignments: { machine_id: selected_machine_id })
+      .where.not(id: @order.id) # 自分自身は除外
+    if incomplete_orders_using_machine.exists?
+      flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
+      return false
+    end
+
+    # 条件3: machine_status_idが4（使用できない状態）の場合
+    current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
+    current_machine_status_id = current_assignment&.machine_status_id
+    # binding.irb
+    # current_machine_status_idが4ならエラーメッセージを表示する例
+    if current_machine_status_id == 4
+      flash.now[:alert] = "選択した織機は現在故障中です。別の織機を選択してください。"
+      return false
+    end
+
+    true
+  end
 end

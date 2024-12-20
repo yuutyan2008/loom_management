@@ -1,6 +1,6 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注編集</h1>
 
-<%= form_with model: @order, url: admin_order_path(@order), method: :patch, local: true do |f| %>
+<%= form_with(model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { turbo: false }) do |f| %>
 <section class="mb-12">
   <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">商品情報</h2>
   <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">

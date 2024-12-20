@@ -78,7 +78,6 @@
                     <thead>
                     <tr class="bg-gray-100">
                         <th class="w-1/4 px-4 py-2 text-gray-700 border">織機名</th>
-                        <th class="w-1/4 px-4 py-2 text-gray-700 border">稼働状況</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -92,9 +91,6 @@
                                     ),
                                     { prompt: "織機を選択してください", class: "form-control" }
                                 %>
-                            </td>
-                            <td class="px-4 py-2 border-b text-gray-900">
-                                <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(MachineStatus.all, :id, :name), { prompt: "稼働状況を選択してください", class: "form-control" } %>
                             </td>
                         </tr>
                     </tbody>
