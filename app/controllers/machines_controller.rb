@@ -68,6 +68,7 @@ class MachinesController < ApplicationController
       end
     end
 
+    # 修正対象
     redirect_to machines_path, notice: "織機が更新されました。"
   rescue ActiveRecord::RecordInvalid => e
     flash.now[:alert] = "更新に失敗しました: #{e.message}"
