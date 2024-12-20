@@ -433,14 +433,11 @@ class Admin::OrdersController < ApplicationController
         end
       end.join(", ")
 
-      # リンクを生成
-      link = view_context.link_to wp_links, admin_order_path(overdue_work_processes.first.order), class: "underline"
-
       # フラッシュメッセージをHTMLとして生成
       flash.now[:alert] = <<-HTML.html_safe
         <strong>以下の作業工程が予定完了日を過ぎており、まだ完了していません。</strong>
         <ul class="text-red-700 list-disc ml-4 px-4 py-2">
-          <li>#{link}</li>
+          <li>#{wp_links}</li>
         </ul>
       HTML
     end
