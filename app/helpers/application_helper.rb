@@ -22,7 +22,7 @@ module ApplicationHelper
   end
 
   def not_available(value)
-    value.presence || 'N/A'
+    value.presence || 'ー'
   end
 
   def not_machine_status(value)

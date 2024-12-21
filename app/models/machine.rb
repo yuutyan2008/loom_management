@@ -36,6 +36,14 @@ class Machine < ApplicationRecord
     joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
   }
 
+  # ガントで過去の発注を非表示にする
+  scope :not_in_past_orders, -> {
+    joins(machine_assignments: { work_process: :order })
+      .where(orders: { id: Order.incomplete.select(:id) })
+      .distinct
+  }
+
+
   # 特定のIDを持つ機械を取得するクラスメソッド
   def self.find_with_associations(id)
     machine_associations.find_by(id: id)

@@ -40,6 +40,7 @@
       </thead>
       <tbody>
         <% grouped_orders = JSON.parse(@orders).group_by { |order| [order["company"], order["machine"], order["product_number"]] } %>
+        <%# <% binding.irb %>
         <% grouped_orders.each do |(company, machine, product_number), orders| %>
           <% orders.each_with_index do |order, index| %>
             <tr class='border border-gray-300' style="height:35px; box-sizing: content-box;">
