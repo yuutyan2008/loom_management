@@ -79,8 +79,8 @@
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_definition&.name %></td>
                     <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.start_date %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date || 'N/A' %></td>
-                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.actual_completion_date || 'N/A' %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.factory_estimated_completion_date || '未設定' %></td>
+                    <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.actual_completion_date || '未設定' %></td>
                     <td class="px-4 py-2 border-b text-gray-900"><%= current_wp&.work_process_status&.name %></td>
                 </tr>
             <% end %>
