@@ -106,17 +106,23 @@
             <table class="min-w-full border text-left border-gray-300">
                 <thead>
                     <tr class="bg-gray-100">
-                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">作業工程定義</th>
+                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">作業工程名</th>
+                        <th class="w-1/4 px-4 py-2 text-gray-700 border-b">現在の進捗</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">開始日</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">完了予定日</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">実際の完了日</th>
-                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">ステータス</th>
                     </tr>
                 </thead>
                 <tbody>
                     <%= form.fields_for :work_processes do |wp_form| %>
                         <tr class="hover:bg-gray-100">
                             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.work_process_definition&.name || "N/A" %></td>
+                            <td class="px-4 py-2 border-b text-gray-900">
+                                <%= wp_form.collection_select :work_process_status_id,
+                                WorkProcessStatus.all, :id, :name,
+                                selected: wp_form.object&.work_process_status_id,
+                                include_blank: "選択してください" %>
+                            </td>
                                 <%= wp_form.hidden_field :start_date, value: wp_form.object&.start_date %>
                             <td class="px-4 py-2 border-b text-gray-900">
                                 <%= wp_form.date_field :start_date, placeholder: "開始日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
@@ -127,12 +133,7 @@
                             <td class="px-4 py-2 border-b text-gray-900">
                                 <%= wp_form.date_field :actual_completion_date, placeholder: "機屋の完了日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
                             </td>
-                            <td class="px-4 py-2 border-b text-gray-900">
-                                <%= wp_form.collection_select :work_process_status_id,
-                                WorkProcessStatus.all, :id, :name,
-                                selected: wp_form.object&.work_process_status_id,
-                                include_blank: "選択してください" %>
-                            </td>
+
                         </tr>
                     <% end %>
                 </tbody>
