@@ -13,9 +13,9 @@
       <tbody>
         <% @dobbie_estimates.each do |estimate| %>
         <tr class="hover:bg-gray-50">
-          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.work_process_definition.name || "N/A" %></td>
-          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.earliest_completion_estimate || "N/A" %></td>
-          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.latest_completion_estimate || "N/A" %></td>
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.work_process_definition.name || "未設定" %></td>
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.earliest_completion_estimate || "未設定" %></td>
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.latest_completion_estimate || "未設定" %></td>
         </tr>
         <% end %>
       </tbody>
@@ -37,9 +37,9 @@
       <tbody>
         <% @jacquard_estimates.each do |estimate| %>
         <tr class="hover:bg-gray-50">
-          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.work_process_definition.name || "N/A" %></td>
-          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.earliest_completion_estimate || "N/A" %></td>
-          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.latest_completion_estimate || "N/A" %></td>
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.work_process_definition.name || "未設定" %></td>
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.earliest_completion_estimate || "未設定" %></td>
+          <td class="py-2 px-4 text-gray-700 border-b"><%= estimate&.latest_completion_estimate || "未設定" %></td>
         </tr>
         <% end %>
       </tbody>
