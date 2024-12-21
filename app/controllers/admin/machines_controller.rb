@@ -99,7 +99,7 @@ class Admin::MachinesController < ApplicationController
     colors = [ "class-a", "class-b" ]
 
     # 現在の作業工程を取得
-    current_work_process = WorkProcess.current_work_process
+    # current_work_process = WorkProcess.current_work_process
 
     @orders = @orders.map.with_index do |order, order_index|
       # custom_classにクラスを指定して代入

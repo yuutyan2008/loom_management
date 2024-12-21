@@ -22,32 +22,37 @@
       g.bar-wrapper.class-b rect.bar-progress {
         fill: #2ecc71 !important; /* 緑 */
       }
+
+
+
+
     </style>
 
   <div class='gantt-wrap flex min-w-[800px]'>
     <table class="flex-none w-1/3 border border-gray-300" style='border-spacing:0px !important;'>
       <thead class="pb-20">
         <tr class='border border-gray-300'>
+          <th class="p-5" style="height:55px;">会社</th>
+          <th class="p-5" style="height:55px;">織機</th>
           <th class="p-5" style="height:55px;">品番</th>
-          <th class="pt-5">会社</th>
-          <th class="pt-5">織機</th>
-          <th class="pt-5">ステータス</th>
+          <th class="p-5" style="height:55px;">ステータス</th>
         </tr>
       </thead>
       <tbody>
-        <% JSON.parse(@orders).group_by { |order| order["custom_index"] }.each do |order_id, grouped_orders| %>
-          <tr class='border border-gray-300' style="height:186.76px; box-sizing: content-box;">
-            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;"><%= grouped_orders.first["product_number"] %></td>
-            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;"><%= grouped_orders.first["company"] %></td>
-            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;">
-              <%= grouped_orders.map { |order| order["machine"] }.uniq.join(", ") %>
-            </td>
-            <td class='text-xs border border-gray-300' style="height:186.76px; box-sizing: content-box;">
-              <% work_process = WorkProcess.current_work_process %>
-              <%= work_process&.work_process_status&.name || "未設定" %>
-            </td>
-          </tr>
+        <% grouped_orders = JSON.parse(@orders).group_by { |order| [order["company"], order["machine"], order["product_number"]] } %>
+        <% grouped_orders.each do |(company, machine, product_number), orders| %>
+          <% orders.each_with_index do |order, index| %>
+            <tr class='border border-gray-300' style="height:35px; box-sizing: content-box;">
+              <% if index == 0 %>
+                <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;" rowspan="<%= orders.size %>"><%= company %></td>
+                <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;" rowspan="<%= orders.size %>"><%= machine %></td>
+                <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;" rowspan="<%= orders.size %>"><%= product_number %></td>
+              <% end %>
+              <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;"><%= order["work_process_status"] %></td>
+            </tr>
+          <% end %>
         <% end %>
+
       </tbody>
     </table>
 
