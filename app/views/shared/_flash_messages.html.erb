@@ -88,15 +88,15 @@
 
     <script>
         function toggleFlashMessages(id) {
-        const additionalMessages = document.getElementById(`additional-flash-messages-${id}`);
-        const button = event.target;
-        if (additionalMessages.classList.contains('hidden')) {
-            additionalMessages.classList.remove('hidden');
-            button.textContent = '閉じる';
-        } else {
-            additionalMessages.classList.add('hidden');
-            button.textContent = 'もっと見る';
-        }
+            const additionalMessages = document.getElementById(`additional-flash-messages-${id}`);
+            const button = event.target;
+            if (additionalMessages.classList.contains('hidden')) {
+                additionalMessages.classList.remove('hidden');
+                button.textContent = '閉じる';
+            } else {
+                additionalMessages.classList.add('hidden');
+                button.textContent = 'もっと見る';
+            }
         }
     </script>
 <% end %>
