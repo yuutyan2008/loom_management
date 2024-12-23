@@ -188,23 +188,68 @@ class OrdersController < ApplicationController
   # WorkProcess の更新を担当
   def update_work_processes
     order_work_processes = update_order_params.except(:machine_assignments_attributes)
-    work_processes = order_work_processes[:work_processes_attributes].values
 
-    next_start_date = nil
-    work_processes.each_with_index do |work_process, index|
-      work_process_record = WorkProcess.find(work_process["id"])
+      # 完了日の取得
+      workprocesses_params = order_work_processes[:work_processes_attributes].values
+      machine = nil
 
-      if index == 0
-        start_date = work_process["start_date"]
-      else
-        start_date = next_start_date
+      # 織機の種類変更がある場合
+      # WorkProcessのprocess_estimate_idを更新
+      # 変更があった場合の新しいナレッジ
+      machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+      process_estimates = ProcessEstimate.where(machine_type_id: machine.machine_type)
+      # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
+      if update_order_params[:machine_assignments_attributes]
+        machine
       end
 
-      actual_completion_date = work_process["actual_completion_date"]
+      # unless machine&.machine_type == process_estimates.first.machine_type
+      #   # type不一致です
+      #   flash[:notice] = "織機の種類が一致していないため、更新できません"
+      #   render :edit and return
+      # end
 
-      updated_date, next_start_date = WorkProcess.check_current_work_process(work_process, start_date, actual_completion_date)
-      work_process_record.update!(updated_date)
-    end
+      current_work_processes = @order.work_processes
+
+      next_start_date = nil
+
+      workprocesses_params.each_with_index do |workprocess_params, index|
+
+        target_work_prcess = current_work_processes.find(workprocess_params[:id])
+        if index == 0
+          start_date = target_work_prcess["start_date"]
+        else
+          input_start_date = workprocess_params[:start_date].to_date
+          # 入力された開始日が新しい場合は置き換え
+          start_date = input_start_date > next_start_date ? input_start_date : next_start_date
+          # if input_start_date < next_start_date
+          #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
+          #   render :edit and return
+          # end
+        end
+
+        actual_completion_date =  workprocess_params[:actual_completion_date]
+
+        # 織機の種類を変更した場合
+        # 選択されたmachine_type_id params[:machine_type_id]
+
+        if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
+          estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+          # ナレッジ置き換え
+          target_work_prcess.process_estimate = estimate
+        end
+        target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
+        target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
+        target_work_prcess.save
+        # 更新したナレッジで全行程の日時の更新処理の呼び出し
+        new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
+        # 開始日の方が新しい場合は置き換え
+        next_start_date = start_date > next_start_date ? start_date : next_start_date
+
+        new_target_work_prcess.actual_completion_date = actual_completion_date
+        new_target_work_prcess.save
+
+      end
   end
 
   # machine_status_id:1をselect_tagに出さないためのメソッド
