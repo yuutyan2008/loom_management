@@ -1,0 +1,102 @@
+<% if flash.present? || flash[:alerts].present? %>
+    <div class="space-y-4">
+
+        <%# 1. 標準のフラッシュメッセージを処理 %>
+        <% flash.each do |key, value| %>
+        <% next if key == 'alerts' %> <%# 'alerts' キーは後で処理 %>
+        <div class="flex items-center justify-between px-4 py-2 rounded-md shadow-md
+            <% if key == 'notice' %>
+            bg-green-100 text-green-800 border-l-4 border-green-500
+            <% elsif key == 'alert' %>
+            bg-red-100 text-red-800 border-l-4 border-red-500
+            <% else %>
+            bg-gray-100 text-gray-800 border-l-4 border-gray-500
+            <% end %>">
+            <span><%= value %></span>
+            <button class="close-button text-gray-500 hover:text-gray-800 font-bold text-lg" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+        <% end %>
+
+        <%# 2. カスタムの flash[:alerts] を処理 %>
+        <% if flash[:alerts].present? %>
+        <% Array(flash[:alerts]).each do |alert| %>
+            <div class="flex flex-col rounded-md p-4 border-l-4 border-red-500 bg-red-100 text-red-700 shadow-md">
+            <div class="flex items-center justify-between">
+                <p class="font-semibold"><%= alert[:title] %></p>
+                <button class="close-button text-gray-500 hover:text-gray-800 font-bold text-lg" onclick="this.parentElement.parentElement.style.display='none'">×</button>
+            </div>
+            <ul class="list-disc ml-6">
+                <% alert[:messages].first(3).each do |message| %>
+                <li class="py-2">
+                    <% if message[:company_name] && message[:order_id] && message[:edit_path] && message[:detail_path] %>
+                        会社名: <%= message[:company_name] %>, 受注 (ID: <%= message[:order_id] %>),
+                        詳しくは <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %> や
+                        <%= link_to '詳細', message[:detail_path], class: 'text-blue-500 underline hover:text-blue-700' %> をご確認ください。
+                    <% elsif message[:machine_name] && message[:company_name] && message[:machine_status] && message[:path] %>
+                        織機名: <%= message[:machine_name] %>, 会社名: <%= message[:company_name] %>, ステータス: <%= message[:machine_status] %>,
+                        <%= link_to '詳細', message[:path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% elsif message[:content] && message[:edit_path] %>
+                        <%= message[:content] %>, <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% elsif message[:detail_path] && message[:edit_path] %>
+                        会社名: <%= message[:company_name] %>, 織機名: <%= message[:machine_name] %>, ステータス: <%= message[:machine_status] %>,
+                        <%= link_to '詳細', message[:detail_path], class: 'text-blue-500 underline hover:text-blue-700' %>,
+                        <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% elsif message[:edit_path] %>
+                        会社名: <%= message[:company_name] %>, 織機名: <%= message[:machine_name] %>, ステータス: <%= message[:machine_status] %>,
+                        <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% else %>
+                        <%= message[:content] %>
+                    <% end %>
+                </li>
+                <% end %>
+            </ul>
+
+            <% if alert[:messages].size > 3 %>
+                <ul class="list-disc ml-6 hidden" id="additional-flash-messages-<%= alert.object_id %>">
+                <% alert[:messages].drop(3).each do |message| %>
+                    <li class="py-2">
+                    <% if message[:company_name] && message[:order_id] && message[:edit_path] && message[:detail_path] %>
+                        会社名: <%= message[:company_name] %>, 受注 (ID: <%= message[:order_id] %>),
+                        詳しくは <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %> や
+                        <%= link_to '詳細', message[:detail_path], class: 'text-blue-500 underline hover:text-blue-700' %> をご確認ください。
+                    <% elsif message[:machine_name] && message[:company_name] && message[:machine_status] && message[:path] %>
+                        織機名: <%= message[:machine_name] %>, 会社名: <%= message[:company_name] %>, ステータス: <%= message[:machine_status] %>,
+                        <%= link_to '詳細', message[:path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% elsif message[:content] && message[:edit_path] %>
+                        <%= message[:content] %>, <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% elsif message[:detail_path] && message[:edit_path] %>
+                        会社名: <%= message[:company_name] %>, 織機名: <%= message[:machine_name] %>, ステータス: <%= message[:machine_status] %>,
+                        <%= link_to '詳細', message[:detail_path], class: 'text-blue-500 underline hover:text-blue-700' %>,
+                        <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% elsif message[:content] && message[:edit_path] %>
+                        会社名: <%= message[:company_name] %>, 織機名: <%= message[:machine_name] %>, ステータス: <%= message[:machine_status] %>,
+                        <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %>
+                    <% else %>
+                        <%= message[:content] %>
+                    <% end %>
+                    </li>
+                <% end %>
+                </ul>
+                <button class="mt-2 text-blue-500 underline hover:text-blue-700" onclick="toggleFlashMessages('<%= alert.object_id %>')">
+                もっと見る
+                </button>
+            <% end %>
+            </div>
+        <% end %>
+        <% end %>
+    </div>
+
+    <script>
+        function toggleFlashMessages(id) {
+        const additionalMessages = document.getElementById(`additional-flash-messages-${id}`);
+        const button = event.target;
+        if (additionalMessages.classList.contains('hidden')) {
+            additionalMessages.classList.remove('hidden');
+            button.textContent = '閉じる';
+        } else {
+            additionalMessages.classList.add('hidden');
+            button.textContent = 'もっと見る';
+        }
+        }
+    </script>
+<% end %>
