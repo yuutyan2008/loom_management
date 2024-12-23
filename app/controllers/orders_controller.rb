@@ -1,5 +1,6 @@
 class OrdersController < ApplicationController
   include ApplicationHelper
+  include FlashHelper
   before_action :require_login
   before_action :set_order, only: [:show, :edit, :update, :destroy]
   before_action :authorize_order, only: [:show, :destroy]
@@ -315,70 +316,45 @@ class OrdersController < ApplicationController
   def check_overdue_work_processes_index(orders)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
-    # 対象となるWorkProcessを取得（Orderとの関連を事前に読み込み）
+
     overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
-                                        .where(order_id: orders&.ids)
+                                        .where(order_id: orders.ids)
                                         .where("earliest_estimated_completion_date < ?", Date.today)
                                         .where.not(work_process_status_id: completed_status.id)
 
     if overdue_work_processes.exists?
-      # Orderごとにグループ化
       grouped = overdue_work_processes.group_by(&:order)
-      # 件数の取得
       total_overdue_orders = grouped.keys.size
-      # メッセージリストを作成
-      message = grouped.map do |order, work_processes|
-        wp_links = work_processes.each_with_index.map do |wp, index|
-          if index == 0
-            # 最初のWorkProcessには受注IDを含める
-            "受注 ID:#{order.id} 作業工程: #{wp.work_process_definition.name}"
-          else
-            # 以降のWorkProcessは受注IDを含めずに作業工程のみ
-            "作業工程: #{wp.work_process_definition.name}"
-          end
-        end.join(", ")
-        # 受注IDごとにリンクを生成
-        link = view_context.link_to wp_links, order_path(order), class: "underline"
-        "<li>#{link}</li>"
-      end.join("<br>").html_safe
 
-      # フラッシュメッセージをHTMLとして生成
-      flash.now[:alert] = <<-HTML.html_safe
-        <strong>予定納期が過ぎている受注が #{total_overdue_orders} 件あります。</strong>
-        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
-          #{message}
-        </ul>
-      HTML
+      flash.now[:alerts] ||= []
+      flash.now[:alerts] << build_flash_alert_message(
+        "予定納期が過ぎている受注が #{total_overdue_orders} 件あります。",
+        grouped.keys,
+        ->(order) { edit_order_path(order) },
+        ->(order) { order_path(order) }
+      )
     end
   end
 
-  # 追加: showアクション用のWorkProcess遅延チェックメソッド
+  ## 追加: showアクション用のWorkProcess遅延チェックメソッド
   def check_overdue_work_processes_show(work_processes)
     completed_status = WorkProcessStatus.find_by(name: '作業完了')
     return unless completed_status
-    # 遅延しているWorkProcessを取得
+
     overdue_work_processes = work_processes.where("earliest_estimated_completion_date < ?", Date.today)
-                                           .where.not(work_process_status_id: completed_status.id)
+                                          .where.not(work_process_status_id: completed_status.id)
 
     if overdue_work_processes.exists?
-      # 同一Orderなのでグループ化は不要
-      message = overdue_work_processes.each_with_index.map do |wp, index|
-        if index == 0
-          # 最初のWorkProcessには受注IDを含める
-          "受注 ID:#{@order.id} 作業工程: #{wp.work_process_definition.name}"
-        else
-          # 以降のWorkProcessは受注IDを含めずに作業工程のみ
-          "作業工程: #{wp.work_process_definition.name}"
+      flash.now[:alerts] ||= []
+      flash.now[:alerts] << {
+        title: "以下の作業工程が予定完了日を過ぎており、まだ完了していません。修正がある場合は 編集 を確認ください。",
+        messages: overdue_work_processes.map do |wp|
+          {
+            content: "作業工程: #{wp.work_process_definition.name}, 完了見込み: #{wp.latest_estimated_completion_date.strftime('%Y-%m-%d')}",
+            edit_path: edit_admin_order_path(wp.order) # 編集リンクのパスを追加
+          }
         end
-      end.join(", ")
-
-      # フラッシュメッセージをHTMLとして生成
-      flash.now[:alert] = <<-HTML.html_safe
-        <strong>以下の作業工程が予定完了日を過ぎており、まだ完了していません。</strong>
-        <ul class="text-red-700 list-disc ml-4 px-4 py-2">
-          <li>#{message}</li>
-        </ul>
-      HTML
+      }
     end
   end
 
