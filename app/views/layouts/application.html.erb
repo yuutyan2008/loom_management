@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Loom Management" %></title>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <%= csrf_meta_tags %>
-        <%= csp_meta_tag %>
-        <%= yield :head %>
-        <link rel="manifest" href="/manifest.json">
-        <link rel="icon" href="/icon.png" type="image/png">
-        <link rel="icon" href="/icon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/icon.png">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.css">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.min.js"></script>
-        <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
-        <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-        <%= javascript_importmap_tags %>
-        <%= javascript_include_tag "turbo", type: "module" %>
+    <title><%= content_for(:title) || "LooMa（ルーマ）" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= yield :head %>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.min.js"></script>
+    <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    <%= javascript_include_tag "turbo", type: "module" %>
   </head>
 
   <body class="flex flex-col items-center bg-gray-100 min-h-screen">
@@ -28,9 +28,9 @@
           <div class="flex items-center">
             <% if logged_in? %>
               <% if current_user.admin? %>
-                <%= link_to 'Loom Management', admin_root_path, class: "text-xl font-bold text-gray-700" %>
+                <%= link_to 'LooMa', admin_root_path, class: "text-xl font-bold text-gray-700" %>
               <% else %>
-                <%= link_to 'Loom Management', root_path, class: "text-xl font-bold text-gray-700" %>
+                <%= link_to 'LooMa', root_path, class: "text-xl font-bold text-gray-700" %>
               <% end %>
             <% end %>
           </div>
