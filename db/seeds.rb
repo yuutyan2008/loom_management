@@ -125,16 +125,14 @@ ActiveRecord::Base.transaction do
       product_number: 'PN-10',
       color_number: 'C-001',
       roll_count: 100,
-      quantity: 1000,
-      start_date: '2024-12-10'
+      quantity: 1000
     },
     {
       company_name: '機屋B',
       product_number: 'PN-30',
       color_number: 'C-003',
       roll_count: 50,
-      quantity: 500,
-      start_date: '2024-12-10'
+      quantity: 500
     }
     # 他の発注も同様に追加
   ]
@@ -144,7 +142,7 @@ ActiveRecord::Base.transaction do
     product_number = ProductNumber.find_by!(number: order_attrs.delete(:product_number))
     color_number = ColorNumber.find_by!(color_code: order_attrs.delete(:color_number))
 
-    Order.find_or_create_by!(company: company, product_number: product_number, color_number: color_number, start_date: order_attrs[:start_date]) do |o|
+    Order.find_or_create_by!(company: company, product_number: product_number, color_number: color_number) do |o|
       o.roll_count = order_attrs[:roll_count]
       o.quantity = order_attrs[:quantity]
     end
@@ -178,8 +176,7 @@ ActiveRecord::Base.transaction do
     { name: 'F004号機', machine_type: 'ドビー', company_name: '機屋F' },
     { name: 'H001号機', machine_type: 'ジャガード', company_name: '機屋H' },
     { name: 'H002号機', machine_type: 'ドビー', company_name: '機屋H' },
-    { name: 'H003号機', machine_type: 'ジャガード', company_name: '機屋H' },
-    # 他の織機も同様に追加
+    { name: 'H003号機', machine_type: 'ジャガード', company_name: '機屋H' }
   ]
 
   machines.each do |machine_attrs|
@@ -292,7 +289,7 @@ ActiveRecord::Base.transaction do
       earliest_completion_estimate: 4,
       latest_completion_estimate: 5,
       update_date: '2024-12-17'
-    },
+    }
   ]
 
   process_estimates.each do |pe_attrs|

@@ -9,6 +9,12 @@ class WorkProcess < ApplicationRecord
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :machines, through: :machine_assignments
 
+  # 新規時バリデーション
+  validates :start_date, presence: true, on: :create
+  # 更新時バリデーション
+  validates :work_process_status, presence: true, on: :update
+  validate :actual_completion_date_presence_if_completed, on: :update
+
   scope :ordered, -> {
     # ネストされた全ての発注関連データを取得
     includes(
@@ -141,6 +147,7 @@ class WorkProcess < ApplicationRecord
       end
       # process[:start_date] = start_date
     end
+
     if process[:work_process_definition_id].to_i == 1
       if actual_completion_date.present?
         process[:latest_estimated_completion_date] = actual_completion_date
@@ -149,7 +156,6 @@ class WorkProcess < ApplicationRecord
         process = self.calc_process_estimate(process, start_date)
       end
     end
-
 
     # 整理加工の開始日調整
     if process[:work_process_definition_id].to_i == 4
@@ -199,4 +205,14 @@ class WorkProcess < ApplicationRecord
     end
   end
 
+  private
+
+  # 更新時のバリデーション
+  def actual_completion_date_presence_if_completed
+    completed_status_id = WorkProcessStatus.find_by(name: "作業完了")&.id
+    if work_process_status_id == completed_status_id && actual_completion_date.blank?
+
+      errors.add(:actual_completion_date, "完了日が入力されていません")
+    end
+  end
 end
