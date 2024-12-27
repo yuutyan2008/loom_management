@@ -4,11 +4,14 @@ class Order < ApplicationRecord
   belongs_to :color_number
   has_many :work_processes, -> { ordered }
   has_many :machine_assignments, through: :work_processes
+  accepts_nested_attributes_for :work_processes
 
   # 未完了の作業工程を持つ注文を簡単に参照できるアソシエーション
   has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: "WorkProcess"
 
-  # accepts_nested_attributes_for :machine_assignments
+  validates :company_id, :product_number_id, :color_number_id, :roll_count, :quantity, presence: true
+  validates :roll_count, :quantity, numericality: { greater_than_or_equal_to: 1 }
+  validate :validate_start_date_presence, on: :create
 
   # すべての作業工程が完了している注文を取得
   scope :completed, -> {
@@ -21,7 +24,7 @@ class Order < ApplicationRecord
     joins(:incomplete_work_processes).distinct
   }
 
-  accepts_nested_attributes_for :work_processes
+
 
   # 最新の MachineAssignment を取得するメソッド
   def latest_machine_assignment
@@ -51,5 +54,15 @@ class Order < ApplicationRecord
   # 注文が1週間以内に作成されたかを判定するメソッド
   def recent?
     created_at >= 1.weeks.ago
+  end
+
+  private
+
+  def validate_start_date_presence
+    return if work_processes.blank? # 作業工程がまだ作成されていない場合はスキップ
+
+    if work_processes.any? { |wp| wp.start_date.blank? }
+      errors.add(:start_date, "開始日を入力してください")
+    end
   end
 end
