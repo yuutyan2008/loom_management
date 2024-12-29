@@ -25,5 +25,14 @@ module LoomManagement
     # config.eager_load_paths << Rails.root.join("extras")
     config.assets.css_compressor = nil
 
+    config.generators do |g|
+      g.test_framework :rspec,
+                       fixtures: true, # FactoryBot用のfixturesファイルを生成
+                       view_specs: false, # ビュースペックを生成しない
+                       helper_specs: false, # ヘルパースペックを生成しない
+                       routing_specs: false, # ルーティングスペックを生成しない
+                       request_specs: false # リクエストスペックを生成しない
+      g.fixture_replacement :factory_bot, dir: 'spec/factories' # FactoryBotの設定
+    end
   end
 end

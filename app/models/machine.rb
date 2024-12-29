@@ -5,6 +5,9 @@ class Machine < ApplicationRecord
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :work_processes, through: :machine_assignments
 
+  validates :name, presence: true, uniqueness: { scope: :company_id, message: "は同じ会社内で一意である必要があります" }
+  validates :machine_type_id, presence: true
+
   scope :machine_associations, -> {
     includes(
       :machine_assignments,
