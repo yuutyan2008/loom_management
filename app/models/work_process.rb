@@ -76,19 +76,18 @@ class WorkProcess < ApplicationRecord
     ]
   end
 
- # 織機の種類登録、変更でwork_processのprocess_estimate_idを更新
+  # 織機の種類登録、変更でwork_processのprocess_estimate_idを更新
   def self.decide_machine_type(workprocesses, machine_type_id)
-    if machine_type_id == 1
-      # 初期のWorkProcess配列のprocess_estimate_idを更新
-      workprocesses.each do |process|
-        process[:process_estimate_id] = process[:work_process_definition_id]
-      end
-    elsif machine_type_id == 2
-      workprocesses.each do |process|
-        process[:process_estimate_id] = process[:work_process_definition_id].to_i + 5
-      end
+    # params[:machine_type_id]と一致するDBの値を取得
+    process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
+    # 初期のWorkProcess配列のprocess_estimate_idを更新
+
+    workprocesses.each do |process|
+      estimate = process_estimates.find_by(work_process_definition_id: process[:work_process_definition_id])
+      process[:process_estimate_id] = estimate[:id]
     end
   end
+
 
   # 新規登録：全行程の日時の更新
   def self.update_deadline(estimate_workprocesses, start_date)
@@ -126,6 +125,59 @@ class WorkProcess < ApplicationRecord
     end
     estimate_workprocesses
   end
+
+
+  def self.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
+    # 入力値を元にDBからProcessEstimateデータ5個分を取得
+    process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
+    # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
+      # machine = Machine.find_by(id: machine_id)
+    # DBに登録されている、5個のwork_process
+    # current_work_processes = @order.work_processes
+
+    next_start_date = nil
+
+    workprocesses_params.each_with_index do |workprocess_params, index|
+      target_work_prcess = current_work_processes.find(workprocess_params[:id])
+
+      # target_work_prcess：current_work_processesの１工程
+      # target_work_prcess = current_work_processes.find(workprocess_params[:id])
+      if index == 0
+        start_date = target_work_prcess["start_date"]
+      else
+        input_start_date = workprocess_params[:start_date].to_date
+        # 入力された開始日が新しい場合は置き換え
+        start_date = input_start_date > next_start_date ? input_start_date : next_start_date
+        # if input_start_date < next_start_date
+        #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
+        #   render :edit and return
+        # end
+      end
+
+      actual_completion_date =  workprocess_params[:actual_completion_date]
+
+      # 織機の種類を変更した場合
+      # 選択されたparams[:machine_type_id]
+      if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
+        estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+        # ナレッジ置き換え
+        target_work_prcess.process_estimate = estimate
+      end
+      target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
+      target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
+      # binding.irb
+      target_work_prcess.save
+      # 更新したナレッジで全行程の日時の更新処理の呼び出し
+      new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
+      # 開始日の方が新しい場合は置き換え
+      next_start_date = start_date > next_start_date ? start_date : next_start_date
+
+      new_target_work_prcess.actual_completion_date = actual_completion_date
+      new_target_work_prcess.save
+
+    end
+  end
+
 
   # 更新：全行程の日時の更新
   def self.check_current_work_process(process, start_date, actual_completion_date)
@@ -186,6 +238,33 @@ class WorkProcess < ApplicationRecord
       process[:latest_estimated_completion_date] = start_date.to_date + target_estimate_record.latest_completion_estimate
       process
   end
+
+  # 更新：織機詳細変更処理
+  def self.change_machine_assignment(order, machine_id, machine_status_id)
+    machine_ids = order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
+
+    if machine_ids.any?
+      # 既存のMachineAssignmentを更新
+      order.machine_assignments.each do |assignment|
+        assignment.update!(
+          machine_id: machine_id.present? ? machine_id : nil,
+          machine_status_id: machine_status_id.present? ? machine_status_id : nil
+        )
+      end
+    else
+      # 存在しない場合は新規作成
+      order.work_processes.each do |work_process|
+        ma = MachineAssignment.find_or_initialize_by(
+          work_process_id: work_process.id,
+          machine_id: machine_id
+        )
+        ma.machine_status_id ||= 2 # デフォルトのステータス
+        ma.save!
+      end
+    end
+  end
+
+
 
 
   # 現在作業中の作業工程を取得するスコープ
