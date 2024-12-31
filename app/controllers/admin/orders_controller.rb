@@ -117,98 +117,28 @@ class Admin::OrdersController < ApplicationController
     end
 
     ActiveRecord::Base.transaction do
+      # パラメータ処理
       order_work_processes = order_params.except(:machine_assignments_attributes)
-
-      # 完了日の取得
       workprocesses_params = order_work_processes[:work_processes_attributes].values
-      machine = nil
-
-      # 織機の種類変更がある場合
-      # WorkProcessのprocess_estimate_idを更新
-      # 変更があった場合の新しいナレッジ
-      process_estimates = ProcessEstimate.where(machine_type_id: params[:machine_type_id])
-      # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
-      if order_params[:machine_assignments_attributes]
-        machine = Machine.find_by(id: order_params[:machine_assignments_attributes][0][:machine_id])
+      machine_type_id = params[:machine_type_id]
+      machine_id =
+      if order_params[:machine_assignments_attributes].present? && order_params[:machine_assignments_attributes].first[:machine_id].present?
+        order_params[:machine_assignments_attributes].first[:machine_id]
+      else
+        nil
       end
-
-      # unless machine&.machine_type == process_estimates.first.machine_type
-      #   # type不一致です
-      #   flash[:notice] = "織機の種類が一致していないため、更新できません"
-      #   render :edit and return
-      # end
-
       current_work_processes = @order.work_processes
+      machine_assignments_params = order_params[:machine_assignments_attributes]
+      machine_status_id = machine_assignments_params[0][:machine_status_id]
 
-      next_start_date = nil
-
-      workprocesses_params.each_with_index do |workprocess_params, index|
-
-        target_work_prcess = current_work_processes.find(workprocess_params[:id])
-        if index == 0
-          start_date = target_work_prcess["start_date"]
-        else
-          input_start_date = workprocess_params[:start_date].to_date
-          # 入力された開始日が新しい場合は置き換え
-          start_date = input_start_date > next_start_date ? input_start_date : next_start_date
-          # if input_start_date < next_start_date
-          #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
-          #   render :edit and return
-          # end
-        end
-
-        actual_completion_date =  workprocess_params[:actual_completion_date]
-
-        # 織機の種類を変更した場合
-        # 選択されたmachine_type_id params[:machine_type_id]
-
-        if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
-          estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
-          # ナレッジ置き換え
-          target_work_prcess.process_estimate = estimate
-        end
-        target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
-        target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
-        # binding.irb
-        target_work_prcess.save
-        # 更新したナレッジで全行程の日時の更新処理の呼び出し
-        new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
-        # 開始日の方が新しい場合は置き換え
-        next_start_date = start_date > next_start_date ? start_date : next_start_date
-
-        new_target_work_prcess.actual_completion_date = actual_completion_date
-        new_target_work_prcess.save
-
-      end
+      # WorkProcess更新処理
+      WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
 
       # 織機詳細変更した場合
-      if order_params[:machine_assignments_attributes].present?
-        # MachineAssignmentの更新
-        machine_assignments_params = order_params[:machine_assignments_attributes]
-        machine_id = machine_assignments_params[0][:machine_id]
-        machine_status_id = machine_assignments_params[0][:machine_status_id]
-        # フォームで送られた ID に基づき MachineAssignment を取得
-        machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
-        if machine_ids.any?
-          @order.machine_assignments.each do |assignment|
-            assignment.update!(
-              machine_id: machine_id.present? ? machine_id : nil ,
-              machine_status_id: machine_status_id.present? ? machine_status_id : nil
-            )
-          end
-        else
-          # 存在しない場合は新規作成し、@order に関連付ける
-          @order.work_processes.each do |work_process|
-            # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
-            ma = MachineAssignment.find_or_initialize_by(
-              work_process_id: work_process.id,
-              machine_id: machine_id,
-              machine_status_id: 2
-            )
-            ma.save!
-          end
-        end
+      if machine_id.present?
+        WorkProcess.change_machine_assignment(@order, machine_id, machine_status_id)
       end
+
       # Orderの更新
       update_order = order_params.except(:machine_assignments_attributes, :work_processes_attributes)
       if update_order.present?
@@ -440,6 +370,9 @@ class Admin::OrdersController < ApplicationController
 
     # 1. 織機タイプのチェック
     if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+      # 新しいmachine_typeが一致する場合は変更を許可
+      return true if permit_change_machine_type_same_time(selected_machine_type_name)
+
       flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
       return false
     end
@@ -467,6 +400,24 @@ class Admin::OrdersController < ApplicationController
       return false
     end
 
-    true
+    true # 呼び出し元の処理を続ける
+  end
+
+  # 同時にmachine_typeが変更される場合は許可
+  def permit_change_machine_type_same_time(selected_machine_type_name)
+    return false unless params[:machine_type_id].present?
+
+    new_machine_type = MachineType.find_by(id: params[:machine_type_id])
+    return false unless new_machine_type && new_machine_type.name == selected_machine_type_name
+
+    @order.work_processes.each do |work_process|
+      process_estimate = ProcessEstimate.find_by(
+        work_process_definition_id: work_process.work_process_definition_id,
+        machine_type_id: new_machine_type.id
+      )
+      work_process.update!(process_estimate: process_estimate)
+    end
+
+    true # 呼び出し元の処理を続ける
   end
 end
