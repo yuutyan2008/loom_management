@@ -5,6 +5,7 @@ class WorkProcess < ApplicationRecord
   has_many :machine_assignments
   accepts_nested_attributes_for :machine_assignments
   belongs_to :process_estimate, optional: true # null allow
+
   accepts_nested_attributes_for :process_estimate
   # WorkControllerでの関連情報取得簡略化のため、throughを追加
   has_many :machines, through: :machine_assignments
@@ -81,10 +82,24 @@ class WorkProcess < ApplicationRecord
     # params[:machine_type_id]と一致するDBの値を取得
     process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
     # 初期のWorkProcess配列のprocess_estimate_idを更新
+    if process_estimates.blank?
+      raise "No process_estimates found for machine_type_id=#{machine_type_id}"
+    end
+
+    puts "### process_estimates.inspect " + process_estimates.inspect
+    puts "### workprocesses.inspect" + workprocesses.inspect
 
     workprocesses.each do |process|
+      #binding.irb
+      puts "### Comparing process ID: #{process[:work_process_definition_id]}"
+      puts "### Process Estimates: #{process_estimates.map(&:work_process_definition_id)}"
       estimate = process_estimates.find_by(work_process_definition_id: process[:work_process_definition_id])
+      #binding.irb
+      if estimate.nil?
+        raise "### No matching estimate found for work_process_definition_id=#{process[:work_process_definition_id]}"
+      end
       process[:process_estimate_id] = estimate[:id]
+
     end
   end
 
@@ -92,7 +107,7 @@ class WorkProcess < ApplicationRecord
   # 新規登録：全行程の日時の更新
   def self.update_deadline(estimate_workprocesses, start_date)
     update = true
-    next_start_date = start_date
+    next_start_date = nil
     # 配列を一個ずつ取り出す
     estimate_workprocesses.each do |process|
       unless update == true
@@ -101,9 +116,11 @@ class WorkProcess < ApplicationRecord
         start_date = process[:start_date]
       end
       # 納期の見込み日数のレコードを取得
+
       target_estimate_record = ProcessEstimate.find_by(
         id: process[:process_estimate_id]
       )
+
       # ナレッジの値を計算して更新
       process[:earliest_estimated_completion_date] = start_date.to_date + target_estimate_record.earliest_completion_estimate
       process[:latest_estimated_completion_date] = start_date.to_date + target_estimate_record.latest_completion_estimate
@@ -126,7 +143,7 @@ class WorkProcess < ApplicationRecord
     estimate_workprocesses
   end
 
-
+  # 更新全体処理
   def self.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
     # 入力値を元にDBからProcessEstimateデータ5個分を取得
     process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
@@ -138,12 +155,13 @@ class WorkProcess < ApplicationRecord
     next_start_date = nil
 
     workprocesses_params.each_with_index do |workprocess_params, index|
-      target_work_prcess = current_work_processes.find(workprocess_params[:id])
 
+      target_work_prcess = current_work_processes.find(workprocess_params[:id])
       # target_work_prcess：current_work_processesの１工程
       # target_work_prcess = current_work_processes.find(workprocess_params[:id])
       if index == 0
-        start_date = target_work_prcess["start_date"]
+        # start_date = target_work_prcess["start_date"]
+        start_date = target_work_prcess.start_date
       else
         input_start_date = workprocess_params[:start_date].to_date
         # 入力された開始日が新しい場合は置き換え
