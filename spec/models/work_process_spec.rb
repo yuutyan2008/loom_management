@@ -1,7 +1,186 @@
 require 'rails_helper'
 
 RSpec.describe WorkProcess, type: :model do
-  describe '現在の進捗と完了日入力のテスト' do
+
+  describe 'associations' do
+    it { should belong_to(:work_process_status) }
+    it { should belong_to(:order) }
+    it { should belong_to(:process_estimate).optional }
+  end
+
+  describe 'validations' do
+    subject { build(:work_process) }
+
+    it { is_expected.to validate_presence_of(:start_date) }
+
+    context 'process_estimate が nil の場合' do
+      it 'レコードが有効であること' do
+        subject.process_estimate = nil
+        expect(subject).to be_valid
+      end
+    end
+  end
+
+  describe 'initial_processes_list' do
+    it '正しい初期値を持つ配列を返す' do
+      start_date = Date.today
+      result = WorkProcess.initial_processes_list(start_date)
+
+      expect(result).to be_an(Array)
+      expect(result.size).to eq(5)
+      expect(result.first[:start_date]).to eq(start_date)
+      expect(result.first[:process_estimate_id]).to be_nil
+    end
+  end
+
+  describe 'decide_machine_type' do
+    let(:machine_type) { create(:machine_type) }
+    let!(:process_estimates) do
+      (1..5).map do |i|
+        create(:process_estimate, work_process_definition: create(:work_process_definition, id: i), machine_type: machine_type)
+      end
+    end
+
+    it 'process_estimate_idを正しく更新する' do
+      start_date = Date.today
+      workprocesses = WorkProcess.initial_processes_list(start_date)
+
+      WorkProcess.decide_machine_type(workprocesses, machine_type.id)
+
+      workprocesses.each_with_index do |process, index|
+        expect(process[:process_estimate_id]).to eq(process_estimates[index].id)
+      end
+    end
+  end
+
+  describe '新規作成:update_deadline' do
+    let(:machine_type) { create(:machine_type) }
+    let!(:process_estimates) do
+      (1..5).map do |i|
+        work_process_definition = create(:work_process_definition, id: i)
+        create(:process_estimate, work_process_definition: work_process_definition, machine_type: machine_type)
+      end
+    end
+
+    before do
+      puts "### ProcessEstimate Before Test: #{ProcessEstimate.all.inspect}"
+      puts "### MachineType Before Test: #{MachineType.all.inspect}"
+    end
+
+    context 'definition_idが1~3の場合' do
+      it 'process[:earliest_estimated_completion_date]が(start_date + estimate.earliest_completion_estimate)になる' do
+        start_date = Date.new(2024, 12, 1)
+        workprocesses = WorkProcess.initial_processes_list(start_date)
+        WorkProcess.decide_machine_type(workprocesses, machine_type.id)
+        updated_workprocesses = WorkProcess.update_deadline(workprocesses, start_date)
+
+        (0..2).each do |index| # definition_idが1~3の場合
+          process = updated_workprocesses[index]
+          estimate = process_estimates[index]
+          expect(process[:earliest_estimated_completion_date]).to eq(start_date + estimate.earliest_completion_estimate)
+          expect(process[:latest_estimated_completion_date]).to eq(start_date + estimate.latest_completion_estimate)
+          start_date = process[:earliest_estimated_completion_date]
+        end
+      end
+    end
+
+    context 'definition_idが4の場合' do
+      context 'process[:earliest_estimated_completion_date]が日曜の場合' do
+        it 'next_start_dateを、process[:earliest_estimated_completion_date]の8日後にする' do
+          start_date = Date.new(2024, 12, 1)
+          workprocesses = WorkProcess.initial_processes_list(start_date)
+          WorkProcess.decide_machine_type(workprocesses, machine_type.id)
+
+          # 定義IDが4の工程の完了予定日を日曜日に設定
+          workprocesses[3][:earliest_estimated_completion_date] = Date.new(2025, 4, 13) # 日曜日
+          updated_workprocesses = WorkProcess.update_deadline(workprocesses, start_date)
+
+          # process = updated_workprocesses[3]
+          # expect(process[:earliest_estimated_completion_date]).to eq(Date.new(2025, 4, 16))
+          # expect(process[:latest_estimated_completion_date]).to eq(Date.new(2025, 4, 21))
+          expect(updated_workprocesses[4][:start_date]).to eq(Date.new(2025, 4, 21)) # 翌々週の月曜日
+        end
+      end
+
+      context 'process[:earliest_estimated_completion_date]が日曜以外の場合' do
+        it 'next_start_dateを、翌週の月曜にする' do
+          start_date = Date.new(2024, 12, 1)
+          workprocesses = WorkProcess.initial_processes_list(start_date)
+          WorkProcess.decide_machine_type(workprocesses, machine_type.id)
+
+          # 定義IDが4の工程の完了予定日を月曜日に設定
+          workprocesses[3][:earliest_estimated_completion_date] = Date.new(2025, 4, 14)
+          updated_workprocesses = WorkProcess.update_deadline(workprocesses, start_date)
+
+          # process = updated_workprocesses[3]
+          # expect(process[:earliest_estimated_completion_date]).to eq(Date.new(2025, 4, 16))
+          # expect(process[:latest_estimated_completion_date]).to eq(Date.new(2025, 4, 21))
+          expect(updated_workprocesses[4][:start_date]).to eq(Date.new(2025, 4, 21)) # 次の月曜日
+        end
+      end
+    end
+  end
+
+
+  describe '更新処理:update_work_processes' do
+    let!(:order) { create(:order) }
+    let!(:machine_type) { create(:machine_type) }
+    let!(:process_estimates) do
+      (1..5).map do |i|
+        work_process_definition = create(:work_process_definition, id: i)
+        create(:process_estimate, work_process_definition: work_process_definition, machine_type: machine_type)
+      end
+    end
+    let(:start_date) { Date.new(2024, 12, 1) }
+    let!(:work_processes) do
+      process_estimates.each_with_index.map do |estimate, index|
+        create(:work_process,
+               order: order,
+               work_process_definition: estimate.work_process_definition,
+               process_estimate: estimate,
+               start_date: start_date + (index * 5).days, # スタート日を適宜増加
+               earliest_estimated_completion_date: start_date + (index * 5).days + estimate.earliest_completion_estimate,
+               latest_estimated_completion_date: start_date + (index * 5).days + estimate.latest_completion_estimate,
+               work_process_status: create(:work_process_status))
+      end
+    end
+
+    let(:workprocesses_params) do
+      work_processes.map do |process|
+        {
+          id: process.id,
+          start_date: process.start_date.to_s,
+          actual_completion_date: nil,
+          work_process_status_id: process.work_process_status.id,
+          factory_estimated_completion_date: nil,
+          earliest_estimated_completion_date: process.earliest_estimated_completion_date.to_s,
+          latest_estimated_completion_date: process.latest_estimated_completion_date.to_s,
+          work_process_definition_id: process.work_process_definition.id,
+          process_estimate_id: process.process_estimate.id
+        }
+      end
+    end
+
+    let!(:current_work_processes) { WorkProcess.where(order: order) }
+
+    it '全てのwork_processを更新し、適切な日付を計算する' do
+      expect do
+        binding.irb
+        WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type.id)
+      end.to_not raise_error
+binding.irb
+      work_processes.each do |work_process|
+        work_process.reload
+        expect(work_process.start_date).to be_present
+        expect(work_process.earliest_estimated_completion_date).to be_present
+        expect(work_process.latest_estimated_completion_date).to be_present
+      end
+    end
+  end
+
+
+
+  describe '更新処理：現在の進捗と完了日入力のテスト' do
     let!(:order) { Order.create!(company: company, product_number: product_number, color_number: color_number, roll_count: 10, quantity: 100) }
     let!(:company) { Company.create!(name: "Test Company") }
     let!(:product_number) { ProductNumber.create!(number: "PN-12345") }
@@ -57,7 +236,7 @@ RSpec.describe WorkProcess, type: :model do
   end
 
 
-  describe 'check_current_work_processメソッドのテスト' do
+  describe 'check_current_work_process' do
     let!(:order) { Order.create!(company: company, product_number: product_number, color_number: color_number, roll_count: 10, quantity: 100) }
     let!(:company) { Company.create!(name: "Test Company") }
     let!(:product_number) { ProductNumber.create!(number: "PN-12345") }
@@ -175,29 +354,27 @@ RSpec.describe WorkProcess, type: :model do
     # it '全てのwork_processを順番に更新して正しい日付が反映されること' do
     #   actual_completion_date_1 = Date.new(2025, 1, 5)
     #   actual_completion_date_2 = Date.new(2025, 1, 15)
-    #   # binding.irb
     #   # 第一工程を更新
     #   updated_process_1, next_start_date_1 = WorkProcess.check_current_work_process(work_process_1, work_process_1.start_date, actual_completion_date_1)
-    #   # binding.irb
-    #   # work_process_1.update!(
-    #   #   earliest_estimated_completion_date: updated_process_1.earliest_estimated_completion_date,
-    #   #   latest_estimated_completion_date: updated_process_1.latest_estimated_completion_date,
-    #   #   actual_completion_date: actual_completion_date_1
-    #   # )
+    #   work_process_1.update!(
+    #     earliest_estimated_completion_date: updated_process_1.earliest_estimated_completion_date,
+    #     latest_estimated_completion_date: updated_process_1.latest_estimated_completion_date,
+    #     actual_completion_date: actual_completion_date_1
+    #   )
 
-    #   # # 第二工程を更新
-    #   # updated_process_2, next_start_date_2 = WorkProcess.check_current_work_process(work_process_2, next_start_date_1, actual_completion_date_2)
-    #   # work_process_2.update!(
-    #   #   earliest_estimated_completion_date: updated_process_2.earliest_estimated_completion_date,
-    #   #   latest_estimated_completion_date: updated_process_2.latest_estimated_completion_date,
-    #   #   start_date: next_start_date_1
-    #   # )
+    #   # 第二工程を更新
+    #   updated_process_2, next_start_date_2 = WorkProcess.check_current_work_process(work_process_2, next_start_date_1, actual_completion_date_2)
+    #   work_process_2.update!(
+    #     earliest_estimated_completion_date: updated_process_2.earliest_estimated_completion_date,
+    #     latest_estimated_completion_date: updated_process_2.latest_estimated_completion_date,
+    #     start_date: next_start_date_1
+    #   )
 
-    #   # # 確認: 第二工程の開始日が第一工程の完了日と一致
-    #   # expect(work_process_2.start_date).to eq(next_start_date_1)
+    #   # 確認: 第二工程の開始日が第一工程の完了日と一致
+    #   expect(work_process_2.start_date).to eq(next_start_date_1)
 
-    #   # # 確認: 第二工程の最短/最長完了日が正しく更新
-    #   # expect(work_process_2.earliest_estimated_completion_date).to eq(next_start_date_1 + 5) # 2025-01-10
-    #   # expect(work_process_2.latest_estimated_completion_date).to eq(next_start_date_1 + 10) # 2025-01-15
+    #   # 確認: 第二工程の最短/最長完了日が正しく更新
+    #   expect(work_process_2.earliest_estimated_completion_date).to eq(next_start_date_1 + 5) # 2025-01-10
+    #   expect(work_process_2.latest_estimated_completion_date).to eq(next_start_date_1 + 10) # 2025-01-15
     # end
 end
