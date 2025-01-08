@@ -16,21 +16,21 @@
       </div>
       <div class="w-full md:w-1/2 mb-4 md:mb-0">
         <label class="text-gray-700 font-bold mb-2 block">
-          <%= f.label :company_id, '品番' %>
+          <%= f.label :product_number_id, '品番' %>
         </label>
         <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
       </div>
       <div class="w-full md:w-1/2 mb-4 md:mb-0">
         <label class="text-gray-700 font-bold mb-2 block">
-          <%= f.label :company_id, '色番' %>
+          <%= f.label :color_number_id, '色番' %>
         </label>
         <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { include_blank: true }, { selected: params[:color_number_id] } %>
       </div>
       <div class="w-full md:w-1/2 mb-4 md:mb-0">
         <label class="text-gray-700 font-bold mb-2 block">
-          <%= f.label :work_process_definitions, '現在の工程' %>
+          <%= f.label :work_process_definition_id, '現在の工程' %>
         </label>
-        <%= f.collection_select :work_process_definitions_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { selected: params[:work_process_definitions_id] } %>
+        <%= f.collection_select :work_process_definition_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { selected: params[:work_process_definition_id] } %>
       </div>
     </div>
   </div>

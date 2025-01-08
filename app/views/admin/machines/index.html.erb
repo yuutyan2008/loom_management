@@ -28,14 +28,7 @@
         </label>
         <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { selected: params[:product_number_id] } %>
       </div>
-      <!--
-      <div class="w-full md:w-1/2 mb-4 md:mb-0">
-        <label class="text-gray-700 font-bold mb-2 block">
-          <%= f.label :work_process_definitions, '現在の工程' %>
-        </label>
-        <%# f.collection_select :work_process_definitions_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { selected: params[:work_process_definitions_id] } %>
-      <%# </div>  %>
-      -->
+
     </div>
   </div>
 <section class="mb-12">
