@@ -21,8 +21,9 @@ class Admin::OrdersController < ApplicationController
     @current_work_processes = {}
     @orders.each do |order|
       if order.work_processes.any?
-        if params[:work_process_definitions_id].present?
-          is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definitions_id].to_i
+        # 現在のwork_processから工程を検索
+        if params[:work_process_definition_id].present?
+          is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
           @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
         else
           @current_work_processes[order.id] = order.work_processes.current_work_process
@@ -60,7 +61,6 @@ class Admin::OrdersController < ApplicationController
     # 遅延している作業工程のチェック（必要に応じて）
     check_overdue_work_processes_index(@orders)
   end
-  # end
 
   def new
     @order = Order.new
