@@ -169,6 +169,35 @@ class Admin::OrdersController < ApplicationController
     redirect_to admin_orders_path
   end
 
+    # 会社を選択
+    def ma_select_company
+      @companies = Company.all
+    end
+
+    #
+    def ma_index
+      @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
+                     .incomplete
+                     .order(:id)
+      @no_orders_message = "現在受注している商品はありません" unless @orders.any?
+      # 各注文に対して現在作業中の作業工程を取得
+      @current_work_processes = {}
+      @orders.each do |order|
+        if order.work_processes.any?
+          # 現在のwork_processから工程を検索
+          if params[:work_process_definition_id].present?
+            is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
+            @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
+          else
+            @current_work_processes[order.id] = order.work_processes.current_work_process
+          end
+        else
+          @current_work_processes[order.id] = nil
+        end
+
+      end
+    end
+
   private
 
   def create_order_params
@@ -223,9 +252,9 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  def set_work_process
-    @work_process = Task.find(params[:id])
-  end
+  # def set_work_process
+  #   @work_process = Task.find(params[:id])
+  # end
 
   def set_product_number
     @product_number = current_user.product_number
@@ -420,4 +449,7 @@ class Admin::OrdersController < ApplicationController
 
     true # 呼び出し元の処理を続ける
   end
+
+
+
 end
