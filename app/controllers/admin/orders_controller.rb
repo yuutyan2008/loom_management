@@ -176,13 +176,42 @@ class Admin::OrdersController < ApplicationController
 
     #
     def ma_index
-      @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
-                     .incomplete
-                     .order(:id)
+      @current_company = Company.find(params[:company_id])
+
+      @orders = @current_company.orders
+      .includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
+      .incomplete
+      .order(:id)
+
+      @machine_names = @current_company.machines.pluck(:name)
+
+      @assigned_orders = {}
+      @unassigned_orders = []
+      @orders.each do |order|
+        # 織機割り当て済の場合
+        if order.latest_machine_assignment.present?
+          machine = order.latest_machine_assignment.machine
+          machine_name = machine.name
+          # machine_id = order.latest_machine_assignment.machine.id
+
+          @assigned_orders[machine_name] << order
+        else
+          # 未割当の商品の場合
+          @unassigned_orders << order
+        end
+      end
+
       @no_orders_message = "現在受注している商品はありません" unless @orders.any?
+
       # 各注文に対して現在作業中の作業工程を取得
       @current_work_processes = {}
       @orders.each do |order|
+
+        work_process = WorkProcess.find_by(order_id: order.id)
+        @current_work_processes[order.id] = work_process
+      # order.id をキーとして、対応する WorkProcess を格納
+      # @current_work_processes[order.id] = current_work_process
+      # current_process = @current_work_processes[:id]
         if order.work_processes.any?
           # 現在のwork_processから工程を検索
           if params[:work_process_definition_id].present?
@@ -190,6 +219,7 @@ class Admin::OrdersController < ApplicationController
             @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
           else
             @current_work_processes[order.id] = order.work_processes.current_work_process
+
           end
         else
           @current_work_processes[order.id] = nil
