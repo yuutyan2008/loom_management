@@ -183,6 +183,7 @@ class Admin::OrdersController < ApplicationController
       .incomplete
       .order(:id)
 
+
       @machine_names = @current_company.machines.pluck(:name)
 
       @assigned_orders = {}
@@ -193,7 +194,7 @@ class Admin::OrdersController < ApplicationController
           machine = order.latest_machine_assignment.machine
           machine_name = machine.name
           # machine_id = order.latest_machine_assignment.machine.id
-
+          @assigned_orders[machine_name] = @assigned_orders[machine_name] || []
           @assigned_orders[machine_name] << order
         else
           # 未割当の商品の場合

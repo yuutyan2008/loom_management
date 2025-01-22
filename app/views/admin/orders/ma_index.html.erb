@@ -50,13 +50,10 @@
 <%# 割り当て先の織機 %>
 <%# 会社の所有する織機を表示 %>
 <% @machine_names.each do |machine_name| %>
-
   <section class="mb-12">
-
       <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
         <h2 class="text-2xl font-bold text-gray-600">織機名: <%= machine_name %></h2>
           <% if @assigned_orders[machine_name].present? %>
-
               <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
                 <thead class="uppercase">
                   <tr class="bg-gray-100">
@@ -70,32 +67,27 @@
                     <th scope="col" class="py-2 px-4 text-gray-700 border-b">割り当て済み機械</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   <% @assigned_orders[machine_name].each do |order| %>
                     <% work_process = @current_work_processes[order.id] %>
                       <tr class="hover:bg-gray-50">
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1][:id] %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1].company.name %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1].product_number.number %></td>
-                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1].color_number.color_code %></td>
-
-                        <% @current_work_processes.each do |order_id, work_process| %>
+                        <td class="py-2 px-4 text-gray-700 border-b"><%= order.id %></td>
+                        <td class="py-2 px-4 text-gray-700 border-b"><%= order.company.name %></td>
+                        <td class="py-2 px-4 text-gray-700 border-b"><%= order.product_number.number %></td>
+                        <td class="py-2 px-4 text-gray-700 border-b"><%= order.color_number.color_code %></td>
                         <td class="py-2 px-4 text-gray-700 border-b">
                           <%= work_process&.work_process_definition&.name.presence || "未設定" %>
                         </td>
                         <td class="py-2 px-4 text-gray-700 border-b"><%= work_process&.start_date %></td>
                         <td class="py-2 px-4 text-gray-700 border-b"><%= work_process&.factory_estimated_completion_date || "未設定" %></td>
-                        <td class="py-2 px-4 border-b text-gray-700"><%= order[1].latest_machine_assignment.machine.name %></td>
-                        <% end %>
+                        <td class="py-2 px-4 border-b text-gray-700"><%= order.latest_machine_assignment.machine.name %></td>
                       </tr>
                   <% end %>
                 </tbody>
-
+              </table>
           <% else %>
             <p class="text-center text-rose-500">割り当て済みの商品はありません。</p>
           <% end %>
       </div>
-
   </section>
 <% end %>
