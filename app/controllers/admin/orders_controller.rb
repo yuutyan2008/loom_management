@@ -174,27 +174,36 @@ class Admin::OrdersController < ApplicationController
       @companies = Company.all
     end
 
-    #
     def ma_index
       @current_company = Company.find(params[:company_id])
+
+      @test = "test";
 
       @orders = @current_company.orders
       .includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
       .incomplete
       .order(:id)
 
+      # 自社の所有する織機の名前のみ配列に取り出す
+
       @machine_names = @current_company.machines.pluck(:name)
 
-      @assigned_orders = {}
+      @assigned_orders = Hash.new { |hash, key| hash[key] = [] }
       @unassigned_orders = []
+
+      # 現在の会社に紐づく発注（関連データは取得済み）の処理ループ
       @orders.each do |order|
+
         # 織機割り当て済の場合
         if order.latest_machine_assignment.present?
+
+          # 機械名を取得
           machine = order.latest_machine_assignment.machine
           machine_name = machine.name
-          # machine_id = order.latest_machine_assignment.machine.id
 
+          # machine_id = order.latest_machine_assignment.machine.id
           @assigned_orders[machine_name] << order
+
         else
           # 未割当の商品の場合
           @unassigned_orders << order
@@ -204,14 +213,17 @@ class Admin::OrdersController < ApplicationController
       @no_orders_message = "現在受注している商品はありません" unless @orders.any?
 
       # 各注文に対して現在作業中の作業工程を取得
-      @current_work_processes = {}
+      @current_work_processes = Hash.new { |hash, key| hash[key] = [] }
+
       @orders.each do |order|
 
         work_process = WorkProcess.find_by(order_id: order.id)
+
         @current_work_processes[order.id] = work_process
-      # order.id をキーとして、対応する WorkProcess を格納
-      # @current_work_processes[order.id] = current_work_process
-      # current_process = @current_work_processes[:id]
+
+        # order.id をキーとして、対応する WorkProcess を格納
+        # @current_work_processes[order.id] = current_work_process
+        # current_process = @current_work_processes[:id]
         if order.work_processes.any?
           # 現在のwork_processから工程を検索
           if params[:work_process_definition_id].present?
@@ -219,7 +231,6 @@ class Admin::OrdersController < ApplicationController
             @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
           else
             @current_work_processes[order.id] = order.work_processes.current_work_process
-
           end
         else
           @current_work_processes[order.id] = nil

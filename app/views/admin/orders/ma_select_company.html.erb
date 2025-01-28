@@ -1,5 +1,4 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">会社を選んでください</h1>
-<%# 以下に会社選択ボタンを作成 %>
 <% @companies.each do |company| %>
     <%= link_to company.name, ma_index_admin_orders_path(company_id: company.id),  class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %>
 <% end %>
