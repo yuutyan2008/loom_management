@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- React and ReactDOM from CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    .drag-target { cursor: move; background-color: #f3f3f3; }
+    .droppable-zone { border: 2px dashed #4CAF50; padding: 10px; min-height: 50px; }
+    .dragging { opacity: 0.5; }
+  </style>
+</head>
+<body>
+
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機未割り当ての商品</h1>
+
+<script>
+  var test = <%= @test %>;
+  var initialOrders = <%= @unassigned_orders.to_json(
+    only: [:id, :start_date, :factory_estimated_completion_date],
+    include: {
+      company: { only: [:name] },
+      product_number: { only: [:number] },
+      color_number: { only: [:color_code] },
+      latest_machine_assignment: {
+        include: { machine: { only: [:name] } }
+      }
+    }
+  ).html_safe %>;
+</script>
+
+<div id="drag-drop-root"></div>
+
+<script type="text/babel">
+  const { useState } = React;
+  function DragDropApp() {
+    // const initialOrders = [
+    //   { id: 1, company: "A社", product: "ABC-123", color: "Red" },
+    //   { id: 2, company: "B社", product: "XYZ-456", color: "Blue" }
+    // ];
+
+    const [unassignedOrders, setUnassignedOrders] = useState(initialOrders);
+    const [assignedOrders, setAssignedOrders] = useState([]);
+
+    // ドラッグの開始時の処理を定義
+    const onDragStart = (e, order) => {
+      // dataTransferにドラッグされた要素（order オブジェクト）がJSONとして保存される
+      e.dataTransfer.setData("order", JSON.stringify(order));
+    };
+
+    // ドロップ
+    const onDrop = (e, machineName) => {
+      // デフォルトの動作を防ぐ処理 ←必要？
+      e.preventDefault();
+      // orderデータの取得、JSONからorder オブジェクトに変換
+      const order = JSON.parse(e.dataTransfer.getData("order"));
+      // 定義した関数setAssignedOrdersを実行して割り当てられたassignedOrdersを更新
+      setAssignedOrders([...assignedOrders, { ...order, machine: machineName }]);
+      setUnassignedOrders(unassignedOrders.filter(o => o.id !== order.id));
+    };
+
+    return (
+      <div>
+        <h2>未割り当ての商品</h2>
+        <table className="table-auto border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="py-2 px-4 border">ID</th>
+              <th className="py-2 px-4 border">会社名</th>
+              <th className="py-2 px-4 border">品番</th>
+              <th className="py-2 px-4 border">色番</th>
+              <th className="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+              <th className="py-2 px-4 text-gray-700 border-b">開始日</th>
+              <th className="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+              <th className="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- state配列unassignedOrdersをtrタグで展開 -->
+            {unassignedOrders.map(order => (
+              // 配列の要素にkeyをつけて識別
+              <tr key={order.id}
+                  className="drag-target"
+                  draggable // draggable = true
+                  // onDragStartイベントをtrタグに登録
+                  onDragStart={(e) => onDragStart(e, order)}>
+                <td className="py-2 px-4 border">{order.id}</td>
+                <td className="py-2 px-4 border">{order.company.name}</td>
+                <td className="py-2 px-4 border">{order.product_number.number}</td>
+                <td className="py-2 px-4 border">{order.color_number.color_code}</td>
+                <td className="py-2 px-4 border">{order.work_process_definition?.name || "未設定"}</td>
+                <td className="py-2 px-4 border">{order.start_date}</td>
+                <td className="py-2 px-4 border">{order.factory_estimated_completion_date || "未設定"}</td>
+                <td className="py-2 px-4 border">{order.latest_machine_assignment?.machine?.name || "ー"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h2 className="mt-6">織機割り当て済の商品</h2>
+
+        <div className="droppable-zone"
+             onDragOver={(e) => e.preventDefault()}
+             onDrop={(e) => onDrop(e, "機械A")}>
+          <table className="table-auto border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-2 px-4 border">ID</th>
+                <th className="py-2 px-4 border">会社名</th>
+                <th className="py-2 px-4 border">品番</th>
+                <th className="py-2 px-4 border">色番</th>
+                <th className="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+                <th className="py-2 px-4 text-gray-700 border-b">開始日</th>
+                <th className="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+                <th className="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignedOrders.map((order, index) => (
+                <tr key={index}>
+                <td className="py-2 px-4 border">{order.id}</td>
+                <td className="py-2 px-4 border">{order.company.name}</td>
+                <td className="py-2 px-4 border">{order.product_number.number}</td>
+                <td className="py-2 px-4 border">{order.color_number.color_code}</td>
+                <td className="py-2 px-4 border">{order.work_process_definition?.name || "未設定"}</td>
+                <td className="py-2 px-4 border">{order.start_date}</td>
+                <td className="py-2 px-4 border">{order.factory_estimated_completion_date || "未設定"}</td>
+                <td className="py-2 px-4 border">{order.latest_machine_assignment?.machine?.name || "ー"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("drag-drop-root")).render(<DragDropApp />);
+</script>
+
+</body>
+</html>

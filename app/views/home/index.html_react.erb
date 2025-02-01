@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React版ホーム画面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .machine-card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-size: 16px;
+        }
+        .start {
+            background-color: #4CAF50;
+        }
+        .end {
+            background-color: #FF5733;
+        }
+        .disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">ホーム画面</h1>
+    <div id="app"></div>
+
+    <!-- React and ReactDOM from CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+    <script type="text/babel">
+        // 仮の機械データ（RailsからAPI経由で取得することを想定）
+        const initialMachines = [
+            {
+                id: 1,
+                companyName: "会社A",
+                machineName: "織機1",
+                workProcessName: "作業工程1",
+                machineStatus: "稼働中",
+                buttonLabel: "作業開始",
+                disabled: false
+            },
+            {
+                id: 2,
+                companyName: "会社B",
+                machineName: "織機2",
+                workProcessName: "作業工程2",
+                machineStatus: "準備中",
+                buttonLabel: "作業終了",
+                disabled: false
+            },
+            {
+                id: 3,
+                companyName: "会社C",
+                machineName: "織機3",
+                workProcessName: "作業工程なし",
+                machineStatus: "不明",
+                buttonLabel: "更新不可",
+                disabled: true
+            }
+        ];
+
+        function MachineCard({ machine, handleUpdate }) {
+            return (
+                <div className="machine-card">
+                    <table className="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+                        <thead>
+                            <tr>
+                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">会社名</th>
+                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.companyName}</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.machineName}</td>
+                            </tr>
+                            <tr>
+                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.workProcessName}</td>
+                            </tr>
+                            <tr>
+                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況</th>
+                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.machineStatus}</td>
+                            </tr>
+                            <tr>
+                                <td colSpan="2" className="px-4 py-2">
+                                    <div className="flex justify-center space-x-2">
+                                        <button
+                                            className={`button ${machine.buttonLabel === '作業開始' ? 'start' : 'end'} ${machine.disabled ? 'disabled' : ''}`}
+                                            disabled={machine.disabled}
+                                            onClick={() => handleUpdate(machine.id, machine.buttonLabel)}
+                                        >
+                                            {machine.buttonLabel}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            );
+        }
+
+        export default function App() {
+            const [machines, setMachines] = React.useState(initialMachines);
+
+            const handleUpdate = (machineId, action) => {
+                console.log(`機械ID: ${machineId}, アクション: ${action}`);
+
+                // Railsバックエンドにリクエストを送信
+                fetch('/update_home', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        machine_id: machineId,
+                        commit: action
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('サーバーエラーが発生しました');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(`サーバーメッセージ: ${data.message}`);
+
+                    // UIを更新する（例: 作業が終了したらボタン無効化）
+                    const updatedMachines = machines.map(machine => {
+                        if (machine.id === machineId) {
+                            return {
+                                ...machine,
+                                buttonLabel: "更新不可",
+                                disabled: true,
+                                machineStatus: action === "作業開始" ? "進行中" : "完了"
+                            };
+                        }
+                        return machine;
+                    });
+                    setMachines(updatedMachines);
+                })
+                .catch(error => {
+                    console.error('エラー:', error);
+                    alert('更新に失敗しました。');
+                });
+            };
+
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {machines.map(machine => (
+                        <MachineCard key={machine.id} machine={machine} handleUpdate={handleUpdate} />
+                    ))}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('app'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
