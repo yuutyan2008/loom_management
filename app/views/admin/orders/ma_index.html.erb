@@ -17,7 +17,18 @@
 
 <script>
   var test = <%= @test %>;
-  var initialOrders = <%= @unassigned_orders.to_json(
+  var unassigned_orders = <%= @unassigned_orders.to_json(
+    only: [:id, :start_date, :factory_estimated_completion_date],
+    include: {
+      company: { only: [:name] },
+      product_number: { only: [:number] },
+      color_number: { only: [:color_code] },
+      latest_machine_assignment: {
+        include: { machine: { only: [:name] } }
+      }
+    }
+  ).html_safe %>;
+  var assigned_orders = <%= @assigned_orders.to_json(
     only: [:id, :start_date, :factory_estimated_completion_date],
     include: {
       company: { only: [:name] },
@@ -40,8 +51,8 @@
     //   { id: 2, company: "B社", product: "XYZ-456", color: "Blue" }
     // ];
 
-    const [unassignedOrders, setUnassignedOrders] = useState(initialOrders);
-    const [assignedOrders, setAssignedOrders] = useState([]);
+    const [unassignedOrders, setUnassignedOrders] = useState(unassigned_orders);
+    const [assignedOrders, setAssignedOrders] = useState(assigned_orders);
 
     const onDragStart = (e, order) => {
       e.dataTransfer.setData("order", JSON.stringify(order));
@@ -57,7 +68,7 @@
 
     return (
       <div>
-        <h2>未割り当ての商品</h2>
+        <h2>未割り当ての発注</h2>
         <table className="table-auto border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-100">

@@ -177,8 +177,6 @@ class Admin::OrdersController < ApplicationController
     def ma_index
       @current_company = Company.find(params[:company_id])
 
-      @test = "test";
-
       @orders = @current_company.orders
       .includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
       .incomplete
@@ -202,7 +200,7 @@ class Admin::OrdersController < ApplicationController
           machine_name = machine.name
 
           # machine_id = order.latest_machine_assignment.machine.id
-          @assigned_orders[machine_name] << order
+          @assigned_orders << order
 
         else
           # 未割当の商品の場合

@@ -6,14 +6,14 @@ class HomeController < ApplicationController
     @company = current_user&.company
     # 会社に紐づく全Machineを取得し、関連情報をプリロード
     @machines = @company&.machines&.machine_associations
-    if @company&.orders.exists?
-      @orders = @company&.orders.includes(:work_processes, :machine_assignments)
-      check_overdue_work_processes_index(@orders)
-      check_missing_machine_assignments(@orders) # 追加: 織機の割り当てができていない受注をチェック
-    else
-      @orders = []
-      @no_orders_message = "現在受注している商品はありません"
-    end
+    # if @company&.orders.exists?
+    #   @orders = @company&.orders.includes(:work_processes, :machine_assignments)
+    #   check_overdue_work_processes_index(@orders)
+    #   check_missing_machine_assignments(@orders) # 追加: 織機の割り当てができていない受注をチェック
+    # else
+    #   @orders = []
+    #   @no_orders_message = "現在受注している商品はありません"
+    # end
   end
 
   def update
