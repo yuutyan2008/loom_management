@@ -4,17 +4,22 @@ class HomeController < ApplicationController
 
   def index
     @company = current_user&.company
-    # 会社に紐づく全Machineを取得し、関連情報をプリロード
-    @machines = @company&.machines&.machine_associations
-    if @company&.orders.exists?
-      @orders = @company&.orders.includes(:work_processes, :machine_assignments)
-      check_overdue_work_processes_index(@orders)
-      check_missing_machine_assignments(@orders) # 追加: 織機の割り当てができていない受注をチェック
-    else
-      @orders = []
-      @no_orders_message = "現在受注している商品はありません"
+    @machines = @company&.machines&.includes(:company, :work_processes)
+
+    @machine_status_data = @machines.map do |machine|
+      work_process = machine.latest_work_process
+      work_process_data = update_work_process_data(machine, work_process)
+      {
+        machine: machine,
+        work_process_name: work_process_data[:work_process_name],
+        machine_status_name: machine.latest_machine_status&.name || "不明",
+        button_label: work_process_data[:button_label],
+        button_disabled: work_process_data[:button_disabled],
+        order_id: work_process&.order_id
+      }
     end
   end
+
 
   def update
     @company = current_user&.company
@@ -24,6 +29,7 @@ class HomeController < ApplicationController
     @order = @company&.orders.find(order_id)
 
     ActiveRecord::Base.transaction do
+      # ボタンの種類(作業開始,作業終了)を識別
       if params[:commit] == "作業開始"
         # 作業開始処理
         # 指定のWorkProcessを更新
@@ -46,13 +52,75 @@ class HomeController < ApplicationController
         # 新規MachineAssignment追加
         MachineAssignment.create!(machine_id: machine_id, machine_status_id: 1, work_process_id: nil)
       end
+
+      @company = current_user&.company
+      @machines = @company&.machines&.includes(:company, :work_processes)
+
+      @machine_status_data = @machines.map do |machine|
+        work_process = machine.latest_work_process
+        work_process_data = update_work_process_data(machine, work_process)
+        {
+          machine: machine,
+          work_process_name: work_process_data[:work_process_name],
+          machine_status_name: machine.latest_machine_status&.name || "不明",
+          button_label: work_process_data[:button_label],
+          button_disabled: work_process_data[:button_disabled],
+          order_id: work_process&.order_id
+        }
+      end
     end
+
+
+
     redirect_to root_path, notice: "ステータスが正常に更新されました。"
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
     redirect_to root_path, alert: "ステータスの更新に失敗しました: #{e.message}"
   end
 
   private
+
+  def update_work_process_data(machine, work_process)
+    if work_process.nil?
+      return {
+        work_process_name: "作業工程なし",
+        button_label: "更新不可",
+        button_disabled: true
+      }
+    end
+
+    order_id = work_process.order_id
+    wps = machine.work_processes.where(order_id: order_id)
+
+    wp1 = wps.find { |wp| wp.work_process_definition_id == 1 }
+    wp2 = wps.find { |wp| wp.work_process_definition_id == 2 }
+    wp3 = wps.find { |wp| wp.work_process_definition_id == 3 }
+    wp4 = wps.find { |wp| wp.work_process_definition_id == 4 }
+
+    wp1_complete = (wp1&.work_process_status_id == 3)? true : false
+    wp2_complete = (wp2&.work_process_status_id == 3)? true : false
+    wp3_complete = (wp3&.work_process_status_id == 3)? true : false
+    wp4_status = wp4&.work_process_status_id
+
+    button_label, button_disabled = determine_button_status(wp1_complete, wp2_complete, wp3_complete, wp4_status)
+
+    {
+      work_process_name: work_process.work_process_definition&.name || "作業工程なし",
+      button_label: button_label,
+      button_disabled: button_disabled
+    }
+  end
+
+  def determine_button_status(wp1_complete, wp2_complete, wp3_complete, wp4_status)
+    if wp1_complete && wp2_complete && wp3_complete && (wp4_status == 1 || wp4_status == 2)
+      return ["作業終了", false]
+    elsif (wp1_complete && wp2_complete && wp3_complete && wp4_status == 3) ||
+          (wp1_complete && wp2_complete && wp3_complete && wp4_status == 4)
+      return ["更新不可", true]
+    else
+      return ["作業開始", false]
+    end
+  end
+
 
   # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   ## 既存: indexアクション用のWorkProcess遅延チェックメソッド
