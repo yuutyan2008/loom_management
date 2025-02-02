@@ -45,7 +45,6 @@ Rails.application.routes.draw do
       get 'past_orders'
     end
   end
-  resources :users
   root to: 'home#index'
   # HomeControllerのupdateアクションを定義
   patch 'home/update', to: 'home#update', as: 'update_home'
