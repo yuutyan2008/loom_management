@@ -35,6 +35,7 @@ class HomeController < ApplicationController
         # 指定のWorkProcessを更新
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
                    .update_all(work_process_status_id: 3) # 完了
+                   binding.irb
         WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
                    .update_all(work_process_status_id: 2) # 作業中に更新
         # MachineAssignmentを稼働中に更新
@@ -42,35 +43,36 @@ class HomeController < ApplicationController
                          .update_all(machine_status_id: 3) # 稼働中
       elsif params[:commit] == "作業終了"
         # 作業終了処理
+        binding.irb
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
                    .update_all(work_process_status_id: 3) # 完了
         WorkProcess.where(order_id: order_id, work_process_definition_id: 5)
                    .update_all(work_process_status_id: 2) # 作業中に更新
+
+        # 下記を修正予定
         # MachineAssignmentの織機をnilに更新
         MachineAssignment.where(machine_id: machine_id, work_process_id: @order.work_processes)
                          .update_all(machine_id: nil, machine_status_id: nil)
         # 新規MachineAssignment追加
         MachineAssignment.create!(machine_id: machine_id, machine_status_id: 1, work_process_id: nil)
       end
-
-      @company = current_user&.company
-      @machines = @company&.machines&.includes(:company, :work_processes)
-
-      @machine_status_data = @machines.map do |machine|
-        work_process = machine.latest_work_process
-        work_process_data = update_work_process_data(machine, work_process)
-        {
-          machine: machine,
-          work_process_name: work_process_data[:work_process_name],
-          machine_status_name: machine.latest_machine_status&.name || "不明",
-          button_label: work_process_data[:button_label],
-          button_disabled: work_process_data[:button_disabled],
-          order_id: work_process&.order_id
-        }
-      end
     end
 
+    @company = current_user&.company
+    @machines = @company&.machines&.includes(:company, :work_processes)
 
+    @machine_status_data = @machines.map do |machine|
+      work_process = machine.latest_work_process
+      work_process_data = update_work_process_data(machine, work_process)
+      {
+        machine: machine,
+        work_process_name: work_process_data[:work_process_name],
+        machine_status_name: machine.latest_machine_status&.name || "不明",
+        button_label: work_process_data[:button_label],
+        button_disabled: work_process_data[:button_disabled],
+        order_id: work_process&.order_id
+      }
+    end
 
     redirect_to root_path, notice: "ステータスが正常に更新されました。"
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
@@ -80,6 +82,7 @@ class HomeController < ApplicationController
   private
 
   def update_work_process_data(machine, work_process)
+
     if work_process.nil?
       return {
         work_process_name: "作業工程なし",
@@ -100,9 +103,7 @@ class HomeController < ApplicationController
     wp2_complete = (wp2&.work_process_status_id == 3)? true : false
     wp3_complete = (wp3&.work_process_status_id == 3)? true : false
     wp4_status = wp4&.work_process_status_id
-
     button_label, button_disabled = determine_button_status(wp1_complete, wp2_complete, wp3_complete, wp4_status)
-
     {
       work_process_name: work_process.work_process_definition&.name || "作業工程なし",
       button_label: button_label,
