@@ -5,7 +5,8 @@
             <h1 class="text-center text-2xl font-bold text-gray-800 sm:text-3xl mt-6 mb-6">ログイン</h1>
             <div class="space-y-6">
                 <div>
-                    <label for="email" class="block text-md font-semibold text-gray-900">
+                    <label for="email" class="block text-md font-semibold text-gray-900", id="session_email">
+>
                         <%= form.label :email %>
                     </label>
                     <div class="mt-2">
@@ -13,7 +14,7 @@
                     </div>
                 </div>
                 <div>
-                    <label for="password" class="block text-md font-semibold text-gray-900">
+                    <label for="password" class="block text-md font-semibold text-gray-900", id="session_password">
                         <%= form.label :password %>
                     </label>
                     <div class="mt-2">
