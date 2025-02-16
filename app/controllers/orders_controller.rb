@@ -6,14 +6,15 @@ class OrdersController < ApplicationController
   before_action :authorize_order, only: [:show, :destroy]
   # 追記：parameterの型変換(accept_nested_attributes_for使用のため)
   before_action :convert_work_processes_params, only: [:update]
-  # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
+  # 【追加】更新時に machine_assignments_attributes を事前整理するためのbefore_actionを追加
   before_action :sanitize_machine_assignments_params, only: [:update]
   before_action :set_machine_statuses_for_form, only: [:edit, :update]
 
   def index
-    @company = current_user&.company
-    @orders = @company&.orders&.incomplete || Order.none
-    @no_orders_message = "現在受注している商品はありません" unless @orders.any?
+    @company = current_user&.company #ログインユーザのcompany
+    @orders = @company&.orders&.incomplete || Order.none #ログインユーザのcompanyの注文で未完了のもの : orderに紐づくworkprocessの状態が3以外
+
+    @no_orders_message = "現在受注している商品はありません" unless @orders.any? #未完了がなければ、受注がないのか？ 受注して完了済みだけの場合・・出るのか？
 
     check_overdue_work_processes_index(@orders)
   end
@@ -27,11 +28,20 @@ class OrdersController < ApplicationController
   end
 
   def show
+    # 注文IDが特定される前提
+    # その注文に紐づく作業工程x5 が取得され、それに紐づく作業名、織機割当-織機情報も取得
     @work_processes = @order.work_processes
                             .includes(:work_process_definition, machine_assignments: :machine)
                             .ordered
+
+    # 作業工程のうち、完了済み以降の最新の1つを取得
     @current_work_process = find_current_work_process(@work_processes)
+
     load_machine_assignments_and_machines
+    # ↑中身は以下↓
+    # @current_machine_assignments = @current_work_process&.machine_assignments&.includes(:machine) || []
+    # @machines = @current_machine_assignments.map(&:machine).uniq
+    # 現在工程に対する織機を取ってくる なぜuniqする必要があるのか不明
 
     check_overdue_work_processes_show(@order.work_processes)
   end
@@ -133,9 +143,9 @@ class OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      # accepts_nested_attributes_forに対応
+      # accepts_nested_attributes_for に対応
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
-      # accepts_nested_attributes_forに対応
+      # accepts_nested_attributes_for に対応
       work_processes_attributes: [
         :id,
         :process_estimate_id,
@@ -152,8 +162,11 @@ class OrdersController < ApplicationController
 
   # ↓↓ showアクションに必要なメソッド ↓↓
   def load_machine_assignments_and_machines
+
     @current_machine_assignments = @current_work_process&.machine_assignments&.includes(:machine) || []
+
     @machines = @current_machine_assignments.map(&:machine).uniq
+
   end
 
   # ↓↓ editアクションに必要なメソッド ↓↓
@@ -222,16 +235,9 @@ class OrdersController < ApplicationController
           input_start_date = workprocess_params[:start_date].to_date
           # 入力された開始日が新しい場合は置き換え
           start_date = input_start_date > next_start_date ? input_start_date : next_start_date
-          # if input_start_date < next_start_date
-          #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
-          #   render :edit and return
-          # end
         end
 
         actual_completion_date =  workprocess_params[:actual_completion_date]
-
-        # 織機の種類を変更した場合
-        # 選択されたmachine_type_id params[:machine_type_id]
 
         if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
           estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
@@ -241,6 +247,7 @@ class OrdersController < ApplicationController
         target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
         target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
         target_work_prcess.save
+
         # 更新したナレッジで全行程の日時の更新処理の呼び出し
         new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
         # 開始日の方が新しい場合は置き換え

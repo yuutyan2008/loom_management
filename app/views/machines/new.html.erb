@@ -23,7 +23,7 @@
                 <div class="md:w-2/3">
                     <%= f.collection_select :machine_type_id, MachineType.all, :id, :name,
                         { prompt: "織機のタイプを選択してください" },
-                        { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+                        { required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
                 </div>
             </div>
         </table>

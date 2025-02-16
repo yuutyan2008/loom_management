@@ -10,7 +10,7 @@ class Order < ApplicationRecord
   has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: "WorkProcess"
 
   validates :company_id, :product_number_id, :color_number_id, :roll_count, :quantity, presence: true
-  validates :roll_count, :quantity, numericality: { greater_than_or_equal_to: 1 }
+  validates :roll_count, :quantity, presence: true, numericality: { greater_than_or_equal_to: 1 }
   validate :validate_start_date_presence, on: :create
 
   # すべての作業工程が完了している注文を取得

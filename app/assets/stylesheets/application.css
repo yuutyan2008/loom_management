@@ -39,3 +39,24 @@ select:focus {
   box-shadow: 0 0 0 2px #6366f1;
   border-color: #6366f1;
 }
+
+.custom-tooltip {
+  position: absolute;
+  top: -35px !important; /* ツールチップをアイコンの上に配置 */
+  left: 0 !important;
+  background-color: gray !important;
+  color: yellow !important;
+  padding: 5px !important;
+  border-radius: 5px !important;
+  white-space: nowrap !important;
+  font-size: 14px !important;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 視認性を向上 */
+}
+
+.custom-icon-wrapper {
+  font-size: 24px !important;
+  cursor: pointer !important;
+  position: relative !important; /* ツールチップの基準位置にする */
+  display: inline-block !important;
+}

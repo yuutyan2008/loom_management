@@ -1,7 +1,3 @@
-<% content_for :head do %>
-  <meta name="turbo-visit-control" content="reload">
-<% end %>
-
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注編集</h1>
 
 <%= form_with(model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { turbo: false }) do |f| %>
@@ -14,25 +10,33 @@
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社</th>
           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
             <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "新しい会社を選択" %>
-            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
           </td>
         </tr>
         <tr class="bg-gray-100 border-b">
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">品番</th>
           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
             <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, prompt: "新しい品番を選択" %>
-            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
           </td>
         </tr>
         <tr class="bg-gray-100 border-b">
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">色番</th>
           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
             <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, prompt: "新しい色番号を選択" %>
-            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
           </td>
         </tr>
 
-        <tr id="react-root" data-turbo="false"></tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">ロール数</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+            <%= f.number_field :roll_count, placeholder: "新しいロール数を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </td>
+        </tr>
+        <tr class="bg-gray-100 border-b">
+          <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
+          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+            <%= f.number_field :quantity, placeholder: "新しい数量を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </td>
+        </tr>
 
         <tr class="bg-gray-100 border-b">
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
@@ -40,7 +44,6 @@
             <% machine_type_name = @order.work_processes.joins(process_estimate: :machine_type).pluck("machine_types.id").uniq %>
             <%= select_tag :machine_type_id,
                           options_from_collection_for_select(MachineType.all, :id, :name, machine_type_name) %>
-            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
           </td>
         </tr>
       </tbody>
@@ -155,70 +158,3 @@
   </div>
 </section>
 <% end %>
-
-
-<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-<script type="text/babel">
-
-  const { useState, useEffect } = React;
-
-  function OrderForm() {
-    const [rollCount, setRollCount] = useState('');
-    const [quantity, setQuantity] = useState('');
-
-    useEffect(() => {
-      document.querySelector('input[name="order[roll_count]"]').value = rollCount;
-      document.querySelector('input[name="order[quantity]"]').value = quantity;
-    }, [rollCount, quantity]);
-
-    const handleInputChange = (setter) => (e) => {
-      const value = e.target.value;
-      if (/^\d{0,4}$/.test(value)) {
-        setter(value);
-      }
-    };
-
-    return (
-      <>
-        <tr class="bg-gray-100 border-b">
-          <th class="w-1/3 px-4 py-2 text-center text-gray-700">反数</th>
-          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
-            <input
-              type="text"
-              name="order[roll_count]"
-              value={rollCount}
-              onChange={handleInputChange(setRollCount)}
-              placeholder="反数を入力してください"
-              className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
-            />
-          </td>
-        </tr>
-        <tr class="bg-gray-100 border-b">
-          <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
-          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
-            <input
-              type="text"
-              name="order[quantity]"
-              value={quantity}
-              onChange={handleInputChange(setQuantity)}
-              placeholder="数量を入力してください"
-              className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
-            />
-          </td>
-        </tr>
-      </>
-    );
-  }
-
-  document.addEventListener("turbo:load", () => {
-    const root = document.getElementById("react-root");
-    if (root) {
-      ReactDOM.render(<OrderForm />, root);
-    }
-  });
-</script>
-
-

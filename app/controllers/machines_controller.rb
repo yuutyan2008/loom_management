@@ -7,11 +7,18 @@ class MachinesController < ApplicationController
   before_action :authorize_machine, only: [ :show, :edit, :update, :destroy ]
 
   def index
-    @machines = @company.machines.includes(machine_assignments: [ :work_process, :machine_status ]).order(:id)
-    @no_machines_message = "現在保有している織機はありません" if @machines.empty?
-    @work_processes = WorkProcess.ordered
-    check_machine_status_index(@machines)
+    # set_company で current_userのcompanyが @companyに入る
 
+    @machines = @company.machines.includes(
+      machine_assignments:
+        [ :work_process, :machine_status ]
+        ).order(:id) # order(:id) は そのモデルの主キー id を使ってソート する。
+
+    @no_machines_message = "現在保有している織機はありません" if @machines.empty?
+
+    @work_processes = WorkProcess.ordered
+
+    check_machine_status_index(@machines)
       # 検索の実行（スコープを適用）
       @machines = @machines
       .search_by_company(params[:company_id])
@@ -37,12 +44,24 @@ class MachinesController < ApplicationController
   end
 
   def create
-    @machine = @company.machines.build(machine_params)
-    if @machine.save
-      redirect_to machine_path(@machine), notice: "織機が作成されました。"
-    else
-      render :new, status: :unprocessable_entity
+    ActiveRecord::Base.transaction do
+      @machine = @company.machines.build(machine_params)
+
+      if @machine.save
+        # 織機が保存されたら、関連する MachineAssignment を作成
+        MachineAssignment.create!(
+          machine_id: @machine.id,
+          machine_status_id: 1,  # デフォルトで「未稼働」の状態とする
+          work_process_id: nil  # 初期状態では作業工程なし
+        )
+
+        redirect_to machine_path(@machine), notice: "織機が作成されました。"
+      else
+        raise ActiveRecord::Rollback  # 織機が保存できなかったらロールバック
+      end
     end
+
+    render :new, status: :unprocessable_entity if @machine.new_record?
   end
 
   def edit

@@ -88,8 +88,17 @@ class Admin::OrdersController < ApplicationController
     update_workprocess.each do |work_process_data|
       @order.work_processes.build(work_process_data)
     end
-    @order.save
-    redirect_to admin_orders_path, notice: "注文が作成されました"
+
+    #@order.save
+    #redirect_to admin_orders_path, notice: "注文が作成されました"
+    if @order.save
+      redirect_to admin_orders_path, notice: "注文が作成されました"
+    else
+      flash.now[:alert] = "注文の作成に失敗しました。入力内容をご確認ください。"
+      @work_process = WorkProcess.new
+      @companies = Company.where.not(id: 1)
+      render :new, status: :unprocessable_entity
+    end
   end
 
   def show

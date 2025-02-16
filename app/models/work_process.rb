@@ -192,40 +192,52 @@ class WorkProcess < ApplicationRecord
   # 更新：全行程の日時の更新
   def self.check_current_work_process(process, start_date, actual_completion_date)
 
-    # 工程idが2以上の場合
+    ############################################
+    # 最短・最長見積もり日とstart_date
+    ############################################
+    # 工程idが2以上の場合 糸のあと
     if process[:work_process_definition_id].to_i >= 2
-      if actual_completion_date.present?
-        process[:latest_estimated_completion_date] = actual_completion_date
-        process[:earliest_estimated_completion_date] = actual_completion_date
-        process[:start_date] = start_date
-      else
+      if actual_completion_date.present? # 完了日が入力されている
+        process[:latest_estimated_completion_date] = actual_completion_date   #最短見積日は完了日に
+        process[:earliest_estimated_completion_date] = actual_completion_date #最長見積日は完了日に
+        process[:start_date] = start_date # 開始日は開始日に
+      else #完了日が入力されていない
       # 開始日の更新が必要
-
         process[:start_date] = start_date
-        # 更新された開始日からナレッジを再計算
+        # 更新された開始日から終了予想日を再計算
         self.calc_process_estimate(process, start_date)
       end
     end
 
-    if process[:work_process_definition_id].to_i == 1
-      if actual_completion_date.present?
-        process[:latest_estimated_completion_date] = actual_completion_date
-        process[:earliest_estimated_completion_date] = actual_completion_date
+    if process[:work_process_definition_id].to_i == 1 # 糸工程の場合
+      if actual_completion_date.present? # 完了日が入力されている
+        process[:latest_estimated_completion_date] = actual_completion_date   #最短見積日は完了日に
+        process[:earliest_estimated_completion_date] = actual_completion_date #最長見積日は完了日に
       else
-        process = self.calc_process_estimate(process, start_date)
+        # 更新された開始日から終了予想日を再計算
+        # 開始日の更新はしない（？）
+        process = self.calc_process_estimate(process, start_date) #
       end
     end
 
     # 整理加工の開始日調整
-    if process[:work_process_definition_id].to_i == 4
+    ############################################
+    # 次工程の開始日
+    # 製織の次だけ曜日を考慮
+    # それ以外は最短終了日が次工程の開始日（なぜこうしたのか？）
+    ############################################
+    if process[:work_process_definition_id].to_i == 4 # 製織工程
       # 日曜日なら翌々週の月曜が作業開始日
       if process[:earliest_estimated_completion_date].to_date.wday == 0
         next_start_date = process[:earliest_estimated_completion_date].to_date + 8
       else
         # 次の月曜日が開始日
         next_start_date = process[:earliest_estimated_completion_date].to_date.next_week
+        # なぜ製織工程だけ、曜日判別から次開始日を決めているのか
+        # 全体に、処理の意図が不明
       end
     else
+      #
       # ここに、工程が５なら次の開始日は不要の処理を作りたい
       next_start_date = process[:earliest_estimated_completion_date]
     end

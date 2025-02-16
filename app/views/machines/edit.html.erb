@@ -31,8 +31,8 @@
                     </label>
                 </div>
                 <div class="md:w-2/3">
-                    <%= form.collection_select :machine_type_id, MachineType.all, :id, :name,
-                        { prompt: "織機のタイプを選択してください" },
+                    <%= form.collection_select :machine_type_id, MachineType.all.order(:id), :id, :name,
+                        { prompt: "織機のタイプを選択してください"},
                         { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                 </div>
                 <div class="md:w-2/3">
                     <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name,
-                        { prompt: "稼働状況を選択してください" },
+                        { prompt: "稼働状況を選択してください", selected: @machine.machine_assignments.first&.machine_status_id },
                         { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
                 </div>
             </div>
