@@ -84,7 +84,7 @@ class Admin::OrdersController < ApplicationController
     estimate_workprocess = WorkProcess.decide_machine_type(workprocess, machine_type_id)
     # 完了見込日時を入れる
     update_workprocess = WorkProcess.update_deadline(estimate_workprocess, start_date)
-    # ５個のハッシュとorderの関連付け
+    # 5個のハッシュとorderの関連付け
     update_workprocess.each do |work_process_data|
       @order.work_processes.build(work_process_data)
     end
@@ -300,10 +300,6 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  # def set_work_process
-  #   @work_process = Task.find(params[:id])
-  # end
-
   def set_product_number
     @product_number = current_user.product_number
   end
@@ -346,34 +342,6 @@ class Admin::OrdersController < ApplicationController
       end
     end
   end
-
-  # def handle_machine_assignment_updates
-  #   relevant_work_process_definition_ids = [1, 2, 3, 4]
-  #   # 対象のWorkProcess群を取得
-  #   relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
-  #   target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-  #   # 条件: 全てがstatus_id=3の場合のみ処理
-  #   if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
-  #     machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
-  #     if machine_id.present?
-  #       # 全WorkProcessを取得(5などその他も含む場合)
-  #       all_work_process_ids = @order.work_processes.pluck(:id)
-  #       # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
-  #       MachineAssignment.where(
-  #         machine_id: machine_id,
-  #         work_process_id: all_work_process_ids
-  #       ).update_all(machine_id: nil, machine_status_id: nil)
-  #       # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
-  #       # 既存があればそれを使い、新たなcreateは行わない
-  #       assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
-  #       if assignment.new_record?
-  #         # 新規の場合のみ作成
-  #         assignment.machine_status_id = 1
-  #         assignment.save!
-  #       end
-  #     end
-  #   end
-  # end
 
   # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
   def set_work_process_status_completed

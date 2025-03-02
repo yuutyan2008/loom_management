@@ -1,3 +1,225 @@
+class ApplicationRecord < ActiveRecord::Base
+  primary_abstract_class
+end
+class ColorNumber < ApplicationRecord
+  has_many :orders
+end
+class Company < ApplicationRecord
+  has_many :users
+  has_many :orders
+  has_many :machines
+
+  validates :name, presence: true, uniqueness: true
+end
+class Machine < ApplicationRecord
+  belongs_to :machine_type
+  belongs_to :company
+  has_many :machine_assignments
+  # WorkControllerでの関連情報取得簡略化のため、throughを追加
+  has_many :work_processes, through: :machine_assignments
+
+  validates :name, presence: true, uniqueness: { scope: :company_id, message: "は同じ会社内で一意である必要があります" }
+  validates :machine_type_id, presence: true
+
+  scope :machine_associations, -> {
+    includes(
+      :machine_assignments,
+      machine_assignments: [ :machine_status ],
+      work_processes: {
+        work_process_status: {},
+        work_process_definition: {},
+        order: [ :company, :product_number, :color_number ]
+      }
+    )
+  }
+
+  # 会社名
+  scope :search_by_company, ->(company_id) {
+    joins(:company).where(company: { id: company_id }) if company_id.present?
+  }
+
+  # 織機
+  scope :search_by_machine, ->(machine_id) { where(id: machine_id) if machine_id.present? }
+
+  # 色番
+  scope :search_by_product_number, ->(product_number_id) {
+    joins(machine_assignments: { work_process: :order })
+    .where(orders: { product_number_id: product_number_id }) if product_number_id.present?
+  }
+
+  # 現在の工程
+  scope :search_by_work_process_definitions, ->(work_process_definition_id) {
+    joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
+  }
+
+  # ガントで過去の発注を非表示にする
+  scope :not_in_past_orders, -> {
+    joins(machine_assignments: { work_process: :order })
+      .where(orders: { id: Order.incomplete.select(:id) })
+      .distinct
+  }
+
+
+  # 特定のIDを持つ機械を取得するクラスメソッド
+  def self.find_with_associations(id)
+    machine_associations.find_by(id: id)
+  end
+
+  # 以下はWorkProcessモデルのデータを取得する方法
+  # 最新のMachineAssignmentを取得するメソッド
+  def latest_machine_assignment
+    machine_assignments.order(created_at: :desc).first
+  end
+  # 最新の工程を取得するメソッドを定義
+  def latest_work_process
+    work_processes.order(created_at: :desc).first
+  end
+  # 最新の工程の状況を取得するメソッドを定義
+  def latest_work_process_status
+    latest_work_process&.work_process_status
+  end
+  # 最新の完成予定日を取得するメソッド
+  def latest_factory_estimated_completion_date
+    latest_work_process&.factory_estimated_completion_date
+  end
+
+  # 以下はMachineAssignmentモデルのデータを取得する方法
+  # 最新のMachineAssignmentを取得するメソッドを定義
+  def latest_machine_assignment
+    machine_assignments.order(created_at: :desc).first
+  end
+  # 最新のMachineStatusを取得するメソッドを定義
+  def latest_machine_status
+    latest_machine_assignment&.machine_status
+  end
+end
+class MachineAssignment < ApplicationRecord
+  belongs_to :machine, optional: true
+  belongs_to :machine_status, optional: true
+  belongs_to :work_process, optional: true
+
+    # 異なる織機タイプを追加できないようにする
+
+end
+
+class MachineStatus < ApplicationRecord
+  has_many :machine_assignments
+end
+class MachineType < ApplicationRecord
+  has_many :machines
+  has_many :process_estimates
+end
+class Order < ApplicationRecord
+  belongs_to :company
+  belongs_to :product_number
+  belongs_to :color_number
+  has_many :work_processes, -> { ordered }
+  has_many :machine_assignments, through: :work_processes
+  accepts_nested_attributes_for :work_processes
+
+  # 未完了の作業工程を持つ注文を簡単に参照できるアソシエーション
+  has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: "WorkProcess"
+
+  validates :company_id, :product_number_id, :color_number_id, :roll_count, :quantity, presence: true
+  validates :roll_count, :quantity, presence: true, numericality: { greater_than_or_equal_to: 1 }
+  validate :validate_start_date_presence, on: :create
+
+  # すべての作業工程が完了している注文を取得
+  scope :completed, -> {
+    left_outer_joins(:incomplete_work_processes)
+      .where(work_processes: { id: nil })
+  }
+
+  # 少なくとも一つの作業工程が未完了の注文を取得
+  scope :incomplete, -> {
+    joins(:incomplete_work_processes).distinct
+  }
+
+
+
+  # 最新の MachineAssignment を取得するメソッド
+  def latest_machine_assignment
+    machine_assignments.order(created_at: :desc).first
+  end
+  # 検索のスコープ
+  # 会社名
+  scope :search_by_company, ->(company_id) {
+    joins(:company).where(company: { id: company_id }) if company_id.present?
+  }
+
+  # 品番
+  scope :search_by_product_number, ->(product_number_id) {
+    joins(:product_number).where(product_number: { id: product_number_id }) if product_number_id.present?
+  }
+
+  # 色番
+  scope :search_by_color_number, ->(color_number_id) {
+    joins(:color_number).where(color_number: { id: color_number_id }) if color_number_id.present?
+  }
+
+  # 現在の工程
+  scope :search_by_work_process_definitions, ->(work_process_definition_id) {
+    joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
+  }
+
+  # 注文が1週間以内に作成されたかを判定するメソッド
+  def recent?
+    created_at >= 1.weeks.ago
+  end
+
+  private
+
+  def validate_start_date_presence
+    return if work_processes.blank? # 作業工程がまだ作成されていない場合はスキップ
+
+    if work_processes.any? { |wp| wp.start_date.blank? }
+      errors.add(:start_date, "開始日を入力してください")
+    end
+  end
+end
+class ProcessEstimate < ApplicationRecord
+  belongs_to :machine_type
+  belongs_to :work_process_definition
+  has_many :work_processes
+
+  # after_update :recalculate_work_processes
+
+  private
+
+  # def recalculate_work_processes
+  #   # このProcessEstimateに関連する全てのWorkProcessを取得
+  #   work_processes = WorkProcess.where(process_estimate_id: self.id)
+  #   # 関連する WorkProcess を再計算
+  #   work_processes.find_each do |work_process|
+  #     work_process.recalculate_deadlines
+  #   end
+  # end
+
+  def self.machine_type_process_estimate(machine_type_id)
+    if machine_type_id == 1
+      where(id: 1..5)
+    elsif machine_type_id == 2
+      where(id: 6..10)
+    else
+      none # 該当なしの場合は空の結果を返す
+    end
+  end
+end
+class ProductNumber < ApplicationRecord
+  has_many :orders
+end
+class User < ApplicationRecord
+  belongs_to :company
+
+  has_secure_password
+
+  validates :name, presence: true
+  validates :email, presence: true, uniqueness: true, allow_blank: true
+  validates :phone_number, presence: true, allow_blank: true
+  validates :company_id, presence: true
+  validates :password, presence: true, length: { minimum: 6 }
+  validates :password_confirmation, presence: true
+end
 class WorkProcess < ApplicationRecord
   belongs_to :order
   belongs_to :work_process_definition
@@ -190,6 +412,17 @@ class WorkProcess < ApplicationRecord
     end
   end
 
+func test(val)
+{
+  val += 3
+}
+
+a = 1
+test(a)
+print(a) a=1
+値渡し
+参照渡し
+
   # 更新：全行程の日時の更新
   def self.check_current_work_process(process, start_date, actual_completion_date)
     ############################################
@@ -320,4 +553,11 @@ class WorkProcess < ApplicationRecord
       errors.add(:actual_completion_date, "完了日が入力されていません")
     end
   end
+end
+class WorkProcessDefinition < ApplicationRecord
+  has_many :process_estimates
+  has_many :work_processes
+end
+class WorkProcessStatus < ApplicationRecord
+  has_many :work_processes
 end
