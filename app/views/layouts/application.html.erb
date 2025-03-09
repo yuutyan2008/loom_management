@@ -28,10 +28,12 @@
           <div class="flex items-center">
             <% if logged_in? %>
               <% if current_user.admin? %>
-                <%= link_to 'LooMa', admin_root_path, class: "text-xl font-bold text-gray-700" %>
+                <%= link_to 'LooMa【発注企業】', admin_root_path, class: "text-xl font-bold text-gray-700" %>
               <% else %>
-                <%= link_to 'LooMa', root_path, class: "text-xl font-bold text-gray-700" %>
+                <%= link_to 'LooMa【受注企業】', root_path, class: "text-xl font-bold text-gray-700" %>
               <% end %>
+            <% else %>
+                <div class='text-xl font-bold text-gray-700'>LooMa</div>
             <% end %>
           </div>
           <!-- デスクトップメニュー -->
