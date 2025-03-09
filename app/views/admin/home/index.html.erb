@@ -1,34 +1,57 @@
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">ホーム画面</h1>
-
-<section class="mb-12">
-    <div class="container mx-auto p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <% @companies.each do |company| %>
-            <div class="border rounded-lg shadow py-8 px-8">
-                <h3 class="text-lg text-gray-700 font-bold mb-2"><%= company[:name] %>の稼働状況</h3>
-                <div class="flex justify-between items-center py-4">
-                    <div class="text-center">
-                        <p class="bg-gray-100 py-2 px-6 text-sm font-bold text-gray-500">未稼働</p>
-                        <p class="text-xl py-2 font-bold text-gray-700"><%= company[:inactive_count] %>台</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="bg-gray-100 py-2 px-6 text-sm font-bold text-gray-500">準備中</p>
-                        <p class="text-xl py-2 font-bold text-gray-700"><%= company[:preparation_count] %>台</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="bg-green-100 py-2 px-6 text-sm font-bold text-green-500">稼働中</p>
-                        <p class="text-xl py-2 font-bold text-green-700"><%= company[:active_count] %>台</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="bg-red-100 py-2 px-6 text-sm font-bold text-red-500">故障中</p>
-                        <p class="text-xl py-2 font-bold text-red-700"><%= company[:broken_count] %>台</p>
-                    </div>
-                </div>
-                <div class="flex justify-end">
-                    <%= link_to "#{company[:name]}の稼働状況はこちら→", admin_company_path(company[:id]), class: "text-blue-500 hover:underline text-sm" %>
-                </div>
-            </div>
-            <% end %>
-        </div>
+<div class="container mx-auto p-4 mb-8">
+  <div class="bg-teal-500 text-white rounded-t-lg px-6 py-3 font-bold text-lg">
+    ご利用の手引き
+  </div>
+  <div class="bg-gray-50 border-l border-r border-b border-gray-200 rounded-b-lg p-6 mb-2">
+    <div class="mb-4">
+      <p class="font-semibold text-gray-700 mb-2">LooMaでは、以下の手順で織物生産の一元管理ができます：</p>
+      <ol class="list-decimal pl-6 space-y-2 text-gray-700">
+        <li><span class="font-medium">織機一覧</span> - 全生産企業の織機の稼働状況および割当状況を確認できます</li>
+        <li><span class="font-medium">発注一覧</span> - 過去の発注履歴と進捗状況を確認・管理できます</li>
+        <li><span class="font-medium">発注する</span> - 新規発注の登録ができます（各工程の詳細情報を入力）</li>
+        <li><span class="font-medium">納期の予想</span> - 工程ごとの標準納期を設定し、全体の納期予測を最適化できます</li>
+        <li><span class="font-medium">ユーザー管理</span> - 発注企業（管理者）および製造企業（パートナー）のアカウント設定と権限管理を行います</li>
+      </ol>
     </div>
+    <!-- 修正したTipsセクション -->
+    <div class="flex items-start border-t border-gray-200 pt-4">
+      <div class="flex-shrink-0 text-teal-500 mr-2 mt-1">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <p class="text-gray-700">ホーム画面の各機屋パネルから詳細ページへ移動して、生産者毎の織機状況を確認・更新できます。</p>
+    </div>
+  </div>
+</div>
+<section class="mb-12">
+  <div class="container mx-auto p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <% @companies.each do |company| %>
+        <div class="border rounded-lg shadow py-8 px-8">
+          <h3 class="text-lg text-gray-700 font-bold mb-2"><%= company[:name] %>の稼働状況</h3>
+          <div class="flex justify-between items-center py-4">
+            <div class="text-center">
+              <p class="bg-gray-100 py-2 px-6 text-sm font-bold text-gray-500">未稼働</p>
+              <p class="text-xl py-2 font-bold text-gray-700"><%= company[:inactive_count] %>台</p>
+            </div>
+            <div class="text-center">
+              <p class="bg-gray-100 py-2 px-6 text-sm font-bold text-gray-500">準備中</p>
+              <p class="text-xl py-2 font-bold text-gray-700"><%= company[:preparation_count] %>台</p>
+            </div>
+            <div class="text-center">
+              <p class="bg-green-100 py-2 px-6 text-sm font-bold text-green-500">稼働中</p>
+              <p class="text-xl py-2 font-bold text-green-700"><%= company[:active_count] %>台</p>
+            </div>
+            <div class="text-center">
+              <p class="bg-red-100 py-2 px-6 text-sm font-bold text-red-500">故障中</p>
+              <p class="text-xl py-2 font-bold text-red-700"><%= company[:broken_count] %>台</p>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <%= link_to "#{company[:name]}の稼働状況はこちら→", admin_company_path(company[:id]), class: "text-blue-500 hover:underline text-sm" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
 </section>
