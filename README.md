@@ -1,32 +1,133 @@
-# README
+# LooMa（ルーマ）
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+![LooMa Logo](./app/assets/images/logo.png)
 
-Things you may want to cover:
+## 📋 アプリケーション概要
 
-* Ruby version：3.3.6
+**LooMa（ルーマ）** は、織物製造業における生産管理をシンプルかつ効率的に行うためのWebアプリケーションです。ボタン操作のシンプルなインターフェースで、複数の機屋（織機メーカー）の稼働状況を可視化し、発注から納品までの工程を一括管理することができます。
 
-* Rails version：7.2.2
+### 解決する課題
 
-* System dependencies
+山梨県富士吉田の織物産業における以下の3つの主要課題を解決します：
 
-* Configuration
+1. **納期の不透明さ**：原料の入荷時期が不透明で、発注者が納期を正確に把握できない
+2. **機屋の稼働状況把握の困難さ**：複数の機屋（合計8社）の稼働状況をリアルタイムで把握することが難しい
+3. **管理体制の煩雑化**：属人的なメモによる管理が多く、情報が整理されていない
 
-* Database creation
+### コンセプト
 
-* Database initialization
+- **一括管理**：複数の機屋の情報を一元的に管理
+- **ボタン操作の簡単さ**：IT知識がなくても直感的に操作可能
+- **可視化**：稼働状況や納期を視覚的に確認可能
 
-* How to run the test suite
+## 🖥️ スクリーンショット
 
-* Services (job queues, cache servers, search engines, etc.)
+### ホーム画面
+![ホーム画面](./app/assets/images/home_screen.png)
 
-* Deployment instructions
+### 稼働状況一覧
+![稼働状況](./app/assets/images/operation_status.png)
 
-* ...
+### 納期予測チャート
+![納期予測](./app/assets/images/delivery_chart.png)
 
+## ✨ 主要機能
 
-https://docs.google.com/spreadsheets/d/1SAt19q2lqFeFSaM46A8ru2OaWWTf8W5wTjyhk0r74vo/edit?usp=drive_link
+### 1. 稼働状況の一括管理
+- エルトップ様と取引のある8社分の織機の稼働状況を1画面で把握
+- 未稼働/準備中/稼働中/故障中の状態を色分けで視覚化
+
+### 2. 納期の可視化
+- 一覧画面・詳細画面、ガントチャートから予定納期を把握
+- 各工程（糸入荷、整経、製織、整理加工等）のステータスと進捗を視覚化
+
+### 3. シンプルなステータス管理
+- ボタン1つの操作で作業状態を更新
+- 普段アプリを使用しない方でも簡単に操作可能
+
+## 🛠️ 使用技術
+
+### バックエンド
+- Ruby 3.3.6
+- Rails 7.2.2
+- PostgreSQL (データベース)
+
+### フロントエンド
+- Tailwind CSS (UIデザイン)
+- Frappe Gantt (ガントチャート表示)
+
+### インフラ
+- Heroku (本番環境)
+
+## 📦 開発環境のセットアップ
+
+### 前提条件
+- Ruby 3.3.6
+- Rails 7.2.2
+- PostgreSQL
+
+### セットアップ手順
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/yourusername/looma.git
+cd looma
+
+# 依存関係のインストール
+bundle install
+
+# データベースのセットアップ
+rails db:create
+rails db:migrate
+rails db:seed
+
+# サーバーの起動
+rails s
+```
+
+## 📝 デモアカウント
+
+```
+メールアドレス: demo@example.com
+パスワード: password
+```
+
+## 👨‍💻 工夫した点
+
+### アプリの設計について
+- 現場訪問を通じて実際の業務内容や課題を理解し、解決策を絞り込み
+- オンラインMTGや週次進捗報告など、クライアントとの密なコミュニケーション
+- ユーザーの技術リテラシーを考慮した、シンプルで直感的なUI設計
+
+### チーム開発について
+- 同時並行での開発における連携と動作確認の徹底
+- 毎朝15分の進捗報告など、開発メンバー間の密なコミュニケーション
+- 小さな機能単位でのテストと統合を繰り返すアジャイル的アプローチ
+
+## 👥 開発チーム
+
+**WEF2409**
+- 高野 里美（ディープロ2024年9月期生）：山口県出身、山口大学細胞生理学専攻
+- 荻野 大暉（ディープロ2024年9月期生）：兵庫県出身、東京理科大学理工学部卒、前職はSEOコンサルティング
+
+## 🙏 謝辞
+
+本プロジェクトは「地域課題解決ハッカソン」の一環として実施されました。以下の皆様に感謝申し上げます：
+
+- 株式会社エルトップ様（課題提供・現場見学受け入れ）
+- キャップクラウド様、株式会社リンクレア様（ハッカソン運営）
+- メンターの宮岡様、重光様、尾澤様（技術サポート）
+
+## 付属資料
+
+詳細な設計書やER図はこちらのPDFをご参照ください
 
 https://www.canva.com/design/DAGV0WAuMqg/TigRgRj8cPy0KLoFw7Wpow/edit
 
+## 📄 ライセンス
+
+[MIT License](LICENSE)
+
+---
+
+© 2024 WEF2409 Team
