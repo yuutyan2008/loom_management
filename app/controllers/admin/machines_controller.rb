@@ -181,7 +181,7 @@ class Admin::MachinesController < ApplicationController
                                                        .where.not(machine_status_id: 3) # "稼働中" でない
                                                        .where("work_processes.latest_estimated_completion_date < ?", today) # 最遅完了予定日 < 本日 の判定
 
-                                                       problematic_machine_assignments = problematic_machine_assignments.where(machine: machines)
+    problematic_machine_assignments = problematic_machine_assignments.where(machine: machines)
     if problematic_machine_assignments.exists?
       grouped = problematic_machine_assignments.includes(:machine, work_process: :order).group_by(&:machine)
       total_problematic_machines = grouped.keys.size
