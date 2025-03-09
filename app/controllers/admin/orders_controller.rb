@@ -139,6 +139,7 @@ class Admin::OrdersController < ApplicationController
       current_work_processes = @order.work_processes
       machine_assignments_params = order_params[:machine_assignments_attributes]
       machine_status_id = machine_assignments_params[0][:machine_status_id]
+
       # WorkProcess更新処理
       WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
 

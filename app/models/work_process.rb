@@ -153,11 +153,15 @@ class WorkProcess < ApplicationRecord
     next_start_date = nil
 
     workprocesses_params.each_with_index do |workprocess_params, index|
-      # target_work_prcess：current_work_processesの１工程
-      target_work_prcess = current_work_processes.find(workprocess_params[:id])
+      # target_work_process：current_work_processesの１工程
+      target_work_process = current_work_processes.find(workprocess_params[:id])
 
       if index == 0
-        start_date = target_work_prcess.start_date
+        # 入力された開始日で更新する
+        #start_date = target_work_process.start_date
+        input_start_date = workprocess_params[:start_date].to_date
+        start_date = input_start_date
+        target_work_process.start_date = input_start_date
       else
         input_start_date = workprocess_params[:start_date].to_date
         # 入力された開始日が新しい場合は置き換え
@@ -172,21 +176,21 @@ class WorkProcess < ApplicationRecord
 
       # 織機の種類を変更した場合
       # 選択されたparams[:machine_type_id]
-      if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
-        estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+      if target_work_process.process_estimate.machine_type != process_estimates.first.machine_type
+        estimate = process_estimates.find_by(work_process_definition_id: target_work_process.work_process_definition_id)
         # ナレッジ置き換え
-        target_work_prcess.process_estimate = estimate
+        target_work_process.process_estimate = estimate
       end
-      target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
-      target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
-      target_work_prcess.save
+      target_work_process.work_process_status_id = workprocess_params[:work_process_status_id]
+      target_work_process.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
+      target_work_process.save
       # 更新したナレッジで全行程の日時の更新処理の呼び出し
-      new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
+      new_target_work_process, next_start_date = WorkProcess.check_current_work_process(target_work_process, start_date, actual_completion_date)
       # 開始日の方が新しい場合は置き換え
       next_start_date = start_date > next_start_date ? start_date : next_start_date
 
-      new_target_work_prcess.actual_completion_date = actual_completion_date
-      new_target_work_prcess.save
+      new_target_work_process.actual_completion_date = actual_completion_date
+      new_target_work_process.save
     end
   end
 

@@ -1,0 +1,2972 @@
+diff --git a/app/assets/stylesheets/application.css b/app/assets/stylesheets/application.css
+index 4b0734c..99a10c6 100644
+--- a/app/assets/stylesheets/application.css
++++ b/app/assets/stylesheets/application.css
+@@ -39,3 +39,24 @@ select:focus {
+   box-shadow: 0 0 0 2px #6366f1;
+   border-color: #6366f1;
+ }
++
++.custom-tooltip {
++  position: absolute;
++  top: -35px !important; /* ツールチップをアイコンの上に配置 */
++  left: 0 !important;
++  background-color: gray !important;
++  color: yellow !important;
++  padding: 5px !important;
++  border-radius: 5px !important;
++  white-space: nowrap !important;
++  font-size: 14px !important;
++  z-index: 1000;
++  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 視認性を向上 */
++}
++
++.custom-icon-wrapper {
++  font-size: 24px !important;
++  cursor: pointer !important;
++  position: relative !important; /* ツールチップの基準位置にする */
++  display: inline-block !important;
++}
+diff --git a/app/controllers/admin/orders_controller.rb b/app/controllers/admin/orders_controller.rb
+index d357484..c876ba7 100644
+--- a/app/controllers/admin/orders_controller.rb
++++ b/app/controllers/admin/orders_controller.rb
+@@ -84,12 +84,21 @@ class Admin::OrdersController < ApplicationController
+     estimate_workprocess = WorkProcess.decide_machine_type(workprocess, machine_type_id)
+     # 完了見込日時を入れる
+     update_workprocess = WorkProcess.update_deadline(estimate_workprocess, start_date)
+-    # ５個のハッシュとorderの関連付け
++    # 5個のハッシュとorderの関連付け
+     update_workprocess.each do |work_process_data|
+       @order.work_processes.build(work_process_data)
+     end
+-    @order.save
++
++    #@order.save
++    #redirect_to admin_orders_path, notice: "注文が作成されました"
++    if @order.save
+       redirect_to admin_orders_path, notice: "注文が作成されました"
++    else
++      flash.now[:alert] = "注文の作成に失敗しました。入力内容をご確認ください。"
++      @work_process = WorkProcess.new
++      @companies = Company.where.not(id: 1)
++      render :new, status: :unprocessable_entity
++    end
+   end
+ 
+   def show
+@@ -174,7 +183,6 @@ class Admin::OrdersController < ApplicationController
+       @companies = Company.all
+     end
+ 
+-    #
+     def ma_index
+       @current_company = Company.find(params[:company_id])
+ 
+@@ -183,19 +191,26 @@ class Admin::OrdersController < ApplicationController
+       .incomplete
+       .order(:id)
+ 
++      # 自社の所有する織機の名前のみ配列に取り出す
+ 
+       @machine_names = @current_company.machines.pluck(:name)
+ 
+-      @assigned_orders = {}
++      @assigned_orders = Hash.new { |hash, key| hash[key] = [] }
+       @unassigned_orders = []
++
++      # 現在の会社に紐づく発注（関連データは取得済み）の処理ループ
+       @orders.each do |order|
++
+         # 織機割り当て済の場合
+         if order.latest_machine_assignment.present?
++
++          # 機械名を取得
+           machine = order.latest_machine_assignment.machine
+           machine_name = machine.name
++
+           # machine_id = order.latest_machine_assignment.machine.id
+-          @assigned_orders[machine_name] = @assigned_orders[machine_name] || []
+-          @assigned_orders[machine_name] << order
++          @assigned_orders << order
++
+         else
+           # 未割当の商品の場合
+           @unassigned_orders << order
+@@ -205,11 +220,14 @@ class Admin::OrdersController < ApplicationController
+       @no_orders_message = "現在受注している商品はありません" unless @orders.any?
+ 
+       # 各注文に対して現在作業中の作業工程を取得
+-      @current_work_processes = {}
++      @current_work_processes = Hash.new { |hash, key| hash[key] = [] }
++
+       @orders.each do |order|
+ 
+         work_process = WorkProcess.find_by(order_id: order.id)
++
+         @current_work_processes[order.id] = work_process
++
+         # order.id をキーとして、対応する WorkProcess を格納
+         # @current_work_processes[order.id] = current_work_process
+         # current_process = @current_work_processes[:id]
+@@ -220,7 +238,6 @@ class Admin::OrdersController < ApplicationController
+             @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
+           else
+             @current_work_processes[order.id] = order.work_processes.current_work_process
+-
+           end
+         else
+           @current_work_processes[order.id] = nil
+@@ -283,10 +300,6 @@ class Admin::OrdersController < ApplicationController
+     end
+   end
+ 
+-  # def set_work_process
+-  #   @work_process = Task.find(params[:id])
+-  # end
+-
+   def set_product_number
+     @product_number = current_user.product_number
+   end
+@@ -330,34 +343,6 @@ class Admin::OrdersController < ApplicationController
+     end
+   end
+ 
+-  # def handle_machine_assignment_updates
+-  #   relevant_work_process_definition_ids = [1, 2, 3, 4]
+-  #   # 対象のWorkProcess群を取得
+-  #   relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
+-  #   target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
+-  #   # 条件: 全てがstatus_id=3の場合のみ処理
+-  #   if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
+-  #     machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
+-  #     if machine_id.present?
+-  #       # 全WorkProcessを取得(5などその他も含む場合)
+-  #       all_work_process_ids = @order.work_processes.pluck(:id)
+-  #       # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
+-  #       MachineAssignment.where(
+-  #         machine_id: machine_id,
+-  #         work_process_id: all_work_process_ids
+-  #       ).update_all(machine_id: nil, machine_status_id: nil)
+-  #       # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
+-  #       # 既存があればそれを使い、新たなcreateは行わない
+-  #       assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
+-  #       if assignment.new_record?
+-  #         # 新規の場合のみ作成
+-  #         assignment.machine_status_id = 1
+-  #         assignment.save!
+-  #       end
+-  #     end
+-  #   end
+-  # end
+-
+   # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
+   def set_work_process_status_completed
+     @order.work_processes.each do |work_process|
+diff --git a/app/controllers/home_controller.rb b/app/controllers/home_controller.rb
+index 541cce8..454cc0a 100644
+--- a/app/controllers/home_controller.rb
++++ b/app/controllers/home_controller.rb
+@@ -35,7 +35,6 @@ class HomeController < ApplicationController
+         # 指定のWorkProcessを更新
+         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                    .update_all(work_process_status_id: 3) # 完了
+-                   binding.irb
+         WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
+                    .update_all(work_process_status_id: 2) # 作業中に更新
+         # MachineAssignmentを稼働中に更新
+@@ -43,19 +42,17 @@ class HomeController < ApplicationController
+                          .update_all(machine_status_id: 3) # 稼働中
+       elsif params[:commit] == "作業終了"
+         # 作業終了処理
+-        binding.irb
+         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
+                    .update_all(work_process_status_id: 3) # 完了
+         WorkProcess.where(order_id: order_id, work_process_definition_id: 5)
+                    .update_all(work_process_status_id: 2) # 作業中に更新
+-
+-        # 下記を修正予定
+         # MachineAssignmentの織機をnilに更新
+         MachineAssignment.where(machine_id: machine_id, work_process_id: @order.work_processes)
+                          .update_all(machine_id: nil, machine_status_id: nil)
+         # 新規MachineAssignment追加
+         MachineAssignment.create!(machine_id: machine_id, machine_status_id: 1, work_process_id: nil)
+       end
++
+     end
+ 
+     @company = current_user&.company
+@@ -74,6 +71,7 @@ class HomeController < ApplicationController
+       }
+     end
+ 
++
+     redirect_to root_path, notice: "ステータスが正常に更新されました。"
+   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+     redirect_to root_path, alert: "ステータスの更新に失敗しました: #{e.message}"
+@@ -82,7 +80,6 @@ class HomeController < ApplicationController
+   private
+ 
+   def update_work_process_data(machine, work_process)
+-
+     if work_process.nil?
+       return {
+         work_process_name: "作業工程なし",
+@@ -103,7 +100,9 @@ class HomeController < ApplicationController
+     wp2_complete = (wp2&.work_process_status_id == 3)? true : false
+     wp3_complete = (wp3&.work_process_status_id == 3)? true : false
+     wp4_status = wp4&.work_process_status_id
++
+     button_label, button_disabled = determine_button_status(wp1_complete, wp2_complete, wp3_complete, wp4_status)
++
+     {
+       work_process_name: work_process.work_process_definition&.name || "作業工程なし",
+       button_label: button_label,
+diff --git a/app/controllers/machines_controller.rb b/app/controllers/machines_controller.rb
+index a9140d1..4074017 100644
+--- a/app/controllers/machines_controller.rb
++++ b/app/controllers/machines_controller.rb
+@@ -7,11 +7,18 @@ class MachinesController < ApplicationController
+   before_action :authorize_machine, only: [ :show, :edit, :update, :destroy ]
+ 
+   def index
+-    @machines = @company.machines.includes(machine_assignments: [ :work_process, :machine_status ]).order(:id)
++    # set_company で current_userのcompanyが @companyに入る
++
++    @machines = @company.machines.includes(
++      machine_assignments:
++        [ :work_process, :machine_status ]
++        ).order(:id) # order(:id) は そのモデルの主キー id を使ってソート する。
++
+     @no_machines_message = "現在保有している織機はありません" if @machines.empty?
++
+     @work_processes = WorkProcess.ordered
+-    check_machine_status_index(@machines)
+ 
++    check_machine_status_index(@machines)
+       # 検索の実行（スコープを適用）
+       @machines = @machines
+       .search_by_company(params[:company_id])
+@@ -37,14 +44,26 @@ class MachinesController < ApplicationController
+   end
+ 
+   def create
++    ActiveRecord::Base.transaction do
+       @machine = @company.machines.build(machine_params)
++
+       if @machine.save
++        # 織機が保存されたら、関連する MachineAssignment を作成
++        MachineAssignment.create!(
++          machine_id: @machine.id,
++          machine_status_id: 1,  # デフォルトで「未稼働」の状態とする
++          work_process_id: nil  # 初期状態では作業工程なし
++        )
++
+         redirect_to machine_path(@machine), notice: "織機が作成されました。"
+       else
+-      render :new, status: :unprocessable_entity
++        raise ActiveRecord::Rollback  # 織機が保存できなかったらロールバック
+       end
+     end
+ 
++    render :new, status: :unprocessable_entity if @machine.new_record?
++  end
++
+   def edit
+   end
+ 
+diff --git a/app/controllers/orders_controller.rb b/app/controllers/orders_controller.rb
+index 2435997..47eed6a 100644
+--- a/app/controllers/orders_controller.rb
++++ b/app/controllers/orders_controller.rb
+@@ -11,9 +11,10 @@ class OrdersController < ApplicationController
+   before_action :set_machine_statuses_for_form, only: [:edit, :update]
+ 
+   def index
+-    @company = current_user&.company
+-    @orders = @company&.orders&.incomplete || Order.none
+-    @no_orders_message = "現在受注している商品はありません" unless @orders.any?
++    @company = current_user&.company #ログインユーザのcompany
++    @orders = @company&.orders&.incomplete || Order.none #ログインユーザのcompanyの注文で未完了のもの : orderに紐づくworkprocessの状態が3以外
++
++    @no_orders_message = "現在受注している商品はありません" unless @orders.any? #未完了がなければ、受注がないのか？ 受注して完了済みだけの場合・・出るのか？
+ 
+     check_overdue_work_processes_index(@orders)
+   end
+@@ -27,11 +28,20 @@ class OrdersController < ApplicationController
+   end
+ 
+   def show
++    # 注文IDが特定される前提
++    # その注文に紐づく作業工程x5 が取得され、それに紐づく作業名、織機割当-織機情報も取得
+     @work_processes = @order.work_processes
+                             .includes(:work_process_definition, machine_assignments: :machine)
+                             .ordered
++
++    # 作業工程のうち、完了済み以降の最新の1つを取得
+     @current_work_process = find_current_work_process(@work_processes)
++
+     load_machine_assignments_and_machines
++    # ↑中身は以下↓
++    # @current_machine_assignments = @current_work_process&.machine_assignments&.includes(:machine) || []
++    # @machines = @current_machine_assignments.map(&:machine).uniq
++    # 現在工程に対する織機を取ってくる なぜuniqする必要があるのか不明
+ 
+     check_overdue_work_processes_show(@order.work_processes)
+   end
+@@ -152,8 +162,11 @@ class OrdersController < ApplicationController
+ 
+   # ↓↓ showアクションに必要なメソッド ↓↓
+   def load_machine_assignments_and_machines
++
+     @current_machine_assignments = @current_work_process&.machine_assignments&.includes(:machine) || []
++
+     @machines = @current_machine_assignments.map(&:machine).uniq
++
+   end
+ 
+   # ↓↓ editアクションに必要なメソッド ↓↓
+@@ -222,17 +235,10 @@ class OrdersController < ApplicationController
+           input_start_date = workprocess_params[:start_date].to_date
+           # 入力された開始日が新しい場合は置き換え
+           start_date = input_start_date > next_start_date ? input_start_date : next_start_date
+-          # if input_start_date < next_start_date
+-          #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
+-          #   render :edit and return
+-          # end
+         end
+ 
+         actual_completion_date =  workprocess_params[:actual_completion_date]
+ 
+-        # 織機の種類を変更した場合
+-        # 選択されたmachine_type_id params[:machine_type_id]
+-
+         if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
+           estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
+           # ナレッジ置き換え
+@@ -241,6 +247,7 @@ class OrdersController < ApplicationController
+         target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
+         target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
+         target_work_prcess.save
++
+         # 更新したナレッジで全行程の日時の更新処理の呼び出し
+         new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
+         # 開始日の方が新しい場合は置き換え
+diff --git a/app/javascript/application.js b/app/javascript/application.js
+index 4f1b95f..1340f00 100644
+--- a/app/javascript/application.js
++++ b/app/javascript/application.js
+@@ -1,5 +1,7 @@
+ // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
+ import "@hotwired/turbo-rails"
+ import "controllers"
++import "jquery";
++import "bootstrap";
+ 
+ Turbo.session.drive = false
+diff --git a/app/javascript/components/DragDropApp.js b/app/javascript/components/DragDropApp.js
+new file mode 100644
+index 0000000..7b24f76
+--- /dev/null
++++ b/app/javascript/components/DragDropApp.js
+@@ -0,0 +1,30 @@
++import React, { useState } from "react";
++import OrderTable from "./OrderTable";
++import DroppableZone from "./DroppableZone";
++
++const initialOrders = [
++  { id: 1, company: "A社", product: "ABC-123", color: "Red", startDate: "2024-10-01" },
++  { id: 2, company: "B社", product: "XYZ-456", color: "Blue", startDate: "2024-10-05" }
++];
++
++const DragDropApp = () => {
++  const [orders, setOrders] = useState(initialOrders);
++  const [assignedOrders, setAssignedOrders] = useState([]);
++
++  const handleDrop = (order, machineName) => {
++    setAssignedOrders([...assignedOrders, { ...order, machineName }]);
++    setOrders(orders.filter(o => o.id !== order.id));
++  };
++
++  return (
++    <div>
++      <h1>未割り当ての商品</h1>
++      <OrderTable orders={orders} />
++
++      <h1>割り当て済みの商品</h1>
++      <DroppableZone machineName="機械A" onDrop={handleDrop} assignedOrders={assignedOrders} />
++    </div>
++  );
++};
++
++export default DragDropApp;
+diff --git a/app/javascript/components/DroppableZone.js b/app/javascript/components/DroppableZone.js
+new file mode 100644
+index 0000000..d9c502d
+--- /dev/null
++++ b/app/javascript/components/DroppableZone.js
+@@ -0,0 +1,44 @@
++import React from "react";
++import { useDrop } from "react-dnd";
++
++const DroppableZone = ({ machineName, onDrop, assignedOrders }) => {
++  const [{ isOver }, drop] = useDrop(() => ({
++    accept: "ORDER",
++    drop: (item) => onDrop(item, machineName),
++    collect: monitor => ({
++      isOver: monitor.isOver()
++    })
++  }));
++
++  return (
++    <div ref={drop} className={`border p-4 ${isOver ? "bg-green-100" : "bg-gray-100"}`}>
++      <h2>織機名: {machineName}</h2>
++      <table className="w-full border-collapse border border-gray-300">
++        <thead>
++          <tr>
++            <th>ID</th>
++            <th>会社名</th>
++            <th>品番</th>
++            <th>色番</th>
++            <th>開始日</th>
++            <th>割り当て済み機械</th>
++          </tr>
++        </thead>
++        <tbody>
++          {assignedOrders.map((order, index) => (
++            <tr key={index} className="hover:bg-gray-50">
++              <td className="border px-4 py-2">{order.id}</td>
++              <td className="border px-4 py-2">{order.company}</td>
++              <td className="border px-4 py-2">{order.product}</td>
++              <td className="border px-4 py-2">{order.color}</td>
++              <td className="border px-4 py-2">{order.startDate}</td>
++              <td className="border px-4 py-2">{order.machineName}</td>
++            </tr>
++          ))}
++        </tbody>
++      </table>
++    </div>
++  );
++};
++
++export default DroppableZone;
+diff --git a/app/javascript/components/OrderRow.js b/app/javascript/components/OrderRow.js
+new file mode 100644
+index 0000000..d35d2bc
+--- /dev/null
++++ b/app/javascript/components/OrderRow.js
+@@ -0,0 +1,24 @@
++import React from "react";
++import { useDrag } from "react-dnd";
++
++const OrderRow = ({ order }) => {
++  const [{ isDragging }, drag] = useDrag(() => ({
++    type: "ORDER",
++    item: order,
++    collect: monitor => ({
++      isDragging: monitor.isDragging()
++    })
++  }));
++
++  return (
++    <tr ref={drag} className={`hover:bg-gray-50 ${isDragging ? "opacity-50" : ""}`}>
++      <td className="border px-4 py-2">{order.id}</td>
++      <td className="border px-4 py-2">{order.company}</td>
++      <td className="border px-4 py-2">{order.product}</td>
++      <td className="border px-4 py-2">{order.color}</td>
++      <td className="border px-4 py-2">{order.startDate}</td>
++    </tr>
++  );
++};
++
++export default OrderRow;
+diff --git a/app/javascript/components/OrderTable.js b/app/javascript/components/OrderTable.js
+new file mode 100644
+index 0000000..abad5e7
+--- /dev/null
++++ b/app/javascript/components/OrderTable.js
+@@ -0,0 +1,29 @@
++import React from "react";
++import OrderRow from "./OrderRow";
++import { DndProvider } from "react-dnd";
++import { HTML5Backend } from "react-dnd-html5-backend";
++
++const OrderTable = ({ orders }) => {
++  return (
++    <DndProvider backend={HTML5Backend}>
++      <table className="table-auto w-full border-collapse border border-gray-300">
++        <thead>
++          <tr>
++            <th>ID</th>
++            <th>会社名</th>
++            <th>品番</th>
++            <th>色番</th>
++            <th>開始日</th>
++          </tr>
++        </thead>
++        <tbody>
++          {orders.map(order => (
++            <OrderRow key={order.id} order={order} />
++          ))}
++        </tbody>
++      </table>
++    </DndProvider>
++  );
++};
++
++export default OrderTable;
+diff --git a/app/javascript/machine_assignment.js b/app/javascript/machine_assignment.js
+index e63e51a..a3105da 100644
+--- a/app/javascript/machine_assignment.js
++++ b/app/javascript/machine_assignment.js
+@@ -1,192 +1,177 @@
+ import React, { useState } from "react";
+-import { createRoot } from "react-dom/client";
+ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+ 
+-document.body.innerHTML = '<div id="selected_color"></div>';
+-
+-const root = createRoot(document.getElementById("selected_color"));
+-root.render(<h1>Hello, world</h1>);
+-
+-// function selected_color() {
+-//   return (
+-
+-//   );
+-// }
+-// const DragAndDropApp = () => {
+-//   // 初期データ
+-//   // 更新用関数setOrders定義
+-//   const [orders, setOrders] = useState([
+-//     { id: "order-1", content: "Order 1" },
+-//     { id: "order-2", content: "Order 2" },
+-//     { id: "order-3", content: "Order 3" },
+-//   ]);
+-
+-//   // 初期データ
+-//   // 更新用関数setMachines定義
+-//   const [machines, setMachines] = useState([
+-//     { id: "1", name: "ドビー", assignedOrders: [] },
+-//     { id: "2", name: "ジャガード", assignedOrders: [] },
+-//   ]);
+-
+-//   // ドラッグ終了時の処理
+-//   const handleDragEnd = (result) => {
+-//     const { source, destination } = result;
+-
+-//     // ドロップ先がない場合（リスト外にドロップされた場合）
+-//     if (!destination) return;
+-
+-//     // 同じリスト内での並び替え
+-//     if (source.droppableId === destination.droppableId) {
+-//       if (source.droppableId === "orders") {
+-//         const updatedOrders = Array.from(orders);
+-//         const [removed] = updatedOrders.splice(source.index, 1);
+-//         updatedOrders.splice(destination.index, 0, removed);
+-//         // 更新用関数setOrders呼び出し
+-//         setOrders(updatedOrders);
+-//       } else {
+-//         const machineIndex = machines.findIndex(
+-//           (machine) => machine.id === source.droppableId
+-//         );
+-//         const updatedMachines = Array.from(machines);
+-//         const [removed] = updatedMachines[machineIndex].assignedOrders.splice(
+-//           source.index,
+-//           1
+-//         );
+-//         updatedMachines[machineIndex].assignedOrders.splice(
+-//           destination.index,
+-//           0,
+-//           removed
+-//         );
+-//         setMachines(updatedMachines);
+-//       }
+-//     }
+-
+-//     // 異なるリスト間の移動
+-//     if (source.droppableId === "orders") {
+-//       const updatedOrders = Array.from(orders);
+-//       const [removed] = updatedOrders.splice(source.index, 1);
+-
+-//       const machineIndex = machines.findIndex(
+-//         (machine) => machine.id === destination.droppableId
+-//       );
+-//       const updatedMachines = Array.from(machines);
+-//       updatedMachines[machineIndex].assignedOrders.splice(
+-//         destination.index,
+-//         0,
+-//         removed
+-//       );
+-
+-//       setOrders(updatedOrders);
+-//       setMachines(updatedMachines);
+-//     } else {
+-//       const machineIndex = machines.findIndex(
+-//         (machine) => machine.id === source.droppableId
+-//       );
+-//       const updatedMachines = Array.from(machines);
+-//       const [removed] = updatedMachines[machineIndex].assignedOrders.splice(
+-//         source.index,
+-//         1
+-//       );
+-
+-//       const updatedOrders = Array.from(orders);
+-//       updatedOrders.splice(destination.index, 0, removed);
+-
+-//       setOrders(updatedOrders);
+-//       setMachines(updatedMachines);
+-//     }
+-//   };
+-
+-//   return (
+-//     <DragDropContext onDragEnd={handleDragEnd}>
+-//       <div style={{ display: "flex", gap: "20px", padding: "20px" }}>
+-//         {/* Orders List */}
+-//         <Droppable droppableId="orders">
+-//           {(provided) => (
+-//             <div
+-//               {...provided.droppableProps}
+-//               ref={provided.innerRef}
+-//               style={{
+-//                 padding: "20px",
+-//                 background: "#f0f0f0",
+-//                 width: "200px",
+-//                 minHeight: "300px",
+-//               }}
+-//             >
+-//               <h3>Orders</h3>
+-//               {orders.map((order, index) => (
+-//                 <Draggable key={order.id} draggableId={order.id} index={index}>
+-//                   {(provided) => (
+-//                     <div
+-//                       ref={provided.innerRef}
+-//                       {...provided.draggableProps}
+-//                       {...provided.dragHandleProps}
+-//                       style={{
+-//                         ...provided.draggableProps.style,
+-//                         margin: "10px 0",
+-//                         padding: "10px",
+-//                         background: "white",
+-//                         border: "1px solid #ddd",
+-//                         borderRadius: "5px",
+-//                       }}
+-//                     >
+-//                       {order.content}
+-//                     </div>
+-//                   )}
+-//                 </Draggable>
+-//               ))}
+-//               {provided.placeholder}
+-//             </div>
+-//           )}
+-//         </Droppable>
+-
+-//         {/* Machines List */}
+-//         {machines.map((machine) => (
+-//           <Droppable droppableId={machine.id} key={machine.id}>
+-//             {(provided) => (
+-//               <div
+-//                 {...provided.droppableProps}
+-//                 ref={provided.innerRef}
+-//                 style={{
+-//                   padding: "20px",
+-//                   background: "#e8f8e8",
+-//                   width: "200px",
+-//                   minHeight: "300px",
+-//                 }}
+-//               >
+-//                 <h3>{machine.name}</h3>
+-//                 {machine.assignedOrders.map((order, index) => (
+-//                   <Draggable
+-//                     key={order.id}
+-//                     draggableId={order.id}
+-//                     index={index}
+-//                   >
+-//                     {(provided) => (
+-//                       <div
+-//                         ref={provided.innerRef}
+-//                         {...provided.draggableProps}
+-//                         {...provided.dragHandleProps}
+-//                         style={{
+-//                           ...provided.draggableProps.style,
+-//                           margin: "10px 0",
+-//                           padding: "10px",
+-//                           background: "white",
+-//                           border: "1px solid #ddd",
+-//                           borderRadius: "5px",
+-//                         }}
+-//                       >
+-//                         {order.content}
+-//                       </div>
+-//                     )}
+-//                   </Draggable>
+-//                 ))}
+-//                 {provided.placeholder}
+-//               </div>
+-//             )}
+-//           </Droppable>
+-//         ))}
+-//       </div>
+-//     </DragDropContext>
+-//   );
+-// };
+-
+-// export default DragAndDropApp;
++const DragAndDropApp = () => {
++  // 初期データ
++  const [orders, setOrders] = useState([
++    { id: "order-1", content: "Order 1" },
++    { id: "order-2", content: "Order 2" },
++    { id: "order-3", content: "Order 3" },
++  ]);
++
++  const [machines, setMachines] = useState([
++    { id: "1", name: "ドビー", assignedOrders: [] },
++    { id: "2", name: "ジャガード", assignedOrders: [] },
++  ]);
++
++  // ドラッグ終了時の処理
++  const handleDragEnd = (result) => {
++    const { source, destination } = result;
++
++    // ドロップ先がない場合（リスト外にドロップされた場合）
++    if (!destination) return;
++
++    // 同じリスト内での並び替え
++    if (source.droppableId === destination.droppableId) {
++      if (source.droppableId === "orders") {
++        const updatedOrders = Array.from(orders);
++        const [removed] = updatedOrders.splice(source.index, 1);
++        updatedOrders.splice(destination.index, 0, removed);
++        setOrders(updatedOrders);
++      } else {
++        const machineIndex = machines.findIndex(
++          (machine) => machine.id === source.droppableId
++        );
++        const updatedMachines = Array.from(machines);
++        const [removed] = updatedMachines[machineIndex].assignedOrders.splice(
++          source.index,
++          1
++        );
++        updatedMachines[machineIndex].assignedOrders.splice(
++          destination.index,
++          0,
++          removed
++        );
++        setMachines(updatedMachines);
++      }
++    }
++
++    // 異なるリスト間の移動
++    if (source.droppableId === "orders") {
++      const updatedOrders = Array.from(orders);
++      const [removed] = updatedOrders.splice(source.index, 1);
++
++      const machineIndex = machines.findIndex(
++        (machine) => machine.id === destination.droppableId
++      );
++      const updatedMachines = Array.from(machines);
++      updatedMachines[machineIndex].assignedOrders.splice(
++        destination.index,
++        0,
++        removed
++      );
++
++      setOrders(updatedOrders);
++      setMachines(updatedMachines);
++    } else {
++      const machineIndex = machines.findIndex(
++        (machine) => machine.id === source.droppableId
++      );
++      const updatedMachines = Array.from(machines);
++      const [removed] = updatedMachines[machineIndex].assignedOrders.splice(
++        source.index,
++        1
++      );
++
++      const updatedOrders = Array.from(orders);
++      updatedOrders.splice(destination.index, 0, removed);
++
++      setOrders(updatedOrders);
++      setMachines(updatedMachines);
++    }
++  };
++
++  return (
++    <DragDropContext onDragEnd={handleDragEnd}>
++      <div style={{ display: "flex", gap: "20px", padding: "20px" }}>
++        {/* Orders List */}
++        <Droppable droppableId="orders">
++          {(provided) => (
++            <div
++              {...provided.droppableProps}
++              ref={provided.innerRef}
++              style={{
++                padding: "20px",
++                background: "#f0f0f0",
++                width: "200px",
++                minHeight: "300px",
++              }}
++            >
++              <h3>Orders</h3>
++              {orders.map((order, index) => (
++                <Draggable key={order.id} draggableId={order.id} index={index}>
++                  {(provided) => (
++                    <div
++                      ref={provided.innerRef}
++                      {...provided.draggableProps}
++                      {...provided.dragHandleProps}
++                      style={{
++                        ...provided.draggableProps.style,
++                        margin: "10px 0",
++                        padding: "10px",
++                        background: "white",
++                        border: "1px solid #ddd",
++                        borderRadius: "5px",
++                      }}
++                    >
++                      {order.content}
++                    </div>
++                  )}
++                </Draggable>
++              ))}
++              {provided.placeholder}
++            </div>
++          )}
++        </Droppable>
++
++        {/* Machines List */}
++        {machines.map((machine) => (
++          <Droppable droppableId={machine.id} key={machine.id}>
++            {(provided) => (
++              <div
++                {...provided.droppableProps}
++                ref={provided.innerRef}
++                style={{
++                  padding: "20px",
++                  background: "#e8f8e8",
++                  width: "200px",
++                  minHeight: "300px",
++                }}
++              >
++                <h3>{machine.name}</h3>
++                {machine.assignedOrders.map((order, index) => (
++                  <Draggable
++                    key={order.id}
++                    draggableId={order.id}
++                    index={index}
++                  >
++                    {(provided) => (
++                      <div
++                        ref={provided.innerRef}
++                        {...provided.draggableProps}
++                        {...provided.dragHandleProps}
++                        style={{
++                          ...provided.draggableProps.style,
++                          margin: "10px 0",
++                          padding: "10px",
++                          background: "white",
++                          border: "1px solid #ddd",
++                          borderRadius: "5px",
++                        }}
++                      >
++                        {order.content}
++                      </div>
++                    )}
++                  </Draggable>
++                ))}
++                {provided.placeholder}
++              </div>
++            )}
++          </Droppable>
++        ))}
++      </div>
++    </DragDropContext>
++  );
++};
++
++export default DragAndDropApp;
+diff --git a/app/javascript/orderform_no_react.js b/app/javascript/orderform_no_react.js
+deleted file mode 100644
+index e92e9f2..0000000
+--- a/app/javascript/orderform_no_react.js
++++ /dev/null
+@@ -1,171 +0,0 @@
+-// ロール数、数量の入力で５桁以上の数字が入力できない、メッセージを表示
+-// 空のフォームがあれば送信ボタンを押せない
+-
+-var isCompanyValid = false;
+-var isProductNumberValid = false;
+-var isColorNumberValid = false;
+-var isRollCountValid = false;
+-var isQuantityValid = false;
+-var isMachineTypeValid = false;
+-var isStartDateValid = false;
+-
+-// フォームタグの取得
+-var orderForm = document.querySelector("#orderForm");
+-// console.log(orderForm);
+-
+-// 各入力フィールドの取得
+-var companyField = document.querySelector("#order_company_id");
+-var productNumberField = document.querySelector("#order_product_number_id");
+-var colorNumberField = document.querySelector("#order_color_number_id");
+-var rollCountField = document.querySelector("#order_roll_count");
+-var quantityField = document.querySelector("#order_quantity");
+-var machineTypeField = document.querySelector("#machine_type_id");
+-var startDateField = document.querySelector("#start_date_field");
+-
+-// フォーム送信ボタンの取得
+-//var submitBtn = document.querySelector("input[type='submit']");
+-var userSubmitBtn = document.querySelector("input[type='submit']");
+-
+-// 各フィールドのエラーメッセージ表示用 p 要素を動的に生成
+-var companyError = document.createElement("p");
+-var productNumberError = document.createElement("p");
+-var colorNumberError = document.createElement("p");
+-var rollCountError = document.createElement("p");
+-var quantityError = document.createElement("p");
+-var machineTypeError = document.createElement("p");
+-var startDateError = document.createElement("p");
+-
+-// エラーメッセージ用のクラスを設定
+-companyError.classList.add("text-red-500");
+-productNumberError.classList.add("text-red-500");
+-colorNumberError.classList.add("text-red-500");
+-rollCountError.classList.add("text-red-500");
+-quantityError.classList.add("text-red-500");
+-machineTypeError.classList.add("text-red-500");
+-startDateError.classList.add("text-red-500");
+-
+-// バリデーション関数とイベントリスナーの設定
+-companyField.addEventListener("change", validateCompany);
+-productNumberField.addEventListener("change", validateProductNumber);
+-colorNumberField.addEventListener("change", validateColorNumber);
+-rollCountField.addEventListener("input", validateRollCount);
+-quantityField.addEventListener("input", validateQuantity);
+-machineTypeField.addEventListener("change", validateMachineType);
+-startDateField.addEventListener("change", validateStartDate);
+-
+-// フォーム送信ボタンの有効化/無効化制御
+-function toggleSubmitButton() {
+-  if (
+-    isCompanyValid &&
+-    isProductNumberValid &&
+-    isColorNumberValid &&
+-    isRollCountValid &&
+-    isQuantityValid &&
+-    isMachineTypeValid &&
+-    isStartDateValid
+-  ) {
+-    userSubmitBtn.disabled = false;
+-  } else {
+-    userSubmitBtn.disabled = true;
+-  }
+-}
+-
+-// 各バリデーション関数
+-function validateCompany() {
+-  console.log("validateCompany");
+-  if (!companyField.value) {
+-    companyError.textContent = "会社名を選択してください。";
+-    companyField.parentNode.appendChild(companyError);
+-    isCompanyValid = false;
+-  } else {
+-    companyError.textContent = "";
+-    isCompanyValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+-
+-function validateProductNumber() {
+-  console.log("validateProductNumber");
+-  if (!productNumberField.value) {
+-    productNumberError.textContent = "品番を選択してください。";
+-    productNumberField.parentNode.appendChild(productNumberError);
+-    isProductNumberValid = false;
+-  } else {
+-    productNumberError.textContent = "";
+-    isProductNumberValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+-
+-function validateColorNumber() {
+-  console.log("validateColorNumber");
+-  if (!colorNumberField.value) {
+-    colorNumberError.textContent = "色番を選択してください。";
+-    colorNumberField.parentNode.appendChild(colorNumberError);
+-    isColorNumberValid = false;
+-  } else {
+-    colorNumberError.textContent = "";
+-    isColorNumberValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+-
+-function validateRollCount() {
+-  console.log("validateRollCount");
+-  if (
+-    !rollCountField.value ||
+-    rollCountField.value <= 0 ||
+-    rollCountField.value.length > 4
+-  ) {
+-    rollCountError.textContent = "反数は1以上4桁以下の値を入力してください。";
+-    rollCountField.parentNode.appendChild(rollCountError);
+-    isRollCountValid = false;
+-  } else {
+-    rollCountError.textContent = "";
+-    isRollCountValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+-
+-function validateQuantity() {
+-  console.log("validateQuantity");
+-  if (
+-    !quantityField.value ||
+-    quantityField.value <= 0 ||
+-    quantityField.value.length > 4
+-  ) {
+-    quantityError.textContent = "数量は1以上4桁以下の値を入力してください。";
+-    quantityField.parentNode.appendChild(quantityError);
+-    isQuantityValid = false;
+-  } else {
+-    quantityError.textContent = "";
+-    isQuantityValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+-
+-function validateMachineType() {
+-  console.log("validateMachineType");
+-  if (!machineTypeField.value) {
+-    machineTypeError.textContent = "機械のタイプを選択してください。";
+-    machineTypeField.parentNode.appendChild(machineTypeError);
+-    isMachineTypeValid = false;
+-  } else {
+-    machineTypeError.textContent = "";
+-    isMachineTypeValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+-
+-function validateStartDate() {
+-  console.log("validateStartDate");
+-  if (!startDateField.value) {
+-    startDateError.textContent = "作業開始日を選択してください。";
+-    startDateField.parentNode.appendChild(startDateError);
+-    isStartDateValid = false;
+-  } else {
+-    startDateError.textContent = "";
+-    isStartDateValid = true;
+-  }
+-  toggleSubmitButton();
+-}
+diff --git a/app/javascript/packs/orderform.js b/app/javascript/packs/orderform.js
+deleted file mode 100644
+index 28c467e..0000000
+--- a/app/javascript/packs/orderform.js
++++ /dev/null
+@@ -1,111 +0,0 @@
+-import React, { useEffect, useState } from "react";
+-
+-// コンポーネント関数定義
+-const OrderForm = () => {
+-  // ステートを初期化する
+-
+-  // 各入力フィールドの値とバリデーション状態を管理するステートの定義
+-  const [rollCount, setRollCount] = useState(1);
+-  const [quantity, setQuantity] = useState(1);
+-
+-  //エラーメッセージを管理するステートの定義
+-  const [errors, setErrors] = useState({
+-    company: "",
+-  });
+-
+-  // フォーム全体が送信可能かどうかを管理するステート
+-  // validation管理ステートの定義
+-  const [isFormValid, setIsFormValid] = useState(false);
+-
+-  // HTML内に埋め込まれたデータを取得してステートにセット
+-  // useEffectフックの宣言
+-  useEffect(() => {
+-    const rootElement = document.getElementById("order-form-root");
+-    setRollCount(JSON.parse(rootElement.dataset.roll_count));
+-    setQuantity(JSON.parse(rootElement.dataset.quantity));
+-  }, []);
+-
+-  // validation実施関数の定義
+-  const validateFields = () => {
+-    const newErrors = {};
+-
+-    if (!rollCount || rollCount <= 0)
+-      newErrors.rollCount = "反数は1以上の値を入力してください。";
+-    if (!quantity || quantity <= 0)
+-      newErrors.quantity = "数量は1以上の値を入力してください。";
+-    if (!startDate) newErrors.startDate = "作業開始日を選択してください。";
+-
+-    // エラーメッセージ更新関数setErrorsの呼び出し
+-    setErrors(newErrors);
+-    // validation状況を更新する関数の呼び出し
+-    setIsFormValid(Object.keys(newErrors).length === 0);
+-  };
+-
+-  // 入力内容のチェックをするイベントハンドラ関数を定義して、その中で更新用関数を呼び出す
+-  const handleInputChange = (e, setStateFunction) => {
+-    setStateFunction(e.target.value);
+-    validateFields(); // 入力が変更されるたびにバリデーション実行
+-  };
+-  // 送信イベントハンドラを定義
+-  const handleSubmit = (e) => {
+-    e.preventDefault(); // デフォルトのフォーム送信を防止
+-    validateFields(); // 更新前に全フォームに対し再度バリデーションを実行
+-
+-    if (isFormValid) {
+-      alert("フォームが正常に送信されました！");
+-    }
+-  };
+-
+-  return (
+-    <div>
+-      <table className="w-full max-w-sm">
+-        {/* 反数 */}
+-        <tr className="md:flex md:items-center mb-6">
+-          <td className="md:w-1/3 py-2">
+-            <label className="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-              反数
+-            </label>
+-          </td>
+-          <td className="md:w-2/3">
+-            <input
+-              type="number"
+-              value={rollCount}
+-              onChange={(e) => handleInputChange(e, setRollCount)}
+-              min="1"
+-              placeholder="反数を入力してください"
+-              className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
+-            />
+-            {errors.rollCount && (
+-              <p className="text-red-500">{errors.rollCount}</p>
+-            )}
+-          </td>
+-        </tr>
+-
+-        {/* 数量 */}
+-        <tr className="md:flex md:items-center mb-6">
+-          <td className="md:w-1/3 py-2">
+-            <label className="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-              数量
+-            </label>
+-          </td>
+-          <td className="md:w-2/3">
+-            <input
+-              type="number"
+-              value={quantity}
+-              onChange={(e) => handleInputChange(e, setQuantity)}
+-              min="1"
+-              placeholder="数量を入力してください"
+-              className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
+-            />
+-            {errors.quantity && (
+-              <p className="text-red-500">{errors.quantity}</p>
+-            )}
+-          </td>
+-        </tr>
+-      </table>
+-    </div>
+-  );
+-};
+-
+-// コンポーネント関数
+-export default OrderForm;
+diff --git a/app/models/order.rb b/app/models/order.rb
+index fe1f846..3664671 100644
+--- a/app/models/order.rb
++++ b/app/models/order.rb
+@@ -10,7 +10,7 @@ class Order < ApplicationRecord
+   has_many :incomplete_work_processes, -> { where.not(work_process_status_id: 3) }, class_name: "WorkProcess"
+ 
+   validates :company_id, :product_number_id, :color_number_id, :roll_count, :quantity, presence: true
+-  validates :roll_count, :quantity, numericality: { greater_than_or_equal_to: 1 }
++  validates :roll_count, :quantity, presence: true, numericality: { greater_than_or_equal_to: 1 }
+   validate :validate_start_date_presence, on: :create
+ 
+   # すべての作業工程が完了している注文を取得
+diff --git a/app/models/work_process.rb b/app/models/work_process.rb
+index 5c3b261..02558eb 100644
+--- a/app/models/work_process.rb
++++ b/app/models/work_process.rb
+@@ -79,8 +79,10 @@ class WorkProcess < ApplicationRecord
+ 
+   # 織機の種類登録、変更でwork_processのprocess_estimate_idを更新
+   def self.decide_machine_type(workprocesses, machine_type_id)
++
+     # params[:machine_type_id]と一致するDBの値を取得
+     process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
++
+     # 初期のWorkProcess配列のprocess_estimate_idを更新
+     if process_estimates.blank?
+       raise "No process_estimates found for machine_type_id=#{machine_type_id}"
+@@ -106,11 +108,11 @@ class WorkProcess < ApplicationRecord
+ 
+   # 新規登録：全行程の日時の更新
+   def self.update_deadline(estimate_workprocesses, start_date)
+-    update = true
++    update = false
+     next_start_date = nil
+     # 配列を一個ずつ取り出す
+     estimate_workprocesses.each do |process|
+-      unless update == true
++      if update == true
+         # 開始日の更新が必要
+         process[:start_date] = next_start_date
+         start_date = process[:start_date]
+@@ -136,7 +138,7 @@ class WorkProcess < ApplicationRecord
+       else
+         next_start_date = process[:earliest_estimated_completion_date]
+       end
+-      update = false
++      update = true
+       #
+ 
+     end
+@@ -188,44 +190,54 @@ class WorkProcess < ApplicationRecord
+     end
+   end
+ 
+-
+   # 更新：全行程の日時の更新
+   def self.check_current_work_process(process, start_date, actual_completion_date)
+-
+-    # 工程idが2以上の場合
++    ############################################
++    # 最短・最長見積もり日とstart_date
++    ############################################
++    # 工程idが2以上の場合 糸のあと
+     if process[:work_process_definition_id].to_i >= 2
+-      if actual_completion_date.present?
+-        process[:latest_estimated_completion_date] = actual_completion_date
+-        process[:earliest_estimated_completion_date] = actual_completion_date
+-        process[:start_date] = start_date
+-      else
++      if actual_completion_date.present? # 完了日が入力されている
++        process[:latest_estimated_completion_date] = actual_completion_date   #最短見積日は完了日に
++        process[:earliest_estimated_completion_date] = actual_completion_date #最長見積日は完了日に
++        process[:start_date] = start_date # 開始日は開始日に
++      else #完了日が入力されていない
+       # 開始日の更新が必要
+-
+         process[:start_date] = start_date
+-        # 更新された開始日からナレッジを再計算
++        # 更新された開始日から終了予想日を再計算
+         self.calc_process_estimate(process, start_date)
+       end
+     end
+ 
+-    if process[:work_process_definition_id].to_i == 1
+-      if actual_completion_date.present?
+-        process[:latest_estimated_completion_date] = actual_completion_date
+-        process[:earliest_estimated_completion_date] = actual_completion_date
++    if process[:work_process_definition_id].to_i == 1 # 糸工程の場合
++      if actual_completion_date.present? # 完了日が入力されている
++        process[:latest_estimated_completion_date] = actual_completion_date   #最短見積日は完了日に
++        process[:earliest_estimated_completion_date] = actual_completion_date #最長見積日は完了日に
+       else
+-        process = self.calc_process_estimate(process, start_date)
++        # 更新された開始日から終了予想日を再計算
++        # 開始日の更新はしない（？）
++        process = self.calc_process_estimate(process, start_date) #
+       end
+     end
+ 
+     # 整理加工の開始日調整
+-    if process[:work_process_definition_id].to_i == 4
++    ############################################
++    # 次工程の開始日
++    # 製織の次だけ曜日を考慮
++    # それ以外は最短終了日が次工程の開始日（なぜこうしたのか？）
++    ############################################
++    if process[:work_process_definition_id].to_i == 4 # 製織工程
+       # 日曜日なら翌々週の月曜が作業開始日
+       if process[:earliest_estimated_completion_date].to_date.wday == 0
+         next_start_date = process[:earliest_estimated_completion_date].to_date + 8
+       else
+         # 次の月曜日が開始日
+         next_start_date = process[:earliest_estimated_completion_date].to_date.next_week
++        # なぜ製織工程だけ、曜日判別から次開始日を決めているのか
++        # 全体に、処理の意図が不明
+       end
+     else
++      #
+       # ここに、工程が５なら次の開始日は不要の処理を作りたい
+       next_start_date = process[:earliest_estimated_completion_date]
+     end
+@@ -275,6 +287,9 @@ class WorkProcess < ApplicationRecord
+ 
+   # 現在作業中の作業工程を取得するスコープ
+   def self.current_work_process
++
++    # 全プロセスから検索しているが、注文番号で絞らなくてよいのか（？）
++
+     # 最新の「作業完了」ステータスの作業工程を取得
+     latest_completed_wp = joins(:work_process_status)
+                             .where(work_process_statuses: { name: '作業完了' })
+diff --git a/app/views/admin/orders/edit.html.erb b/app/views/admin/orders/edit.html.erb
+index b1bb81e..5219eeb 100644
+--- a/app/views/admin/orders/edit.html.erb
++++ b/app/views/admin/orders/edit.html.erb
+@@ -1,3 +1,7 @@
++<% content_for :head do %>
++  <meta name="turbo-visit-control" content="reload">
++<% end %>
++
+ <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注編集</h1>
+ 
+ <%= form_with(model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { turbo: false }) do |f| %>
+@@ -10,38 +14,33 @@
+           <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社</th>
+           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+             <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "新しい会社を選択" %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </td>
+         </tr>
+         <tr class="bg-gray-100 border-b">
+           <th class="w-1/3 px-4 py-2 text-center text-gray-700">品番</th>
+           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+             <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, prompt: "新しい品番を選択" %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </td>
+         </tr>
+         <tr class="bg-gray-100 border-b">
+           <th class="w-1/3 px-4 py-2 text-center text-gray-700">色番</th>
+           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+             <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, prompt: "新しい色番号を選択" %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </td>
+         </tr>
+-        <tr class="bg-gray-100 border-b">
+-          <th class="w-1/3 px-4 py-2 text-center text-gray-700">反数</th>
+-          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+-            <%= f.number_field :roll_count, placeholder: "新しい反数を入力", id: "order_roll_count", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+-          </td>
+-        </tr>
+-        <tr class="bg-gray-100 border-b">
+-          <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
+-          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+-            <%= f.number_field :quantity, placeholder: "新しい数量を入力", id: "order_quantity", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+-          </td>
+-        </tr>
++
++        <tr id="react-root" data-turbo="false"></tr>
++
+         <tr class="bg-gray-100 border-b">
+           <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
+           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
+             <% machine_type_name = @order.work_processes.joins(process_estimate: :machine_type).pluck("machine_types.id").uniq %>
+             <%= select_tag :machine_type_id,
+                           options_from_collection_for_select(MachineType.all, :id, :name, machine_type_name) %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </td>
+         </tr>
+       </tbody>
+@@ -156,4 +155,70 @@
+   </div>
+ </section>
+ <% end %>
+-<%= javascript_include_tag "orderform", type: "module", defer: true %>
++
++
++<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
++<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
++<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
++
++<script type="text/babel">
++
++  const { useState, useEffect } = React;
++
++  function OrderForm() {
++    const [rollCount, setRollCount] = useState('');
++    const [quantity, setQuantity] = useState('');
++
++    useEffect(() => {
++      document.querySelector('input[name="order[roll_count]"]').value = rollCount;
++      document.querySelector('input[name="order[quantity]"]').value = quantity;
++    }, [rollCount, quantity]);
++
++    const handleInputChange = (setter) => (e) => {
++      const value = e.target.value;
++      if (/^\d{0,4}$/.test(value)) {
++        setter(value);
++      }
++    };
++
++    return (
++      <>
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">反数</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <input
++              type="text"
++              name="order[roll_count]"
++              value={rollCount}
++              onChange={handleInputChange(setRollCount)}
++              placeholder="反数を入力してください"
++              className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
++            />
++          </td>
++        </tr>
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <input
++              type="text"
++              name="order[quantity]"
++              value={quantity}
++              onChange={handleInputChange(setQuantity)}
++              placeholder="数量を入力してください"
++              className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
++            />
++          </td>
++        </tr>
++      </>
++    );
++  }
++
++  document.addEventListener("turbo:load", () => {
++    const root = document.getElementById("react-root");
++    if (root) {
++      ReactDOM.render(<OrderForm />, root);
++    }
++  });
++</script>
++
++
+diff --git a/app/views/admin/orders/edit.html_back.erb b/app/views/admin/orders/edit.html_back.erb
+new file mode 100644
+index 0000000..6371ff0
+--- /dev/null
++++ b/app/views/admin/orders/edit.html_back.erb
+@@ -0,0 +1,160 @@
++<h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">発注編集</h1>
++
++<%= form_with(model: @order, url: admin_order_path(@order), method: :patch, local: true, data: { turbo: false }) do |f| %>
++<section class="mb-12">
++  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">商品情報</h2>
++  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
++    <table class="min-w-full border border-gray-300 bg-gray-100">
++      <tbody>
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">会社</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <%= f.collection_select :company_id, Company.all, :id, :name, prompt: "新しい会社を選択" %>
++          </td>
++        </tr>
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">品番</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, prompt: "新しい品番を選択" %>
++          </td>
++        </tr>
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">色番</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, prompt: "新しい色番号を選択" %>
++          </td>
++        </tr>
++
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">ロール数</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <%= f.number_field :roll_count, placeholder: "新しいロール数を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
++          </td>
++        </tr>
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">数量</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <%= f.number_field :quantity, placeholder: "新しい数量を入力", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
++          </td>
++        </tr>
++
++        <tr class="bg-gray-100 border-b">
++          <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
++          <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++            <% machine_type_name = @order.work_processes.joins(process_estimate: :machine_type).pluck("machine_types.id").uniq %>
++            <%= select_tag :machine_type_id,
++                          options_from_collection_for_select(MachineType.all, :id, :name, machine_type_name) %>
++          </td>
++        </tr>
++      </tbody>
++    </table>
++  </div>
++</section>
++
++<section class="mb-12">
++  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">織機の稼働状況</h2>
++  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
++      <table class="min-w-full border border-gray-300 bg-gray-100">
++        <% machine_all = @order.company&.machines %>
++        <% machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq %>
++        <% if machine_ids.any? %>
++        <% machines = Machine.where(id: machine_ids) %>
++          <thead>
++            <% machines.each do |machine| %>
++            <% current_status = machine.machine_assignments.joins(:work_process).where(work_processes: { order_id: @order.id }).order(updated_at: :desc).first&.machine_status_id %>
++            <% machine_assignment = machine.machine_assignments.order(:created_at).last %>
++            <%= hidden_field_tag "order[machine_assignments_attributes][][id]", machine_assignment&.id %>
++              <tr class="bg-gray-100 border-b">
++                <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機名</th>
++                <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++                  <%= select_tag "order[machine_assignments_attributes][][machine_id]",
++                    options_for_select(machine_all.map { |m| ["#{m.name}（#{m.machine_type.name}）", m.id] }, machine&.id),
++                    { prompt: "織機名を選択してください", class: "form-control" } %>
++                </td>
++              </tr>
++          </thead>
++          <tbody>
++              <tr class="bg-gray-100 border-b">
++                <th class="w-1/3 px-4 py-2 text-center text-gray-700">稼働状況</th>
++                <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++                  <%= select_tag "order[machine_assignments_attributes][][machine_status_id]", options_from_collection_for_select(@machine_statuses_for_form, :id, :name, current_status), { prompt: "稼働状況を選択してください", class: "form-control" } %>
++                </td>
++              </tr>
++            <% end %>
++          </tbody>
++      </table>
++      <% else %>
++      <p class="py-2 text-rose-500">この受注にはまだ織機が割り当てられていません。織機と稼働状況を割り当ててください。</p>
++      <table class="min-w-full border border-gray-300">
++          <thead>
++            <tr class="bg-gray-100 border-b">
++              <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機名</th>
++              <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
++                <% machines = Machine.where(id: machine_ids) %>
++                <%= select_tag "order[machine_assignments_attributes][][machine_id]",
++                  options_for_select(machine_all.map { |m| ["#{m.name}（#{m.machine_type&.name || '不明なタイプ'}）", m.id] }, nil),
++                  { prompt: "織機名を選択してください", class: "form-control" } %>
++              </td>
++            </tr>
++          </thead>
++        <% end %>
++      </table>
++  </div>
++</section>
++
++<section class="mb-12">
++  <h2 class="px-4 text-2xl font-semibold text-gray-800 mt-6 mb-6">作業工程</h2>
++  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
++    <table class="min-w-full border text-left border-gray-300">
++      <thead class="bg-gray-200">
++        <tr class="bg-gray-100">
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">作業工程名</th>
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">現在の進捗</th>
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">開始日</th>
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">完了見込み(最短)</th>
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">完了見込み(最長)</th>
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">機屋の完了予定日</th>
++          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">機屋の完了日</th>
++        </tr>
++      </thead>
++      <tbody>
++        <%= f.fields_for :work_processes do |wp_form| %>
++          <tr class="hover:bg-gray-100">
++            <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.work_process_definition&.name %></td>
++            <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.collection_select :work_process_status_id,
++              WorkProcessStatus.all, :id, :name,
++              selected: wp_form.object&.work_process_status_id,
++              include_blank: "選択してください" %></td>
++            <td class="px-4 py-2 border-b text-gray-900">
++              <%= wp_form.date_field :start_date, value: wp_form.object&.start_date, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
++            </td>
++            <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.earliest_estimated_completion_date %></td>
++            <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.latest_estimated_completion_date %></td>
++            <%# wp_form.hidden_field :earliest_estimated_completion_date, value: wp_form.object&.earliest_estimated_completion_date %>
++            <%# wp_form.hidden_field :latest_estimated_completion_date, value: wp_form.object&.latest_estimated_completion_date %>
++            <%# wp_form.hidden_field :work_process_definition_id, value: wp_form.object&.work_process_definition_id %>
++            <%# wp_form.hidden_field :start_date, value: wp_form.object&.start_date %>
++            <td class="px-4 py-2 border-b text-gray-900">
++              <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
++            </td>
++            <td class="px-4 py-2 border-b text-gray-900">
++              <%= wp_form.date_field :actual_completion_date, placeholder: "機屋の完了日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
++            </td>
++          </tr>
++        <% end %>
++      </tbody>
++    </table>
++  </div>
++</section>
++
++<section class="mb-12">
++  <div class="flex justify-center space-x-2">
++    <div class="px-2 py-2">
++      <%= f.submit '更新', class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
++    </div>
++    <div class="px-2 py-2">
++      <%= link_to "戻る", admin_order_path(@order), class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
++    </div>
++  </div>
++</section>
++<% end %>
+diff --git a/app/views/admin/orders/ma_index.html.bk.erb b/app/views/admin/orders/ma_index.html.bk.erb
+deleted file mode 100644
+index 8aadae0..0000000
+--- a/app/views/admin/orders/ma_index.html.bk.erb
++++ /dev/null
+@@ -1,143 +0,0 @@
+-<!DOCTYPE html>
+-<html>
+-<head>
+-  <!-- React and ReactDOM from CDN -->
+-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+-  <style>
+-    .drag-target { cursor: move; background-color: #f3f3f3; }
+-    .droppable-zone { border: 2px dashed #4CAF50; padding: 10px; min-height: 50px; }
+-    .dragging { opacity: 0.5; }
+-  </style>
+-</head>
+-<body>
+-
+-<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機未割り当ての商品</h1>
+-
+-<script>
+-  var test = <%= @test %>;
+-  var initialOrders = <%= @unassigned_orders.to_json(
+-    only: [:id, :start_date, :factory_estimated_completion_date],
+-    include: {
+-      company: { only: [:name] },
+-      product_number: { only: [:number] },
+-      color_number: { only: [:color_code] },
+-      latest_machine_assignment: {
+-        include: { machine: { only: [:name] } }
+-      }
+-    }
+-  ).html_safe %>;
+-</script>
+-
+-<div id="drag-drop-root"></div>
+-
+-<script type="text/babel">
+-  const { useState } = React;
+-  function DragDropApp() {
+-    // const initialOrders = [
+-    //   { id: 1, company: "A社", product: "ABC-123", color: "Red" },
+-    //   { id: 2, company: "B社", product: "XYZ-456", color: "Blue" }
+-    // ];
+-
+-    const [unassignedOrders, setUnassignedOrders] = useState(initialOrders);
+-    const [assignedOrders, setAssignedOrders] = useState([]);
+-
+-    // ドラッグの開始時の処理を定義
+-    const onDragStart = (e, order) => {
+-      // dataTransferにドラッグされた要素（order オブジェクト）がJSONとして保存される
+-      e.dataTransfer.setData("order", JSON.stringify(order));
+-    };
+-
+-    // ドロップ
+-    const onDrop = (e, machineName) => {
+-      // デフォルトの動作を防ぐ処理 ←必要？
+-      e.preventDefault();
+-      // orderデータの取得、JSONからorder オブジェクトに変換
+-      const order = JSON.parse(e.dataTransfer.getData("order"));
+-      // 定義した関数setAssignedOrdersを実行して割り当てられたassignedOrdersを更新
+-      setAssignedOrders([...assignedOrders, { ...order, machine: machineName }]);
+-      setUnassignedOrders(unassignedOrders.filter(o => o.id !== order.id));
+-    };
+-
+-    return (
+-      <div>
+-        <h2>未割り当ての商品</h2>
+-        <table className="table-auto border-collapse border border-gray-300">
+-          <thead>
+-            <tr className="bg-gray-100">
+-              <th className="py-2 px-4 border">ID</th>
+-              <th className="py-2 px-4 border">会社名</th>
+-              <th className="py-2 px-4 border">品番</th>
+-              <th className="py-2 px-4 border">色番</th>
+-              <th className="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+-              <th className="py-2 px-4 text-gray-700 border-b">開始日</th>
+-              <th className="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+-              <th className="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+-            </tr>
+-          </thead>
+-          <tbody>
+-            <!-- state配列unassignedOrdersをtrタグで展開 -->
+-            {unassignedOrders.map(order => (
+-              // 配列の要素にkeyをつけて識別
+-              <tr key={order.id}
+-                  className="drag-target"
+-                  draggable // draggable = true
+-                  // onDragStartイベントをtrタグに登録
+-                  onDragStart={(e) => onDragStart(e, order)}>
+-                <td className="py-2 px-4 border">{order.id}</td>
+-                <td className="py-2 px-4 border">{order.company.name}</td>
+-                <td className="py-2 px-4 border">{order.product_number.number}</td>
+-                <td className="py-2 px-4 border">{order.color_number.color_code}</td>
+-                <td className="py-2 px-4 border">{order.work_process_definition?.name || "未設定"}</td>
+-                <td className="py-2 px-4 border">{order.start_date}</td>
+-                <td className="py-2 px-4 border">{order.factory_estimated_completion_date || "未設定"}</td>
+-                <td className="py-2 px-4 border">{order.latest_machine_assignment?.machine?.name || "ー"}</td>
+-              </tr>
+-            ))}
+-          </tbody>
+-        </table>
+-
+-        <h2 className="mt-6">織機割り当て済の商品</h2>
+-
+-        <div className="droppable-zone"
+-             onDragOver={(e) => e.preventDefault()}
+-             onDrop={(e) => onDrop(e, "機械A")}>
+-          <table className="table-auto border-collapse border border-gray-300">
+-            <thead>
+-              <tr className="bg-gray-100">
+-                <th className="py-2 px-4 border">ID</th>
+-                <th className="py-2 px-4 border">会社名</th>
+-                <th className="py-2 px-4 border">品番</th>
+-                <th className="py-2 px-4 border">色番</th>
+-                <th className="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+-                <th className="py-2 px-4 text-gray-700 border-b">開始日</th>
+-                <th className="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+-                <th className="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+-              </tr>
+-            </thead>
+-            <tbody>
+-              {assignedOrders.map((order, index) => (
+-                <tr key={index}>
+-                <td className="py-2 px-4 border">{order.id}</td>
+-                <td className="py-2 px-4 border">{order.company.name}</td>
+-                <td className="py-2 px-4 border">{order.product_number.number}</td>
+-                <td className="py-2 px-4 border">{order.color_number.color_code}</td>
+-                <td className="py-2 px-4 border">{order.work_process_definition?.name || "未設定"}</td>
+-                <td className="py-2 px-4 border">{order.start_date}</td>
+-                <td className="py-2 px-4 border">{order.factory_estimated_completion_date || "未設定"}</td>
+-                <td className="py-2 px-4 border">{order.latest_machine_assignment?.machine?.name || "ー"}</td>
+-                </tr>
+-              ))}
+-            </tbody>
+-          </table>
+-        </div>
+-      </div>
+-    );
+-  }
+-
+-  ReactDOM.createRoot(document.getElementById("drag-drop-root")).render(<DragDropApp />);
+-</script>
+-
+-</body>
+-</html>
+diff --git a/app/views/admin/orders/ma_index.html.erb b/app/views/admin/orders/ma_index.html.erb
+index 7f92b0e..d4388c9 100644
+--- a/app/views/admin/orders/ma_index.html.erb
++++ b/app/views/admin/orders/ma_index.html.erb
+@@ -1,105 +1,146 @@
+ <!DOCTYPE html>
++<html>
+ <head>
+   <!-- React and ReactDOM from CDN -->
+   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
++  <style>
++    .drag-target { cursor: move; background-color: #f3f3f3; }
++    .droppable-zone { border: 2px dashed #4CAF50; padding: 10px; min-height: 50px; }
++    .dragging { opacity: 0.5; }
++  </style>
+ </head>
+ <body>
++
+ <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機未割り当ての商品</h1>
+-  <%# 割り当て元 %>
+-  <div id="root">
+-    <section class="mb-12">
+-      <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
+-        <% if @unassigned_orders.any? %>
+-          <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
+-            <thead class="uppercase">
+-              <tr class="bg-gray-100">
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">ID</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">会社名</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
+-                <th scope="col" class="py-2 px-4 text-gray-700 border-b"></th>
++
++<script>
++  var test = <%= @test %>;
++  var unassigned_orders = <%= @unassigned_orders.to_json(
++    only: [:id, :start_date, :factory_estimated_completion_date],
++    include: {
++      company: { only: [:name] },
++      product_number: { only: [:number] },
++      color_number: { only: [:color_code] },
++      latest_machine_assignment: {
++        include: { machine: { only: [:name] } }
++      }
++    }
++  ).html_safe %>;
++  var assigned_orders = <%= @assigned_orders.to_json(
++    only: [:id, :start_date, :factory_estimated_completion_date],
++    include: {
++      company: { only: [:name] },
++      product_number: { only: [:number] },
++      color_number: { only: [:color_code] },
++      latest_machine_assignment: {
++        include: { machine: { only: [:name] } }
++      }
++    }
++  ).html_safe %>;
++</script>
++
++<div id="drag-drop-root"></div>
++
++<script type="text/babel">
++  const { useState } = React;
++  function DragDropApp() {
++    // const initialOrders = [
++    //   { id: 1, company: "A社", product: "ABC-123", color: "Red" },
++    //   { id: 2, company: "B社", product: "XYZ-456", color: "Blue" }
++    // ];
++
++    const [unassignedOrders, setUnassignedOrders] = useState(unassigned_orders);
++    const [assignedOrders, setAssignedOrders] = useState(assigned_orders);
++
++    const onDragStart = (e, order) => {
++      e.dataTransfer.setData("order", JSON.stringify(order));
++    };
++
++    const onDrop = (e, machineName) => {
++      e.preventDefault();
++      const order = JSON.parse(e.dataTransfer.getData("order"));
++
++      setAssignedOrders([...assignedOrders, { ...order, machine: machineName }]);
++      setUnassignedOrders(unassignedOrders.filter(o => o.id !== order.id));
++    };
++
++    return (
++      <div>
++        <h2>未割り当ての発注</h2>
++        <table className="table-auto border-collapse border border-gray-300">
++          <thead>
++            <tr className="bg-gray-100">
++              <th className="py-2 px-4 border">ID</th>
++              <th className="py-2 px-4 border">会社名</th>
++              <th className="py-2 px-4 border">品番</th>
++              <th className="py-2 px-4 border">色番</th>
++              <th className="py-2 px-4 text-gray-700 border-b">現在の工程</th>
++              <th className="py-2 px-4 text-gray-700 border-b">開始日</th>
++              <th className="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
++              <th className="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+             </tr>
+           </thead>
+           <tbody>
+-              <% @unassigned_orders.each do |order| %>
+-                <% current_process = @current_work_processes[order.id] %>
+-                <% if current_process %>
+-                <tr id="selected_color" class="hover:bg-gray-50">
+-                  <td class="py-2 px-4 text-gray-700 border-b"><%= order.id %></td>
+-                  <td class="py-2 px-4 text-gray-700 border-b"><%= order.company.name %></td>
+-                  <td class="py-2 px-4 text-gray-700 border-b"><%= order.product_number.number %></td>
+-                  <td class="py-2 px-4 text-gray-700 border-b"><%= order.color_number.color_code %></td>
+-                  <td class="py-2 px-4 text-gray-700 border-b">
+-                    <%= current_process.work_process_definition&.name.presence || "未設定" %>
+-                  </td>
+-                  <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.start_date %></td>
+-                  <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.factory_estimated_completion_date || "未設定" %></td>
+-                  <td class="py-2 px-4 border-b text-gray-700"><%= order&.latest_machine_assignment&.machine&.name || 'ー' %></td>
++            {unassignedOrders.map(order => (
++              <tr key={order.id}
++                  className="drag-target"
++                  draggable
++                  onDragStart={(e) => onDragStart(e, order)}>
++                <td className="py-2 px-4 border">{order.id}</td>
++                <td className="py-2 px-4 border">{order.company.name}</td>
++                <td className="py-2 px-4 border">{order.product_number.number}</td>
++                <td className="py-2 px-4 border">{order.color_number.color_code}</td>
++                <td className="py-2 px-4 border">{order.work_process_definition?.name || "未設定"}</td>
++                <td className="py-2 px-4 border">{order.start_date}</td>
++                <td className="py-2 px-4 border">{order.factory_estimated_completion_date || "未設定"}</td>
++                <td className="py-2 px-4 border">{order.latest_machine_assignment?.machine?.name || "ー"}</td>
+               </tr>
+-                <% end %>
+-              <% end %>
++            ))}
+           </tbody>
+         </table>
+-        <% else %>
+-          <p class="text-center text-rose-500"><%= @no_orders_message %></p>
+-        <% end %>
+-      </div>
+-    </section>
+ 
+-    <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機割り当て済の商品</h1>
+-    <%# 割り当て先の織機 %>
+-    <%# 会社の所有する織機を表示 %>
+-    <% @machine_names.each do |machine_name| %>
+-      <section class="mb-12">
+-          <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
+-            <h2 class="text-2xl font-bold text-gray-600">織機名: <%= machine_name %></h2>
+-              <% if @assigned_orders[machine_name].present? %>
+-                  <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
+-                    <thead class="uppercase">
+-                      <tr class="bg-gray-100">
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">ID</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">会社名</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
+-                        <th scope="col" class="py-2 px-4 text-gray-700 border-b">割り当て済み機械</th>
++        <h2 className="mt-6">織機割り当て済の商品</h2>
++
++        <div className="droppable-zone"
++             onDragOver={(e) => e.preventDefault()}
++             onDrop={(e) => onDrop(e, "機械A")}>
++          <table className="table-auto border-collapse border border-gray-300">
++            <thead>
++              <tr className="bg-gray-100">
++                <th className="py-2 px-4 border">ID</th>
++                <th className="py-2 px-4 border">会社名</th>
++                <th className="py-2 px-4 border">品番</th>
++                <th className="py-2 px-4 border">色番</th>
++                <th className="py-2 px-4 text-gray-700 border-b">現在の工程</th>
++                <th className="py-2 px-4 text-gray-700 border-b">開始日</th>
++                <th className="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
++                <th className="py-2 px-4 text-gray-700 border-b">稼働状況</th>
+               </tr>
+             </thead>
+             <tbody>
+-                      <% @assigned_orders[machine_name].each do |order| %>
+-                        <% work_process = @current_work_processes[order.id] %>
+-                          <tr class="hover:bg-gray-50">
+-                            <td class="py-2 px-4 text-gray-700 border-b"><%= order.id %></td>
+-                            <td class="py-2 px-4 text-gray-700 border-b"><%= order.company.name %></td>
+-                            <td class="py-2 px-4 text-gray-700 border-b"><%= order.product_number.number %></td>
+-                            <td class="py-2 px-4 text-gray-700 border-b"><%= order.color_number.color_code %></td>
+-                            <td class="py-2 px-4 text-gray-700 border-b">
+-                              <%= work_process&.work_process_definition&.name.presence || "未設定" %>
+-                            </td>
+-                            <td class="py-2 px-4 text-gray-700 border-b"><%= work_process&.start_date %></td>
+-                            <td class="py-2 px-4 text-gray-700 border-b"><%= work_process&.factory_estimated_completion_date || "未設定" %></td>
+-                            <td class="py-2 px-4 border-b text-gray-700"><%= order.latest_machine_assignment.machine.name %></td>
++              {assignedOrders.map((order, index) => (
++                <tr key={index}>
++                <td className="py-2 px-4 border">{order.id}</td>
++                <td className="py-2 px-4 border">{order.company.name}</td>
++                <td className="py-2 px-4 border">{order.product_number.number}</td>
++                <td className="py-2 px-4 border">{order.color_number.color_code}</td>
++                <td className="py-2 px-4 border">{order.work_process_definition?.name || "未設定"}</td>
++                <td className="py-2 px-4 border">{order.start_date}</td>
++                <td className="py-2 px-4 border">{order.factory_estimated_completion_date || "未設定"}</td>
++                <td className="py-2 px-4 border">{order.latest_machine_assignment?.machine?.name || "ー"}</td>
+                 </tr>
+-                      <% end %>
++              ))}
+             </tbody>
+           </table>
+-              <% else %>
+-                <p class="text-center text-rose-500">割り当て済みの商品はありません。</p>
+-              <% end %>
+         </div>
+-    <% end %>
+-    </section>
+       </div>
+-  <!-- JavaScript ファイルを読み込む -->
+-  <script src="machine_assignment.js"></script>
++    );
++  }
++
++  ReactDOM.createRoot(document.getElementById("drag-drop-root")).render(<DragDropApp />);
++</script>
++
+ </body>
++</html>
+diff --git a/app/views/admin/orders/ma_index_org.html.erb b/app/views/admin/orders/ma_index_org.html.erb
+new file mode 100644
+index 0000000..ee597a3
+--- /dev/null
++++ b/app/views/admin/orders/ma_index_org.html.erb
+@@ -0,0 +1,98 @@
++<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機未割り当ての商品</h1>
++<%# 割り当て元 %>
++<section class="mb-12">
++  <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
++    <% if @unassigned_orders.any? %>
++      <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
++        <thead class="uppercase">
++          <tr class="bg-gray-100">
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">ID</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">会社名</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
++            <th scope="col" class="py-2 px-4 text-gray-700 border-b">稼働状況</th>
++          </tr>
++        </thead>
++        <tbody>
++          <% @unassigned_orders.each do |order| %>
++            <% current_process = @current_work_processes[order.id] %>
++            <% if current_process %>
++            <tr class="hover:bg-gray-50">
++              <td class="py-2 px-4 text-gray-700 border-b"><%= order.id %></td>
++              <td class="py-2 px-4 text-gray-700 border-b"><%= order.company.name %></td>
++              <td class="py-2 px-4 text-gray-700 border-b"><%= order.product_number.number %></td>
++              <td class="py-2 px-4 text-gray-700 border-b"><%= order.color_number.color_code %></td>
++              <td class="py-2 px-4 text-gray-700 border-b">
++                <%= current_process.work_process_definition&.name.presence || "未設定" %>
++              </td>
++              <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.start_date %></td>
++              <td class="py-2 px-4 text-gray-700 border-b"><%= current_process.factory_estimated_completion_date || "未設定" %></td>
++              <td class="py-2 px-4 border-b text-gray-700"><%= order&.latest_machine_assignment&.machine&.name || 'ー' %></td>
++
++            </tr>
++            <% end %>
++          <% end %>
++        </tbody>
++      </table>
++    <% else %>
++      <p class="text-center text-rose-500"><%= @no_orders_message %></p>
++    <% end %>
++  </div>
++</section>
++
++<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">織機割り当て済の商品</h1>
++<%# 割り当て先の織機 %>
++<%# 会社の所有する織機を表示 %>
++<% @machine_names.each do |machine_name| %>
++
++  <section class="mb-12">
++
++      <div class="px-4 pb-2 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
++        <h2 class="text-2xl font-bold text-gray-600">織機名: <%= machine_name %></h2>
++          <% if @assigned_orders[machine_name].present? %>
++
++              <table class="flex-none w-full text-md border text-left rtl:text-right border-gray-300">
++                <thead class="uppercase">
++                  <tr class="bg-gray-100">
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">ID</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">会社名</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">品番</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">色番</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">現在の工程</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">開始日</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">機屋の完了予定日</th>
++                    <th scope="col" class="py-2 px-4 text-gray-700 border-b">割り当て済み機械</th>
++                  </tr>
++                </thead>
++
++                <tbody>
++                  <% @assigned_orders[machine_name].each do |order| %>
++                    <% work_process = @current_work_processes[order.id] %>
++                      <tr class="hover:bg-gray-50">
++                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1][:id] %></td>
++                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1].company.name %></td>
++                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1].product_number.number %></td>
++                        <td class="py-2 px-4 text-gray-700 border-b"><%= order[1].color_number.color_code %></td>
++
++                        <% @current_work_processes.each do |order_id, work_process| %>
++                        <td class="py-2 px-4 text-gray-700 border-b">
++                          <%= work_process&.work_process_definition&.name.presence || "未設定" %>
++                        </td>
++                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process&.start_date %></td>
++                        <td class="py-2 px-4 text-gray-700 border-b"><%= work_process&.factory_estimated_completion_date || "未設定" %></td>
++                        <td class="py-2 px-4 border-b text-gray-700"><%= order[1].latest_machine_assignment.machine.name %></td>
++                        <% end %>
++                      </tr>
++                  <% end %>
++                </tbody>
++
++          <% else %>
++            <p class="text-center text-rose-500">割り当て済みの商品はありません。</p>
++          <% end %>
++      </div>
++
++  </section>
++<% end %>
+diff --git a/app/views/admin/orders/ma_select_company.html.erb b/app/views/admin/orders/ma_select_company.html.erb
+index 4f85885..25f7759 100644
+--- a/app/views/admin/orders/ma_select_company.html.erb
++++ b/app/views/admin/orders/ma_select_company.html.erb
+@@ -1,5 +1,4 @@
+ <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">会社を選んでください</h1>
+-<%# 以下に会社選択ボタンを作成 %>
+ <% @companies.each do |company| %>
+     <%= link_to company.name, ma_index_admin_orders_path(company_id: company.id),  class: "inline-block px-4 py-2 text-white bg-indigo-500 rounded hover:bg-indigo-600" %>
+ <% end %>
+diff --git a/app/views/admin/orders/new.html.erb b/app/views/admin/orders/new.html.erb
+index ac4ea38..bc452c4 100644
+--- a/app/views/admin/orders/new.html.erb
++++ b/app/views/admin/orders/new.html.erb
+@@ -1,9 +1,7 @@
+ <% content_for :head do %>
+   <meta name="turbo-visit-control" content="reload">
+ <% end %>
+-
+ <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">発注フォーム</h1>
+-
+ <%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+ <% if @order.errors.any? %>
+   <%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+@@ -16,61 +14,70 @@
+     </ul>
+   </div>
+ <% end %>
+-
+ <%= form_with model: @order, url: admin_orders_path, local: true do |f| %>
+   <section class="px-24">
+-  <p class="pb-4 text-rose-500 font-semibold">発注フォームはすべて必須項目になります。</p>
++    <p class="pb-4 text-rose-500 font-semibold">#発注フォームはすべて必須項目になります。</p>
+     <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+       <table class="w-full max-w-sm">
+         <div class="md:flex md:items-center mb-6">
+           <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
++            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center flex item-center mr-2">
+               <%= f.label :name, "会社名" %>
++              <div id="tooltip1" data-turbo="false" style="margin-left: 5px;"></div>
+             </label>
+           </div>
+           <div class="md:w-2/3">
+-          <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true }  %>
++            <% if @companies.present? %>
++              <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
++            <% else %>
++              <p class="text-red-500">会社データが存在しません。管理者にお問い合わせください。</p>
++            <% end %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </div>
+         </div>
+         <div class="md:flex md:items-center mb-6">
+           <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
++            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center flex item-center mr-2">
+               <%= f.label :product_number_id, "品番" %>
++              <div id="tooltip2" data-turbo="false" style="margin-left: 5px;"></div>
+             </label>
+           </div>
+           <div class="md:w-2/3">
+-          <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "品番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true } %>
++            <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "品番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </div>
+         </div>
+         <div class="md:flex md:items-center mb-6">
+           <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
++            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center flex item-center mr-2">
+               <%= f.label :color_number_id, "色番" %>
++              <div id="tooltip3" data-turbo="false" style="margin-left: 5px;"></div>
+             </label>
+           </div>
+           <div class="md:w-2/3">
+-          <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "色番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true }  %>
++            <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "色番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </div>
+         </div>
+-
+-      <!-- RailsからReactに渡すための初期データだけを埋め込む -->
+-      <div id="react-root" data-turbo="false"></div>
+-
++        <div id="react-root" data-roll-count="<%= @order.roll_count %>" data-quantity="<%= @order.quantity %>" data-turbo="false"></div>
+         <div class="md:flex md:items-center mb-6">
+           <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
++            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center flex item-center mr-2">
+               <%= f.label :machine_type, "機械のタイプ" %>
++              <span id="tooltip4" data-turbo="false" style="margin-left: 5px;"></span>
+             </label>
+           </div>
+           <div class="md:w-2/3">
+             <%= select_tag "order[work_processes][process_estimate][machine_type_id]",
+-                          options_from_collection_for_select(MachineType.all, :id, :name), { prompt: "織機のタイプを選択してください", required: true } %>
++                          options_from_collection_for_select(MachineType.all, :id, :name), { prompt: "織機のタイプを選択してください" } %>
++            <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="これはツールチップです"></i>
+           </div>
+         </div>
+         <div class="md:flex md:items-center mb-6">
+           <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
++            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center flex item-center mr-2">
+               <%= f.label :start_date, "作業開始日" %>
++              <span id="tooltip5" data-turbo="false" style="margin-left: 5px;"></span>
+             </label>
+           </div>
+           <div class="md:w-2/3">
+@@ -85,7 +92,6 @@
+       </table>
+     </div>
+   </section>
+-
+   <!-- 提出ボタン -->
+   <section class="mb-12">
+     <div class="flex justify-center space-x-2">
+@@ -98,102 +104,51 @@
+     </div>
+   </section>
+ <% end %>
+-
+ <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+ <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+ <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+-
+ <script type="text/babel">
+   const { useState, useEffect } = React;
+ 
+-  // 各入力フィールドの値とバリデーション状態を管理するステートの定義
+   function OrderForm() {
+-    const [rollCount, setRollCount] = useState('');
+-    const [quantity, setQuantity] = useState('');
+-
+-    //エラーメッセージを管理するステートの定義
+-    const [errors, setErrors] = useState({
+-        // キーと初期値の指定
+-        rollCount: "",
+-        quantity: "",
+-    });
+ 
+-    // フォーム全体が送信可能かどうかを管理するステート
+-    // validation管理ステートの定義
+-    const [isFormValid, setIsFormValid] = useState(false);
++    const root = document.getElementById('react-root');
++    const initialRollCount = root.getAttribute('data-roll-count') || '';
++    const initialQuantity = root.getAttribute('data-quantity') || '';
+ 
+-    // HTML内に埋め込まれたデータを取得してステートにセット
+-    // useEffectフックの宣言
+-    // useEffect(() => {
+-    //     document.querySelector('input[name="order[roll_count]"]').value = rollCount;
+-    //     document.querySelector('input[name="order[quantity]"]').value = quantity;
+-    // }, [rollCount, quantity]);
++    const [rollCount, setRollCount] = useState(initialRollCount);
++    const [quantity, setQuantity] = useState(initialQuantity);
+ 
++    useEffect(() => {
++      document.querySelector('input[name="order[roll_count]"]').value = rollCount;
++      document.querySelector('input[name="order[quantity]"]').value = quantity;
++    }, [rollCount, quantity]);
+ 
+-  // 入力内容のチェックをするイベントハンドラ関数を定義して、その中で更新用関数を呼び出す
+-    // 反数用のイベントハンドラ
+-    const handleRollCountChange = (e) => {
++    const handleInputChange = (setter) => (e) => {
+       const value = e.target.value;
+-
+-        // 入力値が数字かつ4桁以内の場合のみステートを更新
+       if (/^\d{0,4}$/.test(value)) {
+-            setRollCount(value); // ステート更新
+-            setErrors((prevErrors) => ({ ...prevErrors, rollCount: "" })); // エラーをクリア
+-        } else {
+-            // 5桁目が入力されたらエラーメッセージをセット
+-            setErrors((prevErrors) => ({
+-            ...prevErrors,
+-            rollCount: "最大4桁までしか入力できません。",
+-            }));
++        setter(value);
+       }
+     };
+ 
+-    // 数量用のイベントハンドラ
+-    const handleQuantityChange = (e) => {
+-        const value = e.target.value;
+-
+-        // 入力値が数字かつ4桁以内の場合のみステートを更新
+-        if (/^\d{0,4}$/.test(value)) {
+-            setQuantity(value); // ステート更新
+-            setErrors((prevErrors) => ({ ...prevErrors, quantity: "" })); // エラーをクリア
+-        } else {
+-            // 5桁目が入力されたらエラーメッセージをセット
+-            setErrors((prevErrors) => ({
+-            ...prevErrors,
+-            quantity: "最大4桁までしか入力できません。",
+-            }));
+-        }
+-        };
+-
+-
+-        // エラーメッセージ更新関数setErrorsの呼び出し
+-        // setErrors(newErrors);
+-        // validation状況を更新する関数の呼び出し
+-        // isOK = Object.keys(newErrors).length === 0;
+-        // setIsFormValid(isOK);
+-
+-
+     return (
+       <div>
+         <div className="md:flex md:items-center mb-6">
+           <div className="md:w-1/3 py-2">
+             <label className="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+               反数
++              <TooltipIcon message="注文する商品の反数を入力します（商品1点あたりの反数、数量欄が2の場合は合計の反数は倍になります）。" top="2px"/>
+             </label>
+           </div>
+           <div className="md:w-2/3">
+             <input
+               type="text"
++              name="order[roll_count]"
+               value={rollCount}
+-                // setstateで定義したキーrollCountを errorKey に渡す
+-                onChange={(e) => handleRollCountChange(e)}
++              onChange={handleInputChange(setRollCount)}
+               placeholder="反数を入力してください"
+-                required
+               className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
+             />
+-            {errors.rollCount && (
+-              <p className="text-red-500">{errors.rollCount}</p>
+-            )}
+           </div>
+         </div>
+ 
+@@ -201,24 +156,76 @@
+           <div className="md:w-1/3 py-2">
+             <label className="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+               数量
++              <TooltipIcon message="注文する商品の数量を入力します。" top="2px"/>
+             </label>
+           </div>
+           <div className="md:w-2/3">
+             <input
+               type="text"
++              name="order[quantity]"
+               value={quantity}
+-              onChange={(e) => handleQuantityChange(e)}
++              onChange={handleInputChange(setQuantity)}
+               placeholder="数量を入力してください"
+-              required
+               className="block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
+             />
+-            {errors.quantity && (
+-                <p className="text-red-500">{errors.quantity}</p>
+-            )}
+           </div>
+         </div>
+-        <input type="hidden" name="order[roll_count]" value={rollCount} />
+-        <input type="hidden" name="order[quantity]" value={quantity} />
++
++      </div>
++    );
++  }
++
++
++  const TooltipIcon = ({ message = "No Message", top = "-6px"  }) => {
++    const [visible, setVisible] = useState(false);
++
++    const handleClick = () => {
++      setVisible(!visible); // クリックするたびに表示・非表示を切り替える
++    };
++
++    const handleMouseEnter = () => {
++      setVisible(true);
++    };
++
++    const handleMouseLeave = () => {
++      setVisible(false);
++    };
++
++    return (
++      <div
++        className="custom-icon-wrapper"
++        onClick={handleClick}
++        onMouseEnter={handleMouseEnter}
++        onMouseLeave={handleMouseLeave}
++        style={{
++          fontSize: "24px",
++          cursor: "pointer",
++          position: "relative",
++          display: "inline-block",
++          top: top,
++          marginLeft: "5px",
++        }}
++      >
++        <i className="fas fa-question-circle" style={{ color: "lightgray" }}></i>
++        {visible && (
++          <div
++            style={{
++              position: "absolute",
++              top: "-10px",
++              left: "0",
++              backgroundColor: "gray",
++              color: "white",
++              padding: "5px",
++              borderRadius: "5px",
++              whiteSpace: "nowrap",
++              fontSize: "14px",
++              zIndex: 1000,
++              boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)",
++            }}
++          >
++            {message}
++          </div>
++        )}
+       </div>
+     );
+   };
+@@ -228,6 +235,26 @@
+     if (root) {
+       ReactDOM.render(<OrderForm />, root);
+     }
++    const tooltip1 = document.getElementById("tooltip1");
++    if (tooltip1) {
++      ReactDOM.render(<TooltipIcon message='発注先の会社名を選択します。' />, tooltip1);
++    }
++    const tooltip2 = document.getElementById("tooltip2");
++    if (tooltip2) {
++      ReactDOM.render(<TooltipIcon message='発注する商品の型をコードで選択します。' />, tooltip2);
++    }
++    const tooltip3 = document.getElementById("tooltip3");
++    if (tooltip3) {
++      ReactDOM.render(<TooltipIcon message='発注する商品の色をコードで選択します。' />, tooltip3);
++    }
++    const tooltip4 = document.getElementById("tooltip4");
++    if (tooltip4) {
++      ReactDOM.render(<TooltipIcon message='発注する商品を作成する織機のタイプを選択します。' />, tooltip4);
++    }
++    const tooltip5 = document.getElementById("tooltip5");
++    if (tooltip5) {
++      ReactDOM.render(<TooltipIcon message='作業開始日は、現時点での機屋が製織工程を開始する予定日を入力してください' />, tooltip5);
++    }
++
+   });
+ </script>
+-
+diff --git a/app/views/admin/orders/new.html_bk.erb b/app/views/admin/orders/new.html_bk.erb
+deleted file mode 100644
+index 456b512..0000000
+--- a/app/views/admin/orders/new.html_bk.erb
++++ /dev/null
+@@ -1,102 +0,0 @@
+-<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">発注フォーム</h1>
+-
+-<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+-<% if @order.errors.any? %>
+-<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+-<div id="error_explanation">
+-  <h2><%= "#{@order.errors.count} 件のエラーが発生しました" %></h2>
+-  <ul>
+-    <% @order.errors.full_messages.each do |message| %>
+-    <li><%= message %></li>
+-    <% end %>
+-  </ul>
+-</div>
+-<% end %>
+-
+-<%= form_with model: @order, url: admin_orders_path, local: true, html: { id: "orderForm" } do |f| %>
+-<section class="px-24">
+-  <p class="pb-4 text-rose-500 font-semibold">発注フォームはすべて必須項目になります。</p>
+-  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+-    <table class="w-full max-w-sm">
+-      <div class="md:flex md:items-center mb-6">
+-        <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-            <%= f.label :name, "会社名" %>
+-          </label>
+-        </div>
+-        <div class="md:w-2/3">
+-          <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択してください" }, { id: "order_company_id", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+-        </div>
+-      </div>
+-      <div class="md:flex md:items-center mb-6">
+-        <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-            <%= f.label :product_number_id, "品番" %>
+-          </label>
+-        </div>
+-        <div class="md:w-2/3">
+-          <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { id: "order_product_number_id", prompt: "品番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+-        </div>
+-      </div>
+-      <div class="md:flex md:items-center mb-6">
+-        <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-            <%= f.label :color_number_id, "色番" %>
+-          </label>
+-        </div>
+-        <div class="md:w-2/3">
+-          <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { id: "order_color_number_id", prompt: "色番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+-        </div>
+-      </div>
+-
+-      <!-- RailsからReactに渡すための初期データだけを埋め込む -->
+-      <div id="order-form-root" class="md:flex md:items-center mb-6"
+-        data-roll_count="<%= @order.roll_count.to_json %>"
+-        data-quantity="<%= @order.quantity.to_json %>">
+-      </div>
+-
+-      <div class="md:flex md:items-center mb-6">
+-        <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-            <%= f.label :machine_type, "機械のタイプ" %>
+-          </label>
+-        </div>
+-        <div class="md:w-2/3">
+-          <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, { id: "machine_type_id", prompt: "織機のタイプを選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+-        </div>
+-      </div>
+-      <div class="md:flex md:items-center mb-6">
+-        <div class="md:w-1/3 py-2">
+-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+-            <%= f.label :start_date, "作業開始日" %>
+-          </label>
+-        </div>
+-        <div class="md:w-2/3">
+-          <%= text_field_tag 'order[work_processes][start_date]',
+-                          nil,
+-                          placeholder: "作業開始日を選択してください",
+-                          type: :date,
+-                          required: true,
+-                          id: "start_date_field", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+-        </div>
+-      </div>
+-    </table>
+-  </div>
+-</section>
+-
+-<!-- 提出ボタン -->
+-<section class="mb-12">
+-  <div class="flex justify-center space-x-2">
+-    <div class="px-2 py-2">
+-      <%= f.submit "発注", class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
+-    </div>
+-    <div class="px-2 py-2">
+-      <%= link_to "戻る", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+-    </div>
+-  </div>
+-</section>
+-<% end %>
+-
+-<%= javascript_include_tag "orderform", type: "module", defer: true %>
+-
+-
+diff --git a/app/views/home/index.html copy.erb b/app/views/home/index.html copy.erb
+deleted file mode 100644
+index 929d50d..0000000
+--- a/app/views/home/index.html copy.erb	
++++ /dev/null
+@@ -1,102 +0,0 @@
+-<h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">ホーム画面</h1>
+-
+-<section class="w-full px-4 py-6">
+-    <% if @machines.any? %>
+-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+-            <% @machines.each do |machine| %>
+-                <% company_name = machine&.company&.name %>
+-                <% machine_name = machine&.name %>
+-                <% work_process = machine&.latest_work_process %>
+-                <% work_process_name = work_process&.work_process_definition&.name || "作業工程なし" %>
+-                <% machine_status_name = machine&.latest_machine_status&.name || "不明" %>
+-
+-                <!-- WorkProcessをdefinition_id毎に取得（同一Order想定） -->
+-                <% if work_process.present? %>
+-                    <% order_id = work_process&.order_id %>
+-                    <% wps = machine&.work_processes.where(order_id: order_id) %>
+-                <% else %>
+-                    <% wps = [] %>
+-                <% end %>
+-
+-                <% wp1 = wps.find { |wp| wp&.work_process_definition_id == 1 } %>
+-                <% wp2 = wps.find { |wp| wp&.work_process_definition_id == 2 } %>
+-                <% wp3 = wps.find { |wp| wp&.work_process_definition_id == 3 } %>
+-                <% wp4 = wps.find { |wp| wp&.work_process_definition_id == 4 } %>
+-
+-                <% wp1_complete = (wp1&.work_process_status_id == 3) %>
+-                <% wp2_complete = (wp2&.work_process_status_id == 3) %>
+-                <% wp3_complete = (wp3&.work_process_status_id == 3) %>
+-                <% wp4_status = wp4&.work_process_status_id %>
+-
+-                <!-- ボタン表示ロジック -->
+-                <% if work_process.nil? %>
+-                    <!-- Work_processが割り当てられていない場合 -->
+-                    <% button_label = "更新不可" %>
+-                    <% button_disabled = true %>
+-                <% else %>
+-                    <!-- "作業終了"条件: -->
+-                    <!-- [1,2,3]が完了(3) AND 4がステータス1または2 -->
+-                    <% if wp1_complete && wp2_complete && wp3_complete && (wp4_status == 1 || wp4_status == 2) %>
+-                        <% button_label = "作業終了" %>
+-                        <% button_disabled = false %>
+-                    <!-- "更新不可"条件: -->
+-                    <!-- 1) [1,2,3,4]全てが3の場合 -->
+-                    <!-- （wp4が存在しない場合は全工程揃ってないが、本要件では4がないならここに該当しないはず） -->
+-                    <!-- 2) [1,2,3]が3でwp4が4 -->
+-                    <!-- 3) 上部条件でwork_process.nil?は既に別ケースで対応済 -->
+-                    <% elsif (wp1_complete && wp2_complete && wp3_complete && wp4_status == 3) ||
+-                        (wp1_complete && wp2_complete && wp3_complete && wp4_status == 4) %>
+-                        <% button_label = "更新不可" %>
+-                        <% button_disabled = true %>
+-                    <!-- 上記以外は"作業開始" -->
+-                    <% else %>
+-                        <% button_label = "作業開始" %>
+-                        <% button_disabled = false %>
+-                    <% end %>
+-                <% end %>
+-
+-                <div class="w-full px-2 py-2">
+-                    <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+-                        <thead>
+-                            <tr>
+-                                <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">会社名</th>
+-                                <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine&.company&.name %></td>
+-                            </tr>
+-                        </thead>
+-                        <tbody>
+-                            <tr>
+-                                <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+-                                <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine&.name %></td>
+-                            </tr>
+-                            <tr>
+-                                <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+-                                <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= work_process_name(machine) %></td>
+-                            </tr>
+-                            <tr>
+-                                <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況</th>
+-                                <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine&.latest_machine_status&.name %></td>
+-                            </tr>
+-                            <tr>
+-                                <td colspan="2" class="px-4 py-2">
+-                                    <div class="flex justify-center space-x-2">
+-                                    <%= form_with url: update_home_path, method: :patch, local: true do %>
+-                                        <%= hidden_field_tag :machine_id, machine.id %>
+-                                        <% if work_process.present? %>
+-                                            <%= hidden_field_tag :order_id, work_process.order_id %>
+-                                        <% end %>
+-                                        <%= submit_tag button_label, name: 'commit',
+-                                                        class: "rounded-full w-32 h-32 text-white text-xl font-semibold #{button_disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'}",
+-                                                        disabled: button_disabled %>
+-                                    <% end %>
+-                                    </div>
+-                                </td>
+-                            </tr>
+-                        </tbody>
+-                    </table>
+-                </div>
+-            <% end %>
+-        </div>
+-    <% else %>
+-        <p class="text-center text-rose-500">表示するデータがありません。</p>
+-    <% end %>
+-</section>
+diff --git a/app/views/home/index.html_react.erb b/app/views/home/index.html_react.erb
+deleted file mode 100644
+index e6d552f..0000000
+--- a/app/views/home/index.html_react.erb
++++ /dev/null
+@@ -1,182 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="ja">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-    <title>React版ホーム画面</title>
+-    <style>
+-        body {
+-            font-family: Arial, sans-serif;
+-            padding: 20px;
+-        }
+-        .machine-card {
+-            border: 1px solid #ccc;
+-            border-radius: 8px;
+-            padding: 20px;
+-            margin-bottom: 20px;
+-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+-        }
+-        .button {
+-            padding: 10px 20px;
+-            border: none;
+-            border-radius: 4px;
+-            cursor: pointer;
+-            color: white;
+-            font-size: 16px;
+-        }
+-        .start {
+-            background-color: #4CAF50;
+-        }
+-        .end {
+-            background-color: #FF5733;
+-        }
+-        .disabled {
+-            background-color: #ccc;
+-            cursor: not-allowed;
+-        }
+-    </style>
+-</head>
+-<body>
+-    <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">ホーム画面</h1>
+-    <div id="app"></div>
+-
+-    <!-- React and ReactDOM from CDN -->
+-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+-
+-    <script type="text/babel">
+-        // 仮の機械データ（RailsからAPI経由で取得することを想定）
+-        const initialMachines = [
+-            {
+-                id: 1,
+-                companyName: "会社A",
+-                machineName: "織機1",
+-                workProcessName: "作業工程1",
+-                machineStatus: "稼働中",
+-                buttonLabel: "作業開始",
+-                disabled: false
+-            },
+-            {
+-                id: 2,
+-                companyName: "会社B",
+-                machineName: "織機2",
+-                workProcessName: "作業工程2",
+-                machineStatus: "準備中",
+-                buttonLabel: "作業終了",
+-                disabled: false
+-            },
+-            {
+-                id: 3,
+-                companyName: "会社C",
+-                machineName: "織機3",
+-                workProcessName: "作業工程なし",
+-                machineStatus: "不明",
+-                buttonLabel: "更新不可",
+-                disabled: true
+-            }
+-        ];
+-
+-        function MachineCard({ machine, handleUpdate }) {
+-            return (
+-                <div className="machine-card">
+-                    <table className="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
+-                        <thead>
+-                            <tr>
+-                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">会社名</th>
+-                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.companyName}</td>
+-                            </tr>
+-                        </thead>
+-                        <tbody>
+-                            <tr>
+-                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
+-                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.machineName}</td>
+-                            </tr>
+-                            <tr>
+-                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">現在の作業状況</th>
+-                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.workProcessName}</td>
+-                            </tr>
+-                            <tr>
+-                                <th className="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機の稼働状況</th>
+-                                <td className="w-1/4 px-4 py-4 text-gray-700 text-center border-b">{machine.machineStatus}</td>
+-                            </tr>
+-                            <tr>
+-                                <td colSpan="2" className="px-4 py-2">
+-                                    <div className="flex justify-center space-x-2">
+-                                        <button
+-                                            className={`button ${machine.buttonLabel === '作業開始' ? 'start' : 'end'} ${machine.disabled ? 'disabled' : ''}`}
+-                                            disabled={machine.disabled}
+-                                            onClick={() => handleUpdate(machine.id, machine.buttonLabel)}
+-                                        >
+-                                            {machine.buttonLabel}
+-                                        </button>
+-                                    </div>
+-                                </td>
+-                            </tr>
+-                        </tbody>
+-                    </table>
+-                </div>
+-            );
+-        }
+-
+-        export default function App() {
+-            const [machines, setMachines] = React.useState(initialMachines);
+-
+-            const handleUpdate = (machineId, action) => {
+-                console.log(`機械ID: ${machineId}, アクション: ${action}`);
+-
+-                // Railsバックエンドにリクエストを送信
+-                fetch('/update_home', {
+-                    method: 'PATCH',
+-                    headers: {
+-                        'Content-Type': 'application/json',
+-                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+-                    },
+-                    body: JSON.stringify({
+-                        machine_id: machineId,
+-                        commit: action
+-                    })
+-                })
+-                .then(response => {
+-                    if (!response.ok) {
+-                        throw new Error('サーバーエラーが発生しました');
+-                    }
+-                    return response.json();
+-                })
+-                .then(data => {
+-                    alert(`サーバーメッセージ: ${data.message}`);
+-
+-                    // UIを更新する（例: 作業が終了したらボタン無効化）
+-                    const updatedMachines = machines.map(machine => {
+-                        if (machine.id === machineId) {
+-                            return {
+-                                ...machine,
+-                                buttonLabel: "更新不可",
+-                                disabled: true,
+-                                machineStatus: action === "作業開始" ? "進行中" : "完了"
+-                            };
+-                        }
+-                        return machine;
+-                    });
+-                    setMachines(updatedMachines);
+-                })
+-                .catch(error => {
+-                    console.error('エラー:', error);
+-                    alert('更新に失敗しました。');
+-                });
+-            };
+-
+-            return (
+-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                    {machines.map(machine => (
+-                        <MachineCard key={machine.id} machine={machine} handleUpdate={handleUpdate} />
+-                    ))}
+-                </div>
+-            );
+-        }
+-
+-        const root = ReactDOM.createRoot(document.getElementById('app'));
+-        root.render(<App />);
+-    </script>
+-</body>
+-</html>
+diff --git a/app/views/layouts/application.html.erb b/app/views/layouts/application.html.erb
+index 643599a..95c41de 100644
+--- a/app/views/layouts/application.html.erb
++++ b/app/views/layouts/application.html.erb
+@@ -12,6 +12,8 @@
+     <link rel="icon" href="/icon.svg" type="image/svg+xml">
+     <link rel="apple-touch-icon" href="/icon.png">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.css">
++    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
++    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.min.js"></script>
+     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
+     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+@@ -49,6 +51,7 @@
+                 <p><%= link_to "織機一覧", machines_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+                 <p><%= link_to "織機の登録", new_machine_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+                 <p><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
++                <p><%= link_to "ユーザー情報", user_path(current_user), class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
+               <% end %>
+             <p><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-2 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></p>
+             <% else %>
+@@ -90,6 +93,7 @@
+               <li><%= link_to "織機一覧", machines_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+               <li><%= link_to "機械の登録", new_machine_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+               <li><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
++              <li><%= link_to "ユーザー情報", user_path(current_user), class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
+             <% end %>
+           <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-2 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></li>
+           <% else %>
+diff --git a/app/views/machines/edit.html.erb b/app/views/machines/edit.html.erb
+index ca5c73c..ff2b491 100644
+--- a/app/views/machines/edit.html.erb
++++ b/app/views/machines/edit.html.erb
+@@ -31,7 +31,7 @@
+                     </label>
+                 </div>
+                 <div class="md:w-2/3">
+-                    <%= form.collection_select :machine_type_id, MachineType.all, :id, :name,
++                    <%= form.collection_select :machine_type_id, MachineType.all.order(:id), :id, :name,
+                         { prompt: "織機のタイプを選択してください"},
+                         { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+                 </div>
+@@ -44,7 +44,7 @@
+                 </div>
+                 <div class="md:w-2/3">
+                     <%= form.collection_select :machine_status_id, MachineStatus.all, :id, :name,
+-                        { prompt: "稼働状況を選択してください" },
++                        { prompt: "稼働状況を選択してください", selected: @machine.machine_assignments.first&.machine_status_id },
+                         { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+                 </div>
+             </div>
+diff --git a/app/views/machines/new.html.erb b/app/views/machines/new.html.erb
+index ca28546..6375f5b 100644
+--- a/app/views/machines/new.html.erb
++++ b/app/views/machines/new.html.erb
+@@ -23,7 +23,7 @@
+                 <div class="md:w-2/3">
+                     <%= f.collection_select :machine_type_id, MachineType.all, :id, :name,
+                         { prompt: "織機のタイプを選択してください" },
+-                        { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
++                        { required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+                 </div>
+             </div>
+         </table>
+diff --git a/app/views/sessions/new.html.erb b/app/views/sessions/new.html.erb
+index 5b7b7a0..59ffa9a 100644
+--- a/app/views/sessions/new.html.erb
++++ b/app/views/sessions/new.html.erb
+@@ -5,8 +5,7 @@
+             <h1 class="text-center text-2xl font-bold text-gray-800 sm:text-3xl mt-6 mb-6">ログイン</h1>
+             <div class="space-y-6">
+                 <div>
+-                    <label for="email" class="block text-md font-semibold text-gray-900", id="session_email">
+->
++                    <label for="email" class="block text-md font-semibold text-gray-900">
+                         <%= form.label :email %>
+                     </label>
+                     <div class="mt-2">
+@@ -14,7 +13,7 @@
+                     </div>
+                 </div>
+                 <div>
+-                    <label for="password" class="block text-md font-semibold text-gray-900", id="session_password">
++                    <label for="password" class="block text-md font-semibold text-gray-900">
+                         <%= form.label :password %>
+                     </label>
+                     <div class="mt-2">
+diff --git a/config/importmap.rb b/config/importmap.rb
+index e62a700..dbdd658 100644
+--- a/config/importmap.rb
++++ b/config/importmap.rb
+@@ -6,3 +6,9 @@ pin "@hotwired/stimulus", to: "stimulus.min.js"
+ pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"
+ pin "gantt-fix", to: "frappe-gantt.es.js"
+ pin_all_from "app/javascript/controllers", under: "controllers"
++
++# Bootstrap 4のJavaScript（bundle版）
++pin "bootstrap", to: "https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
++
++# jQuery
++pin "jquery", to: "https://code.jquery.com/jquery-3.6.4.min.js"
+diff --git a/config/routes.rb b/config/routes.rb
+index de8334d..bda1676 100644
+--- a/config/routes.rb
++++ b/config/routes.rb
+@@ -45,6 +45,7 @@ Rails.application.routes.draw do
+       get 'past_orders'
+     end
+   end
++  resources :users
+   root to: 'home#index'
+   # HomeControllerのupdateアクションを定義
+   patch 'home/update', to: 'home#update', as: 'update_home'
+diff --git a/node_modules/.bin/esbuild b/node_modules/.bin/esbuild
+new file mode 120000
+index 0000000..c83ac07
+--- /dev/null
++++ b/node_modules/.bin/esbuild
+@@ -0,0 +1 @@
++../esbuild/bin/esbuild
+\ No newline at end of file
+diff --git a/node_modules/.bin/loose-envify b/node_modules/.bin/loose-envify
+new file mode 120000
+index 0000000..ed9009c
+--- /dev/null
++++ b/node_modules/.bin/loose-envify
+@@ -0,0 +1 @@
