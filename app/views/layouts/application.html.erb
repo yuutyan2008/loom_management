@@ -12,6 +12,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.min.js"></script>
     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
@@ -25,17 +26,18 @@
       <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <!-- ロゴまたはアプリケーション名 -->
-          <div class="flex items-center">
-            <% if logged_in? %>
-              <% if current_user.admin? %>
-                <%= link_to 'LooMa【発注企業】', admin_root_path, class: "text-xl font-bold text-gray-700" %>
-              <% else %>
-                <%= link_to 'LooMa【受注企業】', root_path, class: "text-xl font-bold text-gray-700" %>
-              <% end %>
-            <% else %>
-                <div class='text-xl font-bold text-gray-700'>LooMa</div>
-            <% end %>
-          </div>
+<!-- ロゴまたはアプリケーション名 -->
+<div class="flex items-center">
+  <% if logged_in? %>
+    <% if current_user.admin? %>
+      <%= link_to 'LooMa | 発注企業', admin_root_path, class: "text-xl font-bold text-gray-700" %>
+    <% else %>
+      <%= link_to 'LooMa | 生産企業', root_path, class: "text-xl font-bold text-gray-700" %>
+    <% end %>
+  <% else %>
+    <div class='text-xl font-bold text-gray-700'>LooMa | 織物生産管理システム</div>
+  <% end %>
+</div>
           <!-- デスクトップメニュー -->
           <div class="hidden md:flex items-center space-x-4" id="navbarMenu">
             <% if logged_in? %>
