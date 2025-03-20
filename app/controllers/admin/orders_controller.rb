@@ -9,8 +9,8 @@ class Admin::OrdersController < ApplicationController
   # before_action :work_process_params, only: [:create, :update]
   before_action :admin_user
   # 【追加】更新時にmachine_assignments_attributesを事前整理するためのbefore_actionを追加
-  before_action :sanitize_machine_assignments_params, only: [:update]
-  before_action :set_machine_statuses_for_form, only: [:edit, :update]
+  before_action :sanitize_machine_assignments_params, only: [ :update ]
+  before_action :set_machine_statuses_for_form, only: [ :edit, :update ]
 
   def index
     @orders = Order.includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
@@ -31,7 +31,6 @@ class Admin::OrdersController < ApplicationController
       else
         @current_work_processes[order.id] = nil
       end
-
     end
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_index(@orders)
@@ -94,7 +93,7 @@ class Admin::OrdersController < ApplicationController
 
   def show
     @work_process = @order.work_processes.ordered
-    @machines = @work_process.map { |work_process| work_process.machines}.flatten.uniq
+    @machines = @work_process.map { |work_process| work_process.machines }.flatten.uniq
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_show(@order.work_processes)
   end
@@ -145,7 +144,6 @@ class Admin::OrdersController < ApplicationController
       end
       set_work_process_status_completed
       # handle_machine_assignment_updates if machine_assignments_present?
-
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
 
@@ -179,7 +177,7 @@ class Admin::OrdersController < ApplicationController
       @current_company = Company.find(params[:company_id])
 
       @orders = @current_company.orders
-      .includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
+      .includes(work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
       .incomplete
       .order(:id)
 
@@ -207,12 +205,11 @@ class Admin::OrdersController < ApplicationController
       # 各注文に対して現在作業中の作業工程を取得
       @current_work_processes = {}
       @orders.each do |order|
-
         work_process = WorkProcess.find_by(order_id: order.id)
         @current_work_processes[order.id] = work_process
-      # order.id をキーとして、対応する WorkProcess を格納
-      # @current_work_processes[order.id] = current_work_process
-      # current_process = @current_work_processes[:id]
+        # order.id をキーとして、対応する WorkProcess を格納
+        # @current_work_processes[order.id] = current_work_process
+        # current_process = @current_work_processes[:id]
         if order.work_processes.any?
           # 現在のwork_processから工程を検索
           if params[:work_process_definition_id].present?
@@ -225,9 +222,53 @@ class Admin::OrdersController < ApplicationController
         else
           @current_work_processes[order.id] = nil
         end
-
       end
     end
+
+    def gant_index
+      # 発注情報の取得
+      @orders = Order.includes(:work_processes, :company, work_processes: [ :work_process_definition, :work_process_status, process_estimate: :machine_type ])
+
+      # 過去の発注に関連付けられていない機械を取得
+      @machines = Machine.not_in_past_orders
+
+      # 受注中のみ表示
+      @orders = @orders.select do |order|
+        order.work_processes.any? do |process|
+          if process.machine_assignments.empty?
+            true # 織機割り当てのない発注も表示
+          else
+            # machine_assignments が存在する場合は、assignment の machine_id が @machines の中に含まれているかを確認
+            process.machine_assignments.any? do |assignment|
+              @machines.map { |machine| machine.id }.include?(assignment.machine_id)
+            end
+          end
+        end
+      end
+
+      # JSON フォーマット用のマッピング処理
+      colors = [ "class-a", "class-b" ]
+      @orders = @orders.map.with_index do |order, order_index|
+        custom_class = colors[order_index % 2]
+
+        order.work_processes.map do |process|
+          {
+            product_number: order.product_number.number,
+            company: order.company.name,
+            machine: machine_names(order), # 単一の織機を取得
+            id: process.id.to_s,
+            name: process.work_process_definition.name,
+            work_process_status: process.work_process_status.name,
+            end: process&.earliest_estimated_completion_date&.strftime("%Y-%m-%d"),
+            start: process&.start_date&.strftime("%Y-%m-%d"),
+            progress: 100,
+            custom_index: order.id,
+            custom_class: custom_class
+          }
+        end
+      end.compact.flatten.to_json
+    end
+
 
   private
 
@@ -259,7 +300,7 @@ class Admin::OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
-      machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
+      machine_assignments_attributes: [ :id, :machine_id, :machine_status_id ],
       # process_estimate_attributes: [:machine_type_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応
         :id,
@@ -330,34 +371,6 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  # def handle_machine_assignment_updates
-  #   relevant_work_process_definition_ids = [1, 2, 3, 4]
-  #   # 対象のWorkProcess群を取得
-  #   relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
-  #   target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-  #   # 条件: 全てがstatus_id=3の場合のみ処理
-  #   if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
-  #     machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
-  #     if machine_id.present?
-  #       # 全WorkProcessを取得(5などその他も含む場合)
-  #       all_work_process_ids = @order.work_processes.pluck(:id)
-  #       # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
-  #       MachineAssignment.where(
-  #         machine_id: machine_id,
-  #         work_process_id: all_work_process_ids
-  #       ).update_all(machine_id: nil, machine_status_id: nil)
-  #       # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
-  #       # 既存があればそれを使い、新たなcreateは行わない
-  #       assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
-  #       if assignment.new_record?
-  #         # 新規の場合のみ作成
-  #         assignment.machine_status_id = 1
-  #         assignment.save!
-  #       end
-  #     end
-  #   end
-  # end
-
   # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
   def set_work_process_status_completed
     @order.work_processes.each do |work_process|
@@ -370,7 +383,7 @@ class Admin::OrdersController < ApplicationController
   # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   ## 遅延している作業工程のチェック (indexアクション用)
   def check_overdue_work_processes_index(orders)
-    completed_status = WorkProcessStatus.find_by(name: '作業完了')
+    completed_status = WorkProcessStatus.find_by(name: "作業完了")
     return unless completed_status
 
     overdue_work_processes = WorkProcess.includes(:order, :work_process_definition)
@@ -394,7 +407,7 @@ class Admin::OrdersController < ApplicationController
 
   ## 遅延している作業工程のチェック (showアクション用)
   def check_overdue_work_processes_show(work_processes)
-    completed_status = WorkProcessStatus.find_by(name: '作業完了')
+    completed_status = WorkProcessStatus.find_by(name: "作業完了")
     return unless completed_status
 
     overdue_work_processes = work_processes.where("earliest_estimated_completion_date < ?", Date.today)
@@ -480,7 +493,4 @@ class Admin::OrdersController < ApplicationController
 
     true # 呼び出し元の処理を続ける
   end
-
-
-
 end

@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+
+  get '/manifest.json', to: 'application#manifest'
+
   # ログイン機能のルーティング
   get 'login', to: 'sessions#new', as: 'login'
   post 'login', to: 'sessions#create'
