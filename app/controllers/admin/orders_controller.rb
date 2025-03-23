@@ -252,6 +252,7 @@ class Admin::OrdersController < ApplicationController
         custom_class = colors[order_index % 2]
 
         order.work_processes.map do |process|
+          process_class = process.work_process_status_id == 3 ? "completed" : custom_class
           {
             product_number: order.product_number.number,
             company: order.company.name,
@@ -263,7 +264,7 @@ class Admin::OrdersController < ApplicationController
             start: process&.start_date&.strftime("%Y-%m-%d"),
             progress: 100,
             custom_index: order.id,
-            custom_class: custom_class
+            custom_class: process_class
           }
         end
       end.compact.flatten.to_json
