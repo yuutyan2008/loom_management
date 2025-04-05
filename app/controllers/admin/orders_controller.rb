@@ -268,6 +268,7 @@ class Admin::OrdersController < ApplicationController
           }
         end
       end.compact.flatten.to_json
+
     end
 
 

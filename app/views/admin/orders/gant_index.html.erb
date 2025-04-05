@@ -1,150 +1,198 @@
-  <h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">工程ごとの機屋一覧</h1>
 
-    <style>
-      /* テーブル全体の背景色を白に設定 */
-      .gantt-wrap {
-        display: flex;
-        align-items: flex-start;
-        background-color: #ffffff; /* 背景色を白に設定 */
-      }
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-700 mt-6 mb-6 text-center">工程ごとの機屋一覧</h1>
+<style>
+  /* テーブル全体の背景色を白に設定 */
+  .gantt-wrap {
+    display: flex;
+    align-items: flex-start;
+    background-color: #ffffff; /* 背景色を白に設定 */
+  }
 
-      /* 内部のテーブルの背景を白に設定 */
-      .gantt-wrap table {
-        background-color: #ffffff; /* テーブル全体の背景色 */
-        border-collapse: collapse; /* 境界線の余白を削除 */
-      }
+  /* 内部のテーブルの背景を白に設定 */
+  .gantt-wrap table {
+    background-color: #ffffff; /* テーブル全体の背景色 */
+    border-collapse: collapse; /* 境界線の余白を削除 */
+  }
 
-        /* クラスに応じたスタイルを設定 */
-      g.bar-wrapper.class-a rect.bar-progress {
-        fill: #3498db !important; /* 青 */
-      }
+    /* クラスに応じたスタイルを設定 */
+  g.bar-wrapper.class-a rect.bar-progress {
+    fill: #3498db !important; /* 青 */
+  }
 
-      g.bar-wrapper.class-b rect.bar-progress {
-        fill: #2ecc71 !important; /* 緑 */
-      }
+  g.bar-wrapper.class-b rect.bar-progress {
+    fill: #2ecc71 !important; /* 緑 */
+  }
 
-      /* 作業完了状態のバーの色設定 */
-      g.bar-wrapper.completed rect.bar-progress {
-        fill: #a0a0a0 !important; /* グレー */
-      }
+  /* 作業完了状態のバーの色設定 */
+  g.bar-wrapper.completed rect.bar-progress {
+    fill: #a0a0a0 !important; /* 明るいグレー */
+  }
 
 
-    </style>
+  /* テーブル全体のリセット */
+  .gantt-wrap table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    table-layout: fixed !important;
+    box-sizing: border-box !important;
+    font-size: 12px !important; /* フォントサイズを固定 */
+  }
 
-  <div class='gantt-wrap flex min-w-[800px]'>
-    <table class="flex-none w-1/3 border border-gray-300" style='border-spacing:0px !important;'>
-      <thead class="pb-20">
-        <tr class='border border-gray-300'>
-          <th class="p-5" style="height:55px;">会社</th>
-          <th class="p-5" style="height:55px;">織機</th>
-          <th class="p-5" style="height:55px;">品番</th>
-          <th class="p-5" style="height:55px;">ステータス</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% grouped_orders = JSON.parse(@orders).group_by { |order| [order["company"], order["machine"], order["product_number"]] } %>
-        <%# <% binding.irb %>
-        <% grouped_orders.each do |(company, machine, product_number), orders| %>
-          <% orders.each_with_index do |order, index| %>
-            <tr class='border border-gray-300' style="height:35px; box-sizing: content-box;">
-              <% if index == 0 %>
-                <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;" rowspan="<%= orders.size %>"><%= company %></td>
-                <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;" rowspan="<%= orders.size %>"><%= machine %></td>
-                <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;" rowspan="<%= orders.size %>"><%= product_number %></td>
-              <% end %>
-              <td class='text-xs border border-gray-300' style="height:35px; box-sizing: content-box;"><%= order["work_process_status"] %></td>
-            </tr>
-          <% end %>
+  /* テーブルセルが正確なサイズになるための重要な設定 */
+  .gantt-wrap table,
+  .gantt-wrap table tr,
+  .gantt-wrap table th,
+  .gantt-wrap table td {
+    margin: 0 !important;
+    padding: 0 !important; /* パディングをゼロにリセット */
+  }
+
+  /* テーブル行のボーダーをリセット（セルにボーダーを持たせる） */
+  .gantt-wrap table tbody tr {
+    border: none !important;
+  }
+
+    /* カスタムクラスの追加: 正確に35pxの高さを持つ行とセル用 */
+    .table-row {
+      height: 38px !important;
+      min-height: 38px !important;
+      max-height: 38px !important;
+      line-height: 38px !important;
+      box-sizing: border-box !important;
+      line-height: 1.2 !important;
+      /* display: table-cell !important; */
+      border: 1px solid #e2e8f0 !important;
+      padding: 0 5px !important;
+      text-align: center !important;
+    }
+
+    /* ヘッダーの高さを正確に指定 */
+    .table-header {
+      height: 65px !important;
+      min-height: 65px !important;
+      max-height: 65px !important;
+      line-height: 65px !important;
+      box-sizing: border-box !important;
+      vertical-align: middle !important;
+      overflow: hidden !important;
+      white-space: nowrap !important;
+      text-overflow: ellipsis !important;
+      border: 1px solid #e2e8f0 !important;
+      padding: 0 5px !important;
+    }
+</style>
+<div class='gantt-wrap flex '>
+  <table class="flex-none w-1/3 border border-gray-300" style='border-spacing:0px !important;'>
+    <thead class="">
+      <tr class='table-header'>
+        <th class="table-header rowspan-cell">会社</th>
+        <th class="table-header rowspan-cell">織機</th>
+        <th class="table-header rowspan-cell">品番</th>
+        <th class="table-header">状態</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% grouped_orders = JSON.parse(@orders).group_by { |order| [order["company"], order["machine"], order["product_number"]] } %>
+      <%# <% binding.irb %>
+      <% grouped_orders.each do |(company, machine, product_number), orders| %>
+        <% orders.each_with_index do |order, index| %>
+          <tr class='border border-gray-300 table-row' >
+            <% if index == 0 %>
+              <td class='text-xs border border-gray-300 table-row' rowspan="<%= orders.size %>"><%= company %></td>
+              <td class='text-xs border border-gray-300 table-row' rowspan="<%= orders.size %>"><%= machine %></td>
+              <td class='text-xs border border-gray-300 table-row' rowspan="<%= orders.size %>"><%= product_number %></td>
+            <% end %>
+            <td class='text-xs border border-gray-300 table-row' ><%= order["work_process_status"] %></td>
+          </tr>
         <% end %>
+      <% end %>
+    </tbody>
+  </table>
+  <svg id="gantt" class="flex-grow"></svg>
+</div>
+<script>
+  window.addEventListener("turbo:load", function () {
+    const orders = <%= raw @orders %>
+    console.log(orders);
 
-      </tbody>
-    </table>
+    // モバイル表示の確認
+    const isMobile = window.innerWidth <= 768;
 
-    <svg id="gantt" class="flex-grow"></svg>
-  </div>
+    const gantt = new Gantt("#gantt", orders, {
+      view_mode: 'Month',
+      header_height: 55,
+      bar_height: 20,
+    });
 
-  <script>
-    window.addEventListener("turbo:load", function () {
-      const orders = <%= raw @orders %>
-        console.log(orders)
+    //
+    // 横軸の月ラベルを日本語に変更
+    setTimeout(function () {
+      console.log('timeout proc');
+      const labels = document.querySelectorAll(".lower-text");
+      const monthMapping = {
+        "January": "1月",
+        "February": "2月",
+        "March": "3月",
+        "April": "4月",
+        "May": "5月",
+        "June": "6月",
+        "July": "7月",
+        "August": "8月",
+        "September": "9月",
+        "October": "10月",
+        "November": "11月",
+        "December": "12月",
+      };
 
-      const gantt = new Gantt("#gantt", orders, {
-        view_mode: 'Month',
-        header_height: 45,
-        bar_height: 20,
-        // column_width: 30,
-        // padding: 60
+      labels.forEach((label) => {
+        const text = label.textContent.trim();
+        if (monthMapping[text]) {
+          label.textContent = monthMapping[text];
+        }
       });
+    }, 200); // 描画が完了するまで待機
 
-      //
-      // 横軸の月ラベルを日本語に変更
-      setTimeout(function () {
-        console.log('timeout proc');
-        const labels = document.querySelectorAll(".lower-text");
-        const monthMapping = {
-          "January": "1月",
-          "February": "2月",
-          "March": "3月",
-          "April": "4月",
-          "May": "5月",
-          "June": "6月",
-          "July": "7月",
-          "August": "8月",
-          "September": "9月",
-          "October": "10月",
-          "November": "11月",
-          "December": "12月",
-        };
+    const popups = document.querySelectorAll(".bar-wrapper");
+    // popups.addEventListener("click", setPopup);
 
-        labels.forEach((label) => {
-          const text = label.textContent.trim();
-          if (monthMapping[text]) {
-            label.textContent = monthMapping[text];
-          }
-        });
-      }, 500); // 描画が完了するまで待機
-
-      const popups = document.querySelectorAll(".bar-wrapper");
-      // popups.addEventListener("click", setPopup);
-
-      // popup内の月ラベルを日本語に変更
-      popups.forEach((popup) => {
-        popup.addEventListener("click", function () {
-          setTimeout(replacePopupDate, 100);
-        });
+    // popup内の月ラベルを日本語に変更
+    popups.forEach((popup) => {
+      popup.addEventListener("click", function () {
+        setTimeout(replacePopupDate, 100);
       });
+    });
 
-      function replacePopupDate() {
-        console.log('timeout proc2');
-        const popupSubtitles = document.querySelectorAll(".subtitle");
-        console.log(popupSubtitles);
-        const monthMapping = {
-          "January": "1 /",
-          "February": "2 /",
-          "March": "3 /",
-          "April": "4/",
-          "May": "5/",
-          "June": "6/",
-          "July": "7/",
-          "August": "8/",
-          "September": "9/",
-          "October": "10 /",
-          "November": "11 /",
-          "December": "12 /",
-        };
+    function replacePopupDate() {
+      console.log('timeout proc2');
+      const popupSubtitles = document.querySelectorAll(".subtitle");
+      console.log(popupSubtitles);
+      const monthMapping = {
+        "January": "1 /",
+        "February": "2 /",
+        "March": "3 /",
+        "April": "4/",
+        "May": "5/",
+        "June": "6/",
+        "July": "7/",
+        "August": "8/",
+        "September": "9/",
+        "October": "10 /",
+        "November": "11 /",
+        "December": "12 /",
+      };
 
-        popupSubtitles.forEach((subtitle) => {
-          let text = subtitle.textContent.trim(); // テキスト内容を取得
-          console.log("Before Translation:", text);
+      popupSubtitles.forEach((subtitle) => {
+        let text = subtitle.textContent.trim(); // テキスト内容を取得
+        console.log("Before Translation:", text);
 
-          // 月名を日本語に置き換える
-          for (const [english, japanese] of Object.entries(monthMapping)) {
-            text = text.replace(new RegExp(english, "g"), japanese); // すべての一致箇所を置換
-          }
+        // 月名を日本語に置き換える
+        for (const [english, japanese] of Object.entries(monthMapping)) {
+          text = text.replace(new RegExp(english, "g"), japanese); // すべての一致箇所を置換
+        }
 
-          subtitle.textContent = text; // 翻訳後のテキストを設定
-          console.log("After Translation:", subtitle.textContent);
-        });
-      }
-    })
-  </script>
+        subtitle.textContent = text; // 翻訳後のテキストを設定
+        console.log("After Translation:", subtitle.textContent);
+      });
+    }
+  })
+</script>
