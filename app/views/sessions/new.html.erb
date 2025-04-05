@@ -5,26 +5,79 @@
             <h1 class="text-center text-2xl font-bold text-gray-800 sm:text-3xl mt-6 mb-6">ログイン</h1>
             <div class="space-y-6">
                 <div>
-                    <label for="email" class="block text-md font-semibold text-gray-900">
-                        <%= form.label :email %>
-                    </label>
+                    <%= form.label :email, class: "block text-md font-semibold text-gray-900" %>
                     <div class="mt-2">
                         <%= form.email_field :email, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
                     </div>
                 </div>
                 <div>
-                    <label for="password" class="block text-md font-semibold text-gray-900">
-                        <%= form.label :password %>
-                    </label>
+                    <%= form.label :password, class: "block text-md font-semibold text-gray-900" %>
                     <div class="mt-2">
                         <%= form.password_field :password, required: true, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
                     </div>
                 </div>
             </div>
-            <div class="mt-6">
+            <div class="mt-6 mb-6">
                 <%= form.submit "ログイン", class: "w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" %>
+            </div>
+
+            <!-- デモアカウント情報セクション (ログインフォームと同じコンテナ内) -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <!-- デモアカウントヘッダー -->
+                <div class="bg-indigo-50 px-4 py-3 border-b border-gray-200">
+                    <h3 class="font-bold text-indigo-800">採用担当者様向けデモアカウント</h3>
+                </div>
+
+                <!-- 発注企業セクション -->
+                <div class="border-b border-gray-200">
+                    <div class="bg-gray-100 px-4 py-2 font-bold">
+                        【発注企業】
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="mb-1">メール: <span class="font-mono">aaa@example.com</span></p>
+                                <p>パスワード: <span class="font-mono">password</span></p>
+                            </div>
+                            <button id="autofill1" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-2 rounded">
+                                自動入力
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 受注企業セクション -->
+                <div>
+                    <div class="bg-gray-100 px-4 py-2 font-bold">
+                        【受注企業】
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="mb-1">メール: <span class="font-mono">bbb@example.com</span></p>
+                                <p>パスワード: <span class="font-mono">password</span></p>
+                            </div>
+                            <button id="autofill2" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-2 rounded">
+                                自動入力
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
 <% end %>
+
+<!-- 自動入力のためのJavaScript -->
+<script>
+  document.getElementById('autofill1').addEventListener('click', function() {
+    document.querySelector('input[name="session[email]"]').value = 'aaa@example.com';
+    document.querySelector('input[name="session[password]"]').value = 'password';
+  });
+
+  document.getElementById('autofill2').addEventListener('click', function() {
+    document.querySelector('input[name="session[email]"]').value = 'bbb@example.com';
+    document.querySelector('input[name="session[password]"]').value = 'password';
+  });
+</script>

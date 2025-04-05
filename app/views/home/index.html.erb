@@ -3,66 +3,10 @@
 <section class="w-full px-4 py-6">
     <% if @machines.any? %>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <% @machines.each do |machine| %>
-                <% company_name = machine&.company&.name %>
-                <% machine_name = machine&.name %>
-                <% work_process = machine&.latest_work_process %>
-                <% work_process_name = work_process&.work_process_definition&.name || "作業工程なし" %>
-                <% machine_status_name = machine&.latest_machine_status&.name || "不明" %>
-
-                <!-- WorkProcessをdefinition_id毎に取得（同一Order想定） -->
-                <% if work_process.present? %>
-                    <% order_id = work_process&.order_id %>
-                    <% wps = machine&.work_processes.where(order_id: order_id) %>
-                <% else %>
-                    <% wps = [] %>
-                <% end %>
-
-                <% wp1 = wps.find { |wp| wp&.work_process_definition_id == 1 } %>
-                <% wp2 = wps.find { |wp| wp&.work_process_definition_id == 2 } %>
-                <% wp3 = wps.find { |wp| wp&.work_process_definition_id == 3 } %>
-                <% wp4 = wps.find { |wp| wp&.work_process_definition_id == 4 } %>
-
-                <% wp1_complete = (wp1&.work_process_status_id == 3) %>
-                <% wp2_complete = (wp2&.work_process_status_id == 3) %>
-                <% wp3_complete = (wp3&.work_process_status_id == 3) %>
-                <% wp4_status = wp4&.work_process_status_id %>
-
-                <!-- ボタン表示ロジック -->
-                <% if work_process.nil? %>
-                    <!-- Work_processが割り当てられていない場合 -->
-                    <% button_label = "更新不可" %>
-                    <% button_disabled = true %>
-                <% else %>
-                    <!-- "作業終了"条件: -->
-                    <!-- [1,2,3]が完了(3) AND 4がステータス1または2 -->
-                    <% if wp1_complete && wp2_complete && wp3_complete && (wp4_status == 1 || wp4_status == 2) %>
-                        <% button_label = "作業終了" %>
-                        <% button_disabled = false %>
-                    <!-- "更新不可"条件: -->
-                    <!-- 1) [1,2,3,4]全てが3の場合 -->
-                    <!-- （wp4が存在しない場合は全工程揃ってないが、本要件では4がないならここに該当しないはず） -->
-                    <!-- 2) [1,2,3]が3でwp4が4 -->
-                    <!-- 3) 上部条件でwork_process.nil?は既に別ケースで対応済 -->
-                    <% elsif (wp1_complete && wp2_complete && wp3_complete && wp4_status == 3) ||
-                        (wp1_complete && wp2_complete && wp3_complete && wp4_status == 4) %>
-                        <% button_label = "更新不可" %>
-                        <% button_disabled = true %>
-                    <!-- 上記以外は"作業開始" -->
-                    <% else %>
-                        <% button_label = "作業開始" %>
-                        <% button_disabled = false %>
-                    <% end %>
-                <% end %>
-
+            <% @machine_status_data.each do |data| %>
+                <% machine = data[:machine] %>
                 <div class="w-full px-2 py-2">
                     <table class="w-full bg-white shadow rounded-lg overflow-hidden border-collapse border border-gray-200">
-                        <thead>
-                            <tr>
-                                <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">会社名</th>
-                                <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine&.company&.name %></td>
-                            </tr>
-                        </thead>
                         <tbody>
                             <tr>
                                 <th class="w-1/4 px-4 py-4 text-gray-700 font-bold text-left border-b">織機名</th>
@@ -81,12 +25,10 @@
                                     <div class="flex justify-center space-x-2">
                                     <%= form_with url: update_home_path, method: :patch, local: true do %>
                                         <%= hidden_field_tag :machine_id, machine.id %>
-                                        <% if work_process.present? %>
-                                            <%= hidden_field_tag :order_id, work_process.order_id %>
-                                        <% end %>
-                                        <%= submit_tag button_label, name: 'commit',
-                                                        class: "rounded-full w-32 h-32 text-white text-xl font-semibold #{button_disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'}",
-                                                        disabled: button_disabled %>
+                                            <%= hidden_field_tag :order_id, data[:order_id] %>
+                                        <%= submit_tag data[:button_label], name: 'commit',
+                                                        class: "rounded-full w-32 h-32 text-white text-xl font-semibold #{data[:button_disabled] ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'}",
+                                                        disabled: data[:button_disabled] %>
                                     <% end %>
                                     </div>
                                 </td>

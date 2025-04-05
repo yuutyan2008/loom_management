@@ -6,52 +6,6 @@
     </div>
 </section>
 
-<%
-=begin
-%>
-
-<%= form_with(url: machines_path, method: :get, local: true) do |f| %>
-    <div class="px-4 mb-4">
-        <div class="flex flex-col md:flex-row md:space-x-6">
-            <!-- 織機名フィールド -->
-            <div class="w-full md:w-1/3 mb-4 md:mb-0">
-                <label class="text-gray-700 font-bold mb-2 block">
-                    <%= f.label :machine_id, '織機名' %>
-                </label>
-                <%= f.collection_select :machine_id, Machine.all, :id, :name, { include_blank: true }, { class: "mt-1 block w-full border border-gray-300 rounded-md p-2" } %>
-            </div>
-            <!-- 製品番号フィールド -->
-            <div class="w-full md:w-1/3 mb-4 md:mb-0">
-            <label class="text-gray-700 font-bold mb-2 block">
-                <%= f.label :product_number_id, '製品番号' %>
-            </label>
-                <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { include_blank: true }, { class: "mt-1 block w-full border border-gray-300 rounded-md p-2" } %>
-            </div>
-            <!-- 現在の工程フィールド -->
-            <div class="w-full md:w-1/3">
-            <label class="text-gray-700 font-bold mb-2 block">
-                <%= f.label :work_process_definitions_id, '現在の工程' %>
-            </label>
-                <%= f.collection_select :work_process_definitions_id, WorkProcessDefinition.all, :id, :name, { include_blank: true }, { class: "mt-1 block w-full border border-gray-300 rounded-md p-2" } %>
-            </div>
-        </div>
-    </div>
-    <section class="mb-12">
-        <div class="flex justify-center space-x-2">
-            <div class="px-2 py-2">
-                <%= f.submit "検索", class: "inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700" %>
-            </div>
-            <div class="px-2 py-2">
-                <%= link_to "リセット", machines_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
-            </div>
-        </div>
-    </section>
-<% end %>
-
-<%
-=end
-%>
-
 <section class="mb-12">
     <div class="px-4 py-4 relative overflow-x-auto whitespace-nowrap sm:rounded-lg">
         <% if @machines.any? %>

@@ -147,20 +147,14 @@ class WorkProcess < ApplicationRecord
   def self.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
     # 入力値を元にDBからProcessEstimateデータ5個分を取得
     process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
-    # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
-      # machine = Machine.find_by(id: machine_id)
-    # DBに登録されている、5個のwork_process
-    # current_work_processes = @order.work_processes
 
     next_start_date = nil
 
     workprocesses_params.each_with_index do |workprocess_params, index|
-
-      target_work_prcess = current_work_processes.find(workprocess_params[:id])
       # target_work_prcess：current_work_processesの１工程
-      # target_work_prcess = current_work_processes.find(workprocess_params[:id])
+      target_work_prcess = current_work_processes.find(workprocess_params[:id])
+
       if index == 0
-        # start_date = target_work_prcess["start_date"]
         start_date = target_work_prcess.start_date
       else
         input_start_date = workprocess_params[:start_date].to_date
@@ -183,7 +177,6 @@ class WorkProcess < ApplicationRecord
       end
       target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
       target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
-      # binding.irb
       target_work_prcess.save
       # 更新したナレッジで全行程の日時の更新処理の呼び出し
       new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
@@ -192,7 +185,6 @@ class WorkProcess < ApplicationRecord
 
       new_target_work_prcess.actual_completion_date = actual_completion_date
       new_target_work_prcess.save
-
     end
   end
 
@@ -205,8 +197,6 @@ class WorkProcess < ApplicationRecord
       if actual_completion_date.present?
         process[:latest_estimated_completion_date] = actual_completion_date
         process[:earliest_estimated_completion_date] = actual_completion_date
-        # start_date = process[:start_date]
-        # 追記
         process[:start_date] = start_date
       else
       # 開始日の更新が必要
@@ -215,7 +205,6 @@ class WorkProcess < ApplicationRecord
         # 更新された開始日からナレッジを再計算
         self.calc_process_estimate(process, start_date)
       end
-      # process[:start_date] = start_date
     end
 
     if process[:work_process_definition_id].to_i == 1
@@ -284,21 +273,25 @@ class WorkProcess < ApplicationRecord
 
 
 
-
   # 現在作業中の作業工程を取得するスコープ
   def self.current_work_process
     # 最新の「作業完了」ステータスの作業工程を取得
     latest_completed_wp = joins(:work_process_status)
                             .where(work_process_statuses: { name: '作業完了' })
                             .order(start_date: :desc)
-                            .last
+                            .first
 
     if latest_completed_wp
       # 最新の「作業完了」より後の作業工程を取得
-      where('work_processes.start_date > ?', latest_completed_wp.start_date).order(:start_date).first
+      select('work_processes.*')
+        .where('start_date > ?', latest_completed_wp.start_date)
+        .order(:start_date)
+        .first
     else
       # 「作業完了」がない場合、最も古い作業工程を取得
-      order(:start_date).first
+      select('work_processes.*')
+        .order(:start_date)
+        .first
     end
   end
 

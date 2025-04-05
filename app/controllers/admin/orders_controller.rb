@@ -21,8 +21,9 @@ class Admin::OrdersController < ApplicationController
     @current_work_processes = {}
     @orders.each do |order|
       if order.work_processes.any?
-        if params[:work_process_definitions_id].present?
-          is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definitions_id].to_i
+        # 現在のwork_processから工程を検索
+        if params[:work_process_definition_id].present?
+          is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
           @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
         else
           @current_work_processes[order.id] = order.work_processes.current_work_process
@@ -60,7 +61,6 @@ class Admin::OrdersController < ApplicationController
     # 遅延している作業工程のチェック（必要に応じて）
     check_overdue_work_processes_index(@orders)
   end
-  # end
 
   def new
     @order = Order.new
@@ -121,16 +121,15 @@ class Admin::OrdersController < ApplicationController
       order_work_processes = order_params.except(:machine_assignments_attributes)
       workprocesses_params = order_work_processes[:work_processes_attributes].values
       machine_type_id = params[:machine_type_id]
-      machine_id =
+
       if order_params[:machine_assignments_attributes].present? && order_params[:machine_assignments_attributes].first[:machine_id].present?
-        order_params[:machine_assignments_attributes].first[:machine_id]
+        machine_id = order_params[:machine_assignments_attributes].first[:machine_id]
       else
-        nil
+        machine_id = nil
       end
       current_work_processes = @order.work_processes
       machine_assignments_params = order_params[:machine_assignments_attributes]
       machine_status_id = machine_assignments_params[0][:machine_status_id]
-
       # WorkProcess更新処理
       WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
 
@@ -145,7 +144,8 @@ class Admin::OrdersController < ApplicationController
         @order.update!(update_order)
       end
       set_work_process_status_completed
-      handle_machine_assignment_updates if machine_assignments_present?
+      # handle_machine_assignment_updates if machine_assignments_present?
+
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
 
@@ -168,6 +168,112 @@ class Admin::OrdersController < ApplicationController
     end
     redirect_to admin_orders_path
   end
+
+    # 会社を選択
+    def ma_select_company
+      @companies = Company.all
+    end
+
+    #
+    def ma_index
+      @current_company = Company.find(params[:company_id])
+
+      @orders = @current_company.orders
+      .includes(work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
+      .incomplete
+      .order(:id)
+
+
+      @machine_names = @current_company.machines.pluck(:name)
+
+      @assigned_orders = {}
+      @unassigned_orders = []
+      @orders.each do |order|
+        # 織機割り当て済の場合
+        if order.latest_machine_assignment.present?
+          machine = order.latest_machine_assignment.machine
+          machine_name = machine.name
+          # machine_id = order.latest_machine_assignment.machine.id
+          @assigned_orders[machine_name] = @assigned_orders[machine_name] || []
+          @assigned_orders[machine_name] << order
+        else
+          # 未割当の商品の場合
+          @unassigned_orders << order
+        end
+      end
+
+      @no_orders_message = "現在受注している商品はありません" unless @orders.any?
+
+      # 各注文に対して現在作業中の作業工程を取得
+      @current_work_processes = {}
+      @orders.each do |order|
+
+        work_process = WorkProcess.find_by(order_id: order.id)
+        @current_work_processes[order.id] = work_process
+      # order.id をキーとして、対応する WorkProcess を格納
+      # @current_work_processes[order.id] = current_work_process
+      # current_process = @current_work_processes[:id]
+        if order.work_processes.any?
+          # 現在のwork_processから工程を検索
+          if params[:work_process_definition_id].present?
+            is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
+            @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
+          else
+            @current_work_processes[order.id] = order.work_processes.current_work_process
+
+          end
+        else
+          @current_work_processes[order.id] = nil
+        end
+
+      end
+    end
+
+    # ガントチャート
+    def gant_index
+      # 発注情報の取得
+      @orders = Order.includes(:work_processes, :company, work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
+
+      # 過去の発注に関連付けられていない機械を取得
+      @machines = Machine.not_in_past_orders
+
+      # 受注中のみ表示
+      @orders = @orders.select do |order|
+        order.work_processes.any? do |process|
+          if process.machine_assignments.empty?
+            true # 織機割り当てのない発注も表示
+          else
+            # machine_assignments が存在する場合は、assignment の machine_id が @machines の中に含まれているかを確認
+            process.machine_assignments.any? do |assignment|
+              @machines.map { |machine| machine.id }.include?(assignment.machine_id)
+            end
+          end
+        end
+      end
+
+      # JSON フォーマット用のマッピング処理
+      colors = ["class-a", "class-b"]
+      @orders = @orders.map.with_index do |order, order_index|
+        custom_class = colors[order_index % 2]
+
+        order.work_processes.map do |process|
+          {
+            product_number: order.product_number.number,
+            company: order.company.name,
+            machine: machine_names(order), # 単一の織機を取得
+            id: process.id.to_s,
+            name: process.work_process_definition.name,
+            work_process_status: process.work_process_status.name,
+            end: process&.earliest_estimated_completion_date&.strftime("%Y-%m-%d"),
+            start: process&.start_date&.strftime("%Y-%m-%d"),
+            progress: 100,
+            custom_index: order.id,
+            custom_class: custom_class
+          }
+        end
+      end.compact.flatten.to_json
+    end
+
 
   private
 
@@ -223,9 +329,9 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  def set_work_process
-    @work_process = Task.find(params[:id])
-  end
+  # def set_work_process
+  #   @work_process = Task.find(params[:id])
+  # end
 
   def set_product_number
     @product_number = current_user.product_number
@@ -270,33 +376,33 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  def handle_machine_assignment_updates
-    relevant_work_process_definition_ids = [1, 2, 3, 4]
-    # 対象のWorkProcess群を取得
-    relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
-    target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-    # 条件: 全てがstatus_id=3の場合のみ処理
-    if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
-      machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
-      if machine_id.present?
-        # 全WorkProcessを取得(5などその他も含む場合)
-        all_work_process_ids = @order.work_processes.pluck(:id)
-        # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
-        MachineAssignment.where(
-          machine_id: machine_id,
-          work_process_id: all_work_process_ids
-        ).update_all(machine_id: nil, machine_status_id: nil)
-        # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
-        # 既存があればそれを使い、新たなcreateは行わない
-        assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
-        if assignment.new_record?
-          # 新規の場合のみ作成
-          assignment.machine_status_id = 1
-          assignment.save!
-        end
-      end
-    end
-  end
+  # def handle_machine_assignment_updates
+  #   relevant_work_process_definition_ids = [1, 2, 3, 4]
+  #   # 対象のWorkProcess群を取得
+  #   relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
+  #   target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
+  #   # 条件: 全てがstatus_id=3の場合のみ処理
+  #   if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
+  #     machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
+  #     if machine_id.present?
+  #       # 全WorkProcessを取得(5などその他も含む場合)
+  #       all_work_process_ids = @order.work_processes.pluck(:id)
+  #       # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
+  #       MachineAssignment.where(
+  #         machine_id: machine_id,
+  #         work_process_id: all_work_process_ids
+  #       ).update_all(machine_id: nil, machine_status_id: nil)
+  #       # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
+  #       # 既存があればそれを使い、新たなcreateは行わない
+  #       assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
+  #       if assignment.new_record?
+  #         # 新規の場合のみ作成
+  #         assignment.machine_status_id = 1
+  #         assignment.save!
+  #       end
+  #     end
+  #   end
+  # end
 
   # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
   def set_work_process_status_completed
@@ -357,7 +463,12 @@ class Admin::OrdersController < ApplicationController
   ## 織機選択時のバリデーションを行うメソッド
   def validate_machine_selection
     machine_assignments_params = order_params[:machine_assignments_attributes]
-    return true unless machine_assignments_params.present? # 織機が未指定の場合は特にチェックせずスキップ
+
+    # 織機が未指定の場合はバリデーションエラー
+    if machine_assignments_params.blank? || machine_assignments_params[0][:machine_id].blank?
+      flash.now[:alert] = "織機を選択してください。"
+      return false
+    end
 
     selected_machine_id = machine_assignments_params[0][:machine_id].to_i
     selected_machine = Machine.find_by(id: selected_machine_id)
@@ -420,4 +531,7 @@ class Admin::OrdersController < ApplicationController
 
     true # 呼び出し元の処理を続ける
   end
+
+
+
 end
