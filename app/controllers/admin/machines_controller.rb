@@ -94,50 +94,6 @@ class Admin::MachinesController < ApplicationController
     redirect_to admin_machines_path
   end
 
-  def gant_index
-    # 発注情報の取得
-    @orders = Order.includes(:work_processes, :company, work_processes: [:work_process_definition, :work_process_status, process_estimate: :machine_type])
-
-    # 過去の発注に関連付けられていない機械を取得
-    @machines = Machine.not_in_past_orders
-
-    # 受注中のみ表示
-    @orders = @orders.select do |order|
-      order.work_processes.any? do |process|
-        if process.machine_assignments.empty?
-          true # 織機割り当てのない発注も表示
-        else
-          # machine_assignments が存在する場合は、assignment の machine_id が @machines の中に含まれているかを確認
-          process.machine_assignments.any? do |assignment|
-            @machines.map { |machine| machine.id }.include?(assignment.machine_id)
-          end
-        end
-      end
-    end
-
-    # JSON フォーマット用のマッピング処理
-    colors = ["class-a", "class-b"]
-    @orders = @orders.map.with_index do |order, order_index|
-      custom_class = colors[order_index % 2]
-
-      order.work_processes.map do |process|
-        {
-          product_number: order.product_number.number,
-          company: order.company.name,
-          machine: machine_names(order), # 単一の織機を取得
-          id: process.id.to_s,
-          name: process.work_process_definition.name,
-          work_process_status: process.work_process_status.name,
-          end: process&.earliest_estimated_completion_date&.strftime("%Y-%m-%d"),
-          start: process&.start_date&.strftime("%Y-%m-%d"),
-          progress: 100,
-          custom_index: order.id,
-          custom_class: custom_class
-        }
-      end
-    end.compact.flatten.to_json
-  end
-
 
   private
 
