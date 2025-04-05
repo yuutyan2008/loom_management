@@ -1,0 +1,102 @@
+<h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">発注フォーム</h1>
+
+<%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
+<% if @order.errors.any? %>
+<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+<div id="error_explanation">
+  <h2><%= "#{@order.errors.count} 件のエラーが発生しました" %></h2>
+  <ul>
+    <% @order.errors.full_messages.each do |message| %>
+    <li><%= message %></li>
+    <% end %>
+  </ul>
+</div>
+<% end %>
+
+<%= form_with model: @order, url: admin_orders_path, local: true, html: { id: "orderForm" } do |f| %>
+<section class="px-24">
+  <p class="pb-4 text-rose-500 font-semibold">発注フォームはすべて必須項目になります。</p>
+  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+    <table class="w-full max-w-sm">
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :name, "会社名" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択してください" }, { id: "order_company_id", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :product_number_id, "品番" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { id: "order_product_number_id", prompt: "品番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :color_number_id, "色番" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { id: "order_color_number_id", prompt: "色番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+
+      <!-- RailsからReactに渡すための初期データだけを埋め込む -->
+      <div id="order-form-root" class="md:flex md:items-center mb-6"
+        data-roll_count="<%= @order.roll_count.to_json %>"
+        data-quantity="<%= @order.quantity.to_json %>">
+      </div>
+
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :machine_type, "機械のタイプ" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= f.collection_select :machine_type_id, MachineType.all, :id, :name, { id: "machine_type_id", prompt: "織機のタイプを選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" } %>
+        </div>
+      </div>
+      <div class="md:flex md:items-center mb-6">
+        <div class="md:w-1/3 py-2">
+          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+            <%= f.label :start_date, "作業開始日" %>
+          </label>
+        </div>
+        <div class="md:w-2/3">
+          <%= text_field_tag 'order[work_processes][start_date]',
+                          nil,
+                          placeholder: "作業開始日を選択してください",
+                          type: :date,
+                          required: true,
+                          id: "start_date_field", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+        </div>
+      </div>
+    </table>
+  </div>
+</section>
+
+<!-- 提出ボタン -->
+<section class="mb-12">
+  <div class="flex justify-center space-x-2">
+    <div class="px-2 py-2">
+      <%= f.submit "発注", class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
+    </div>
+    <div class="px-2 py-2">
+      <%= link_to "戻る", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+    </div>
+  </div>
+</section>
+<% end %>
+
+<%= javascript_include_tag "orderform", type: "module", defer: true %>
+
+

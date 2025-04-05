@@ -349,32 +349,4 @@ binding.irb
     end
   end
 
-
-
-    # it '全てのwork_processを順番に更新して正しい日付が反映されること' do
-    #   actual_completion_date_1 = Date.new(2025, 1, 5)
-    #   actual_completion_date_2 = Date.new(2025, 1, 15)
-    #   # 第一工程を更新
-    #   updated_process_1, next_start_date_1 = WorkProcess.check_current_work_process(work_process_1, work_process_1.start_date, actual_completion_date_1)
-    #   work_process_1.update!(
-    #     earliest_estimated_completion_date: updated_process_1.earliest_estimated_completion_date,
-    #     latest_estimated_completion_date: updated_process_1.latest_estimated_completion_date,
-    #     actual_completion_date: actual_completion_date_1
-    #   )
-
-    #   # 第二工程を更新
-    #   updated_process_2, next_start_date_2 = WorkProcess.check_current_work_process(work_process_2, next_start_date_1, actual_completion_date_2)
-    #   work_process_2.update!(
-    #     earliest_estimated_completion_date: updated_process_2.earliest_estimated_completion_date,
-    #     latest_estimated_completion_date: updated_process_2.latest_estimated_completion_date,
-    #     start_date: next_start_date_1
-    #   )
-
-    #   # 確認: 第二工程の開始日が第一工程の完了日と一致
-    #   expect(work_process_2.start_date).to eq(next_start_date_1)
-
-    #   # 確認: 第二工程の最短/最長完了日が正しく更新
-    #   expect(work_process_2.earliest_estimated_completion_date).to eq(next_start_date_1 + 5) # 2025-01-10
-    #   expect(work_process_2.latest_estimated_completion_date).to eq(next_start_date_1 + 10) # 2025-01-15
-    # end
 end

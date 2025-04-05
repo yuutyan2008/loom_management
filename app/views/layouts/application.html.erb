@@ -12,11 +12,14 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.5.0/frappe-gantt.min.js"></script>
     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
-    <%= javascript_include_tag "turbo", type: "module" %>
+    <%# javascript_include_tag "turbo", type: "module" %>
+    <%= javascript_import_module_tag "orderform_no_react", defer: true %>
+
   </head>
 
   <body class="flex flex-col items-center bg-gray-100 min-h-screen">
@@ -25,15 +28,18 @@
       <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <!-- ロゴまたはアプリケーション名 -->
-          <div class="flex items-center">
-            <% if logged_in? %>
-              <% if current_user.admin? %>
-                <%= link_to 'LooMa', admin_root_path, class: "text-xl font-bold text-gray-700" %>
-              <% else %>
-                <%= link_to 'LooMa', root_path, class: "text-xl font-bold text-gray-700" %>
-              <% end %>
-            <% end %>
-          </div>
+<!-- ロゴまたはアプリケーション名 -->
+<div class="flex items-center">
+  <% if logged_in? %>
+    <% if current_user.admin? %>
+      <%= link_to 'LooMa | 発注企業', admin_root_path, class: "text-xl font-bold text-gray-700" %>
+    <% else %>
+      <%= link_to 'LooMa | 生産企業', root_path, class: "text-xl font-bold text-gray-700" %>
+    <% end %>
+  <% else %>
+    <div class='text-xl font-bold text-gray-700'>LooMa | 織物生産管理システム</div>
+  <% end %>
+</div>
           <!-- デスクトップメニュー -->
           <div class="hidden md:flex items-center space-x-4" id="navbarMenu">
             <% if logged_in? %>
@@ -49,9 +55,10 @@
                 <p><%= link_to "織機一覧", machines_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
                 <p><%= link_to "織機の登録", new_machine_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
                 <p><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
-                <p><%= link_to "ユーザー情報", user_path(current_user), class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
               <% end %>
-            <p><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-2 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></p>
+            <p><%= button_to "ログアウト", logout_path, method: :delete,
+                form: { data: { turbo_confirm: "ログアウトしますか？" }, class: "inline" },
+                class: "text-rose-500 hover:bg-gray-200 px-2 py-2 rounded-md font-semibold" %></p>
             <% else %>
               <%# 未ログイン時のナビゲーション %>
               <p><%= link_to "ログイン", login_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></p>
@@ -91,9 +98,10 @@
               <li><%= link_to "織機一覧", machines_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
               <li><%= link_to "機械の登録", new_machine_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
               <li><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
-              <li><%= link_to "ユーザー情報", user_path(current_user), class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
             <% end %>
-          <li><%= link_to "ログアウト", logout_path, data: { turbo_method: :delete }, class: "block px-2 py-2 rounded-md font-semibold text-rose-500 hover:bg-gray-200" %></li>
+          <li><%= button_to "ログアウト", logout_path, method: :delete,
+              form: { data: { turbo_confirm: "ログアウトしますか？" }, class: "inline" },
+              class: "text-rose-500 hover:bg-gray-200 px-2 py-2 rounded-md font-semibold" %></li>
           <% else %>
             <%# 未ログイン時のナビゲーション %>
             <li><%= link_to "ログイン", login_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
