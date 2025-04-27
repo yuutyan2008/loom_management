@@ -34,5 +34,7 @@ module LoomManagement
                        request_specs: false # リクエストスペックを生成しない
       g.fixture_replacement :factory_bot, dir: 'spec/factories' # FactoryBotの設定
     end
+    config.assets.paths << Rails.root.join("app/javascript")
+
   end
 end
