@@ -452,7 +452,7 @@ class Admin::OrdersController < ApplicationController
         title: "以下の作業工程が予定完了日を過ぎており、まだ完了していません。修正がある場合は 編集 を確認ください。",
         messages: overdue_work_processes.map do |wp|
           {
-            content: "作業工程: #{wp.work_process_definition.name}, 完了見込み: #{wp.latest_estimated_completion_date.strftime('%Y-%m-%d')}",
+            content: "作業工程: #{wp.work_process_definition.name}, 完了見込み（最短）: #{wp.earliest_estimated_completion_date.strftime('%Y-%m-%d')}",
             edit_path: edit_admin_order_path(wp.order) # 編集リンクのパスを追加
           }
         end
