@@ -29,7 +29,7 @@
                 <% alert[:messages].first(3).each do |message| %>
                 <li class="py-2">
                     <% if message[:company_name] && message[:order_id] && message[:edit_path] && message[:detail_path] %>
-                        会社名: <%= message[:company_name] %>, 受注 (ID: <%= message[:order_id] %>),
+                        受注ID: <%= message[:order_id] %>, 会社名: <%= message[:company_name] %>,
                         詳しくは <%= link_to '編集', message[:edit_path], class: 'text-blue-500 underline hover:text-blue-700' %> や
                         <%= link_to '詳細', message[:detail_path], class: 'text-blue-500 underline hover:text-blue-700' %> をご確認ください。
                     <% elsif message[:machine_name] && message[:company_name] && message[:machine_status] && message[:path] %>
