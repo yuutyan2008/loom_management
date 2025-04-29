@@ -46,7 +46,8 @@ class Admin::MachinesController < ApplicationController
   def create
     @machine = Machine.new(machine_params)
     if @machine.save
-      redirect_to admin_machines_path, status: :unprocessable_entity, notice: "機械が登録されました。"
+      # redirect_to admin_machines_path, status: :unprocessable_entity, notice: "機械が登録されました。"
+      redirect_to admin_machines_path, notice: "機械が登録されました。"
     else
       render :new
     end
