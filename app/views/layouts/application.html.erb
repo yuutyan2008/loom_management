@@ -100,7 +100,7 @@
               <li><%= link_to "受注一覧", orders_path, class: "block px-2 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-200" %></li>
             <% end %>
           <li><%= button_to "ログアウト", logout_path, method: :delete,
-              form: { data: { turbo_confirm: "ログアウトしますか？" }, class: "inline" },
+              form: { data: { turbo: true, turbo_method: :delete, turbo_confirm: "ログアウトしますか？" }, class: "inline" },
               class: "text-rose-500 hover:bg-gray-200 px-2 py-2 rounded-md font-semibold" %></li>
           <% else %>
             <%# 未ログイン時のナビゲーション %>
