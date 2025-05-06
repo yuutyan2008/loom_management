@@ -8,4 +8,5 @@ pin "gantt-fix", to: "frappe-gantt.es.js"
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin "orderform_no_react"
 
-pin "@rails/request.js", to: "request.js", preload: true
+pin "jquery", to: "https://code.jquery.com/jquery-3.6.4.min.js"
+pin "bootstrap", to: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"

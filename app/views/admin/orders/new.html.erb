@@ -1,108 +1,100 @@
 <% content_for :head do %>
   <meta name="turbo-visit-control" content="reload">
 <% end %>
-
 <h1 class="px-4 py-2 text-3xl font-bold text-gray-800 mt-6 mb-6 text-center">発注フォーム</h1>
-
 <%# フォームが表示される前にエラーメッセージを表示するためform_withの前に書く %>
 <% if @order.errors.any? %>
-<%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
-<div id="error_explanation">
-  <h2><%= "#{@order.errors.count} 件のエラーが発生しました" %></h2>
-  <ul>
-    <% @order.errors.full_messages.each do |message| %>
-    <li><%= message %></li>
-    <% end %>
-  </ul>
-</div>
+  <%# Railsがデフォルトで用意しているエラー用のスタイル（CSS）を適用 %>
+  <div id="error_explanation">
+    <h2><%= "#{@order.errors.count} 件のエラーが発生しました" %></h2>
+    <ul>
+      <% @order.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
 <% end %>
-
 <%= form_with model: @order, url: admin_orders_path, local: true do |f| %>
-<section class="px-24">
-  <p class="pb-4 text-rose-500 font-semibold">発注フォームはすべて必須項目になります。</p>
-  <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
-    <table class="w-full max-w-sm">
-      <div class="md:flex md:items-center mb-6">
-        <div class="md:w-1/3 py-2">
-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
-            <%= f.label :name, "会社名" %>
-          </label>
+  <section class="px-24">
+    <p class="pb-4 text-rose-500 font-semibold">発注フォームはすべて必須項目になります。</p>
+    <div class="px-4 py-2 overflow-x-auto mb-6 whitespace-nowrap">
+      <table class="w-full max-w-sm">
+        <div class="md:flex md:items-center mb-6">
+          <div class="md:w-1/3 py-2">
+            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+              <%= f.label :name, "会社名" %>
+            </label>
+          </div>
+          <div class="md:w-2/3">
+            <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true }  %>
+          </div>
         </div>
-        <div class="md:w-2/3">
-          <%= f.collection_select :company_id, @companies, :id, :name, { prompt: "会社を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true }  %>
+        <div class="md:flex md:items-center mb-6">
+          <div class="md:w-1/3 py-2">
+            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+              <%= f.label :product_number_id, "品番" %>
+            </label>
+          </div>
+          <div class="md:w-2/3">
+            <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "品番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true } %>
+          </div>
         </div>
-      </div>
-      <div class="md:flex md:items-center mb-6">
-        <div class="md:w-1/3 py-2">
-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
-            <%= f.label :product_number_id, "品番" %>
-          </label>
+        <div class="md:flex md:items-center mb-6">
+          <div class="md:w-1/3 py-2">
+            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+              <%= f.label :color_number_id, "色番" %>
+            </label>
+          </div>
+          <div class="md:w-2/3">
+            <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "色番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true }  %>
+          </div>
         </div>
-        <div class="md:w-2/3">
-          <%= f.collection_select :product_number_id, ProductNumber.all, :id, :number, { prompt: "品番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true } %>
-        </div>
-      </div>
-      <div class="md:flex md:items-center mb-6">
-        <div class="md:w-1/3 py-2">
-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
-            <%= f.label :color_number_id, "色番" %>
-          </label>
-        </div>
-        <div class="md:w-2/3">
-          <%= f.collection_select :color_number_id, ColorNumber.all, :id, :color_code, { prompt: "色番を選択してください" }, { class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none", required: true }  %>
-        </div>
-      </div>
-
-      <!-- RailsからReactに渡すための初期データだけを埋め込む -->
-      <div id="react-root" data-turbo="false"></div>
-
-      <div class="md:flex md:items-center mb-6">
-        <div class="md:w-1/3 py-2">
-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
-            <%= f.label :machine_type, "機械のタイプ" %>
-          </label>
-        </div>
-        <div class="md:w-2/3">
-          <%= select_tag "order[work_processes][process_estimate][machine_type_id]",
+        <!-- RailsからReactに渡すための初期データだけを埋め込む -->
+        <div id="react-root" data-turbo="false"></div>
+        <div class="md:flex md:items-center mb-6">
+          <div class="md:w-1/3 py-2">
+            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+              <%= f.label :machine_type, "機械のタイプ" %>
+            </label>
+          </div>
+          <div class="md:w-2/3">
+            <%= select_tag "order[work_processes][process_estimate][machine_type_id]",
                           options_from_collection_for_select(MachineType.all, :id, :name), { prompt: "織機のタイプを選択してください", required: true } %>
+          </div>
         </div>
-      </div>
-      <div class="md:flex md:items-center mb-6">
-        <div class="md:w-1/3 py-2">
-          <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
-            <%= f.label :start_date, "作業開始日" %>
-          </label>
-        </div>
-        <div class="md:w-2/3">
-          <%= text_field_tag 'order[work_processes][start_date]',
+        <div class="md:flex md:items-center mb-6">
+          <div class="md:w-1/3 py-2">
+            <label class="w-1/3 px-4 py-2 text-gray-700 font-bold text-center">
+              <%= f.label :start_date, "作業開始日" %>
+            </label>
+          </div>
+          <div class="md:w-2/3">
+            <%= text_field_tag 'order[work_processes][start_date]',
                           nil,
                           placeholder: "作業開始日を選択してください",
                           type: :date,
                           required: true,
                           class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none" %>
+          </div>
         </div>
+      </table>
+    </div>
+  </section>
+  <!-- 提出ボタン -->
+  <section class="mb-12">
+    <div class="flex justify-center space-x-2">
+      <div class="px-2 py-2">
+        <%= f.submit "発注", class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
       </div>
-    </table>
-  </div>
-</section>
-
-<!-- 提出ボタン -->
-<section class="mb-12">
-  <div class="flex justify-center space-x-2">
-    <div class="px-2 py-2">
-      <%= f.submit "発注", class: "inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700" %>
+      <div class="px-2 py-2">
+        <%= link_to "戻る", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
+      </div>
     </div>
-    <div class="px-2 py-2">
-      <%= link_to "戻る", admin_orders_path, class: "inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700" %>
-    </div>
-  </div>
-</section>
+  </section>
 <% end %>
-
 <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
 <script type="text/babel">
   const { useState, useEffect } = React;
 
@@ -134,36 +126,55 @@
     // 反数用のイベントハンドラ
     const handleRollCountChange = (e) => {
         const value = e.target.value;
+  // (1) 半角数字 0〜9 で 0〜4 桁以内 → 正常
+  if (/^[0-9]{0,4}$/.test(value)) {
+    setRollCount(value);
+    setErrors(prev => ({ ...prev, rollCount: "" }));
+    return;
+  }
 
-        // 入力値が数字かつ4桁以内の場合のみステートを更新
-        if (/^\d{0,4}$/.test(value)) {
-            setRollCount(value); // ステート更新
-            setErrors((prevErrors) => ({ ...prevErrors, rollCount: "" })); // エラーをクリア
-        } else {
-            // 5桁目が入力されたらエラーメッセージをセット
-            setErrors((prevErrors) => ({
-            ...prevErrors,
-            rollCount: "最大4桁までしか入力できません。",
-            }));
-        }
+  // (2) 5 桁以上だが数字だけ → 桁オーバー
+  if (/^[0-9]+$/.test(value)) {
+    setErrors(prev => ({
+      ...prev,
+      rollCount: "数字は最大4桁まで入力できます。",
+    }));
+    return;
+  }
+
+  // (3) 数字以外や全角文字が含まれる → 形式エラー
+  setErrors(prev => ({
+    ...prev,
+    rollCount: "半角数字のみ入力してください。",
+  }));
         };
 
     // 数量用のイベントハンドラ
     const handleQuantityChange = (e) => {
         const value = e.target.value;
+  // (1) 半角数字 0〜9 で 0〜4 桁以内 → 正常
+  if (/^[0-9]{0,4}$/.test(value)) {
+    setRollCount(value);
+    setErrors(prev => ({ ...prev, rollCount: "" }));
+    return;
+  }
 
-        // 入力値が数字かつ4桁以内の場合のみステートを更新
-        if (/^\d{0,4}$/.test(value)) {
-            setQuantity(value); // ステート更新
-            setErrors((prevErrors) => ({ ...prevErrors, quantity: "" })); // エラーをクリア
-        } else {
-            // 5桁目が入力されたらエラーメッセージをセット
-            setErrors((prevErrors) => ({
-            ...prevErrors,
-            quantity: "最大4桁までしか入力できません。",
-            }));
-        }
-        };
+  // (2) 5 桁以上だが数字だけ → 桁オーバー
+  if (/^[0-9]+$/.test(value)) {
+    setErrors(prev => ({
+      ...prev,
+      rollCount: "数字は最大4桁まで入力できます。",
+    }));
+    return;
+  }
+
+  // (3) 数字以外や全角文字が含まれる → 形式エラー
+  setErrors(prev => ({
+    ...prev,
+    rollCount: "半角数字のみ入力してください。",
+  }));
+
+  };
 
 
         // エラーメッセージ更新関数setErrorsの呼び出し
@@ -230,4 +241,3 @@
     }
   });
 </script>
-
