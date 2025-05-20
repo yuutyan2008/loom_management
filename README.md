@@ -206,6 +206,8 @@ https://looma.jp
 
 ## 付属資料
 
-アプリの課題解決に関するスライド資料は下記をご参照ください
+
+アプリに関する詳細説明は下記をご参照ください
 
 https://www.canva.com/design/DAGV0WAuMqg/TigRgRj8cPy0KLoFw7Wpow/edit
+
