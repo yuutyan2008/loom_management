@@ -59,20 +59,25 @@ class Admin::MachinesController < ApplicationController
   def update
     # paramsでフォームのデータを安全に受け取る
     params_machine_assignment_id = params[:machine_assignment_id]
-    params_machine_status_id = params[:machine_status_id]
+    params_machine_status_id = params[:machine][:machine_status_id]
 
     if @machine.update(machine_params)
-      assignment = @machine.machine_assignments.find_by(id: params_machine_assignment_id)
-
+      # assignment = @machine.machine_assignments.find_by(id: params_machine_assignment_id)
       # assignmentの更新があった場合
-      if assignment
-        # MachineAssignmentの状態を更新
-        assignment.update(machine_status_id: params_machine_status_id)
-      else
-        flash.now[:alert] = "指定された割り当てが見つかりません。"
+      # if assignment
+      #   # MachineAssignmentの状態を更新
+      #   assignment.update(machine_status_id: params_machine_status_id)
+      # else
+      #   flash.now[:alert] = "指定された割り当てが見つかりません。"
+      # end
+      # machine_status_idがあれば、関連するMachineAssignmentを個別に更新
+      if params_machine_status_id.present?
+        @machine.machine_assignments.each do |assignment|
+          assignment.update!(machine_status_id: params_machine_status_id)
+          flash[:notice] = "機械の割り当てが更新されました"
+        end
       end
 
-      flash[:notice] = "機械の割り当てが更新されました"
       redirect_to admin_machine_path(@machine)
     else
       flash.now[:alert] = @machine.errors.full_messages.join(", ") # エラーメッセージを追加
