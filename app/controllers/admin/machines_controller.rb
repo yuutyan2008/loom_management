@@ -46,7 +46,8 @@ class Admin::MachinesController < ApplicationController
   def create
     @machine = Machine.new(machine_params)
     if @machine.save
-      redirect_to admin_machines_path, status: :unprocessable_entity, notice: "機械が登録されました。"
+      # redirect_to admin_machines_path, status: :unprocessable_entity, notice: "機械が登録されました。"
+      redirect_to admin_machines_path, notice: "機械が登録されました。"
     else
       render :new
     end
@@ -82,10 +83,11 @@ class Admin::MachinesController < ApplicationController
   # 削除処理の開始し管理者削除を防ぐロジックはmodelで行う
   def destroy
     @machine = Machine.find(params[:id])
+    machine_name = @machine.name
     if @machine.destroy
       # ココ(削除実行直前)でmodelに定義したコールバックが呼ばれる
-
-      flash[:notice] = t("flash.admin.destroyed")
+      #flash[:notice] = t("flash.admin.destroyed")
+      flash[:notice] = "織機「#{machine_name}」が削除されました。"
     else
       # バリデーションに失敗で@user.errors.full_messagesにエラーメッセージが配列として追加されます
       # .join(", "): 配列内の全てのエラーメッセージをカンマ区切り（, ）で連結
