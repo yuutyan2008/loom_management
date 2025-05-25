@@ -72,6 +72,7 @@ class Admin::UsersController < ApplicationController
     if @user.update(user_params.except(:new_company_name))
       redirect_to admin_user_path(@user), notice: "ユーザー情報が更新されました。"
     else
+      Rails.logger.debug "Update failed: #{@user.errors.full_messages}"
       flash.now[:alert] = "ユーザー情報の更新に失敗しました。"
       render :edit
     end
@@ -98,7 +99,15 @@ class Admin::UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :phone_number, :company_id, :new_company_name)
+    params.require(:user).permit(
+      :name,
+      :email,
+      :phone_number,
+      :company_id,
+      :new_company_name,
+      :password,              # 追加
+      :password_confirmation  # 追加
+      )
   end
 
   def completed_signin(user)
