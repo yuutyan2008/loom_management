@@ -69,7 +69,7 @@ class Admin::UsersController < ApplicationController
   end
 
   def update
-    if @user.update(user_params.except(:new_company_name))
+    if @user.update(user_params)
       redirect_to admin_user_path(@user), notice: "ユーザー情報が更新されました。"
     else
       flash.now[:alert] = "ユーザー情報の更新に失敗しました。"
@@ -98,8 +98,25 @@ class Admin::UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :phone_number, :company_id, :new_company_name)
+    if current_user == @user
+      # 本人が編集する場合：パスワードも許可
+      params.require(:user).permit(
+        :name,
+        :email,
+        :phone_number,
+        :password,
+        :password_confirmation
+      )
+    else
+      # 本人以外が編集する場合：パスワードは許可しない
+      params.require(:user).permit(
+        :name,
+        :email,
+        :phone_number,
+      )
+    end
   end
+
 
   def completed_signin(user)
     if user.admin?
