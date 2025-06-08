@@ -7,7 +7,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true, allow_blank: true
   validates :phone_number, presence: true, allow_blank: true
   # validates :company_id, presence: true
-  validates :password, presence: true, length: { minimum: 6 }, if: :password_present?
+  validates :password, presence: true, length: { in: 6..20 }, if: :password_present?
   validates :password_confirmation, presence: true, if: :password_present?
 
   private
