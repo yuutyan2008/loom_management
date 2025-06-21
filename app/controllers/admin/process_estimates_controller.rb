@@ -1,4 +1,6 @@
 class Admin::ProcessEstimatesController < ApplicationController
+  # SCRF対策トークンを有効化
+  protect_from_forgery
 
   def index
     @dobbie_estimates = ProcessEstimate.includes(:machine_type, :work_process_definition)

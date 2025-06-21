@@ -27,7 +27,13 @@ Rails.application.routes.draw do
         get 'ma_index'
       end
     end
-    resources :users
+    resources :users do
+      collection do
+        get :show_myaccount
+        get :edit_myaccount
+        patch :update_myaccount
+      end
+    end
     resources :products
 
     resources :process_estimates, only: [:index, :new, :create] do
