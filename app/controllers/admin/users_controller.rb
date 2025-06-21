@@ -3,10 +3,14 @@ class Admin::UsersController < ApplicationController
   before_action :require_login, only: [ :show, :edit, :update, :destroy ]
 
   def index
-    @users = User.all
+    @users = User.where.not(id: current_user.id)
   end
 
   def show
+  end
+
+  def show_myaccount
+    @user = current_user
   end
 
   def new
@@ -68,12 +72,41 @@ class Admin::UsersController < ApplicationController
   def edit
   end
 
+  def edit_myaccount
+    @user = current_user
+  end
+
   def update
-    if @user.update(user_params.except(:new_company_name))
+    if @user.update(user_params)
       redirect_to admin_user_path(@user), notice: "ユーザー情報が更新されました。"
     else
       flash.now[:alert] = "ユーザー情報の更新に失敗しました。"
       render :edit
+    end
+  end
+
+  def update_myaccount
+    @user = current_user
+
+    # 現在のパスワード確認
+    unless @user.authenticate(params[:current_password])
+
+      flash.now[:alert] = "現在のパスワードが正しくありません"
+      render :edit_myaccount and return
+    end
+
+    # 新しいパスワードと確認が一致しているか
+    if params[:new_password] != params[:new_password_confirmation]
+      flash.now[:alert] = "新しいパスワードが一致しません"
+      render :edit_myaccount and return
+    end
+
+    # 更新処理
+    if @user.update(password: params[:new_password], password_confirmation: params[:new_password_confirmation])
+      redirect_to show_myaccount_admin_users_path, notice: "パスワードを更新しました"
+    else
+      flash.now[:alert] = "パスワードの更新に失敗しました"
+      render :edit_myaccount
     end
   end
 
@@ -98,8 +131,23 @@ class Admin::UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :phone_number, :company_id, :new_company_name)
+    if current_user == @user
+      # 本人が編集する場合：パスワードも許可
+      params.require(:user).permit(
+        :name,
+        :email,
+        :phone_number,
+      )
+    else
+      # 本人以外が編集する場合：パスワードは許可しない
+      params.require(:user).permit(
+        :name,
+        :email,
+        :phone_number,
+      )
+    end
   end
+
 
   def completed_signin(user)
     if user.admin?
