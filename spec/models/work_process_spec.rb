@@ -165,10 +165,8 @@ RSpec.describe WorkProcess, type: :model do
 
     it '全てのwork_processを更新し、適切な日付を計算する' do
       expect do
-        binding.irb
         WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type.id)
       end.to_not raise_error
-binding.irb
       work_processes.each do |work_process|
         work_process.reload
         expect(work_process.start_date).to be_present
