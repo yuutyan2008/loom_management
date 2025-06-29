@@ -15,6 +15,7 @@ class HomeController < ApplicationController
         machine_status_name: machine.latest_machine_status&.name || "不明",
         button_label: work_process_data[:button_label],
         button_disabled: work_process_data[:button_disabled],
+        confirm_text: work_process_data[:confirm_text],
         order_id: work_process&.order_id
       }
     end
@@ -35,7 +36,7 @@ class HomeController < ApplicationController
         # 指定のWorkProcessを更新
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
                    .update_all(work_process_status_id: 3) # 完了
-                   binding.irb
+                   #binding.irb
         WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
                    .update_all(work_process_status_id: 2) # 作業中に更新
         # MachineAssignmentを稼働中に更新
@@ -43,7 +44,6 @@ class HomeController < ApplicationController
                          .update_all(machine_status_id: 3) # 稼働中
       elsif params[:commit] == "作業終了"
         # 作業終了処理
-        binding.irb
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
                    .update_all(work_process_status_id: 3) # 完了
         WorkProcess.where(order_id: order_id, work_process_definition_id: 5)
@@ -103,11 +103,13 @@ class HomeController < ApplicationController
     wp2_complete = (wp2&.work_process_status_id == 3)? true : false
     wp3_complete = (wp3&.work_process_status_id == 3)? true : false
     wp4_status = wp4&.work_process_status_id
-    button_label, button_disabled = determine_button_status(wp1_complete, wp2_complete, wp3_complete, wp4_status)
+    #button_label, button_disabled = determine_button_status(wp1_complete, wp2_complete, wp3_complete, wp4_status)
+    button_label, button_disabled, confirm_text = determine_button_status_and_confirmation(wp1_complete, wp2_complete, wp3_complete, wp4_status)
     {
       work_process_name: work_process.work_process_definition&.name || "作業工程なし",
       button_label: button_label,
-      button_disabled: button_disabled
+      button_disabled: button_disabled,
+      confirm_text: confirm_text
     }
   end
 
@@ -119,6 +121,24 @@ class HomeController < ApplicationController
       return ["更新不可", true]
     else
       return ["作業開始", false]
+    end
+  end
+
+  def determine_button_status_and_confirmation(wp1, wp2, wp3, wp4)
+    if wp1 && wp2 && wp3 && (wp4 == 1 || wp4 == 2)
+      [
+        "作業終了",
+        false,
+        "製織工程を完了し、整理加工工程を開始します。よろしいですか？"
+      ]
+    elsif wp1 && wp2 && wp3 && (wp4 == 3 || wp4 == 4)
+      ["更新不可", true, nil]
+    else
+      [
+        "作業開始",
+        false,
+        "糸工程〜整経工程を完了し、製織工程を開始します。よろしいですか？"
+      ]
     end
   end
 

@@ -21,14 +21,18 @@
                                 <td class="w-1/4 px-4 py-4 text-gray-700 text-center border-b"><%= machine&.latest_machine_status&.name %></td>
                             </tr>
                             <tr>
+                                <% Rails.logger.debug "▼data  = #{data.inspect}" %>
                                 <td colspan="2" class="px-4 py-2">
                                     <div class="flex justify-center space-x-2">
-                                    <%= form_with url: update_home_path, method: :patch, local: true do %>
-                                        <%= hidden_field_tag :machine_id, machine.id %>
+                                    <%= form_with url: update_home_path, method: :patch, local: true,
+                                        html:   (data[:confirm_text].present? ?
+                                                { onsubmit: "return confirm('#{j data[:confirm_text]}');" } : {}) do %>
+                                            <%= hidden_field_tag :machine_id, machine.id %>
                                             <%= hidden_field_tag :order_id, data[:order_id] %>
-                                        <%= submit_tag data[:button_label], name: 'commit',
+                                            <%= submit_tag data[:button_label], name: 'commit',
                                                         class: "rounded-full w-32 h-32 text-white text-xl font-semibold #{data[:button_disabled] ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'}",
-                                                        disabled: data[:button_disabled] %>
+                                                        disabled: data[:button_disabled]
+                                                        %>
                                     <% end %>
                                     </div>
                                 </td>
