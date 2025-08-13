@@ -111,7 +111,7 @@
           <th class="w-1/4 px-4 py-2 text-gray-700 border-b">開始日</th>
           <th class="w-1/4 px-4 py-2 text-gray-700 border-b">完了見込み</th>
           <%# <th class="w-1/4 px-4 py-2 text-gray-700 border-b">完了見込み(最長)</th> %>
-          <%# <th class="w-1/4 px-4 py-2 text-gray-700 border-b">機屋の完了予定日</th> %>
+          <th class="w-1/4 px-4 py-2 text-gray-700 border-b">機屋の完了予定日</th>
           <th class="w-1/4 px-4 py-2 text-gray-700 border-b">機屋の完了日</th>
         </tr>
       </thead>
@@ -127,14 +127,7 @@
               <%= wp_form.date_field :start_date, required: true, value: wp_form.object&.start_date, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
             </td>
             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.earliest_estimated_completion_date %></td>
-            <%# <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.latest_estimated_completion_date</td> %>
-            <%# wp_form.hidden_field :earliest_estimated_completion_date, value: wp_form.object&.earliest_estimated_completion_date %>
-            <%# wp_form.hidden_field :latest_estimated_completion_date, value: wp_form.object&.latest_estimated_completion_date %>
-            <%# wp_form.hidden_field :work_process_definition_id, value: wp_form.object&.work_process_definition_id %>
-            <%# wp_form.hidden_field :start_date, value: wp_form.object&.start_date %>
-            <%# <td class="px-4 py-2 border-b text-gray-900">
-              <%# <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
-            <%# </td>  %>
+            <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.factory_estimated_completion_date || "未設定" %></td>
             <td class="px-4 py-2 border-b text-gray-900">
               <%= wp_form.date_field :actual_completion_date, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
             </td>

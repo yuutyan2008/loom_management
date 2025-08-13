@@ -75,7 +75,7 @@
           <th class="px-4 py-2 text-gray-700 border-b">開始日</th>
           <th class="px-4 py-2 text-gray-700 border-b">完了見込み</th>
           <%# <th class="px-4 py-2 text-gray-700 border-b">完了見込み(最長)</th> %>
-          <%# <th class="px-4 py-2 text-gray-700 border-b">機屋の完了予定日</th> %>
+          <th class="px-4 py-2 text-gray-700 border-b">機屋の完了予定日</th>
           <th class="px-4 py-2 text-gray-700 border-b">機屋の完了日</th>
         </tr>
       </thead>
@@ -87,7 +87,7 @@
           <td class="px-4 py-2 text-gray-900 bg-white"><%= process&.start_date %></td>
           <td class="px-4 py-2 text-gray-900 bg-white"><%= process&.earliest_estimated_completion_date  %></td>
           <%# <td class="px-4 py-2 text-gray-900 bg-white"><%= process&.latest_estimated_completion_date </td>  %>
-          <%# <td class="px-4 py-2 text-gray-900 bg-white"><%= process&.factory_estimated_completion_date || "未設定"</td>  %>
+          <td class="px-4 py-2 text-gray-900 bg-white"><%= process&.factory_estimated_completion_date || "未設定" %></td>
           <td class="px-4 py-2 text-gray-900 bg-white"><%= process&.actual_completion_date || "未設定" %></td>
         </tr>
         <% end %>
