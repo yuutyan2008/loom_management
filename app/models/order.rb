@@ -24,7 +24,22 @@ class Order < ApplicationRecord
     joins(:incomplete_work_processes).distinct
   }
 
+  def current_work_process
+    processes = work_processes.joins(:work_process_status)  # 変数に代入
 
+    latest_completed = processes.where(work_process_statuses: { name:'作業完了' }).reorder(work_process_definition_id: :desc).first
+
+    if latest_completed
+      # 次の工程ID = 最新完了工程のID + 1
+      next_definition_id = latest_completed.work_process_definition_id + 1
+      # その工程IDで検索
+      processes.where(work_process_definition_id:next_definition_id).first
+    else
+      # 完了工程がない場合、最初の工程（ID=1）を取得
+      processes.where(work_process_definition_id:1).first
+    end
+
+  end
 
   # 最新の MachineAssignment を取得するメソッド
   def latest_machine_assignment
