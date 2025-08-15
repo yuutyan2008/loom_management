@@ -14,7 +14,7 @@ class WorkProcess < ApplicationRecord
   validates :start_date, presence: true, on: :create
   # 更新時バリデーション
   validates :work_process_status, presence: true, on: :update
-  validate :actual_completion_date_presence_if_completed, on: :update
+  # validate :actual_completion_date_presence_if_completed, on: :update  # 作業完了時の完了日必須→無効 25.8.15
 
   scope :ordered, -> {
     # ネストされた全ての発注関連データを取得
