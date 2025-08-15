@@ -47,6 +47,11 @@ class HomeController < ApplicationController
                    .where('start_date > ?', today)
                    .update_all(start_date: today)
 
+        # 作業1-3の完了予定日を条件付きで更新（明日以降または空白の場合、本日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                   .where('factory_estimated_completion_date > ? OR factory_estimated_completion_date IS NULL', today)
+                   .update_all(factory_estimated_completion_date: today)
+
         # 作業4を作業中にする
         WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
                    .update_all(work_process_status_id: 2) # 作業中に更新
@@ -70,6 +75,11 @@ class HomeController < ApplicationController
         WorkProcess.where(order_id: order_id, work_process_definition_id: [4,5])
                    .where('start_date > ?', today)
                    .update_all(start_date: today)
+
+        # 作業4の完了予定日を条件付きで更新（明日以降または空白の場合、本日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [4])
+                   .where('factory_estimated_completion_date > ? OR factory_estimated_completion_date IS NULL', today)
+                   .update_all(factory_estimated_completion_date: today)
 
         # 作業5を作業中に更新
         WorkProcess.where(order_id: order_id, work_process_definition_id: 5)
