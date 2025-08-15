@@ -23,10 +23,10 @@ class Admin::OrdersController < ApplicationController
       if order.work_processes.any?
         # 現在のwork_processから工程を検索
         if params[:work_process_definition_id].present?
-          is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
-          @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
+          is_match = order.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
+          @current_work_processes[order.id] = is_match ? order.current_work_process : nil
         else
-          @current_work_processes[order.id] = order.work_processes.current_work_process
+          @current_work_processes[order.id] = order.current_work_process
         end
       else
         @current_work_processes[order.id] = nil
@@ -53,7 +53,7 @@ class Admin::OrdersController < ApplicationController
     @current_work_processes = {}
     @orders.each do |order|
       if order.work_processes.any?
-        @current_work_processes[order.id] = order.work_processes.current_work_process
+        @current_work_processes[order.id] = order.current_work_process
       else
         @current_work_processes[order.id] = nil
       end
@@ -216,10 +216,10 @@ class Admin::OrdersController < ApplicationController
         if order.work_processes.any?
           # 現在のwork_processから工程を検索
           if params[:work_process_definition_id].present?
-            is_match = order.work_processes.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
-            @current_work_processes[order.id] = is_match ? order.work_processes.current_work_process : nil
+            is_match = order.current_work_process.work_process_definition_id == params[:work_process_definition_id].to_i
+            @current_work_processes[order.id] = is_match ? order.current_work_process : nil
           else
-            @current_work_processes[order.id] = order.work_processes.current_work_process
+            @current_work_processes[order.id] = order.current_work_process
 
           end
         else
