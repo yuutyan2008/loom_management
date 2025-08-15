@@ -1,23 +1,19 @@
 module ApplicationHelper
   # 現在作業中の作業工程を取得するヘルパーメソッド
   def find_current_work_process(work_processes)
-    # 引数として渡された work_processes から完了済み工程を特定
-    latest_completed_wp = work_processes
-                            .joins(:work_process_status)
-                            .where(work_process_statuses: { name: '作業完了' })
-                            .order(start_date: :desc)
-                            .last
+    # order.rbのcurrent_work_processと同様のロジックに変更
+    processes = work_processes.joins(:work_process_status)
 
-    if latest_completed_wp
-      # 完了済み工程より後ろにある工程を取得
-      current_wp = work_processes.where('work_processes.start_date > ?', latest_completed_wp.start_date).order(:start_date).first
-      return current_wp if current_wp
-      # 後続工程がなければ、最終的な工程は完了済みのものになる場合もありうるが
-      # ここでは nil を返す
-      return nil
+    latest_completed = processes.where(work_process_statuses: { name: '作業完了' }).reorder(work_process_definition_id: :desc).first
+
+    if latest_completed
+      # 次の工程ID = 最新完了工程のID + 1
+      next_definition_id = latest_completed.work_process_definition_id + 1
+      # その工程IDで検索
+      processes.where(work_process_definition_id: next_definition_id).first
     else
-      # 完了済みがない場合は最も最初の工程が現在工程となる
-      return work_processes.order(:start_date).first
+      # 完了工程がない場合、最初の工程（ID=1）を取得
+      processes.where(work_process_definition_id: 1).first
     end
   end
 

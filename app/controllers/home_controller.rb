@@ -42,7 +42,12 @@ class HomeController < ApplicationController
                      actual_completion_date: today        # 完了日を今日に設定
                    )
 
-        # 作業1-3の開始日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        # 作業1-3の完了予定日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                   .where('earliest_estimated_completion_date > ?', today)
+                   .update_all(earliest_estimated_completion_date: today)
+
+        # 作業1-4の開始日を条件付きで更新（現在日より後の場合のみ今日に設定）
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
                    .where('start_date > ?', today)
                    .update_all(start_date: today)
@@ -75,6 +80,11 @@ class HomeController < ApplicationController
         WorkProcess.where(order_id: order_id, work_process_definition_id: [4,5])
                    .where('start_date > ?', today)
                    .update_all(start_date: today)
+
+        # 作業4の完了予定日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [4])
+                   .where('earliest_estimated_completion_date > ?', today)
+                   .update_all(earliest_estimated_completion_date: today)
 
         # 作業4の完了予定日を条件付きで更新（明日以降または空白の場合、本日に設定）
         WorkProcess.where(order_id: order_id, work_process_definition_id: [4])
