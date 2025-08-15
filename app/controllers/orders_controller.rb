@@ -233,6 +233,7 @@ class OrdersController < ApplicationController
         target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
         target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
         target_work_prcess.actual_completion_date = workprocess_params[:actual_completion_date]
+        target_work_prcess.start_date = workprocess_params[:start_date] #25.8.15 追加 開始日の変更が反映されない問題の対応
         target_work_prcess.save!
         # 更新したナレッジで全行程の日時の更新処理の呼び出し
         new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
