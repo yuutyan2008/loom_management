@@ -38,11 +38,18 @@ class MachinesController < ApplicationController
 
   def create
     @machine = @company.machines.build(machine_params)
-    if @machine.save
-      redirect_to machine_path(@machine), notice: "織機が作成されました。"
-    else
-      render :new, status: :unprocessable_entity
+
+    ActiveRecord::Base.transaction do
+      @machine.save!
+      # テスト用：↓ 一時的に例外を発生させるコード
+      # raise ActiveRecord::RecordInvalid.new(@machine), "テスト用エラー: 意図的に例外を発生させました"
+      MachineAssignment.create!(machine_id: @machine.id, machine_status_id: 1, work_process_id: nil)
     end
+
+    redirect_to machine_path(@machine), notice: "織機が作成されました。"
+  rescue ActiveRecord::RecordInvalid => e
+    flash.now[:alert] = "織機の作成に失敗しました: #{e.message}"
+    render :new, status: :unprocessable_entity
   end
 
   def edit
