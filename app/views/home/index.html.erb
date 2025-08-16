@@ -7,19 +7,22 @@
     <div class="mb-4">
       <p class="font-semibold text-gray-700 mb-2">LooMaは以下のメニューから構成され、織物生産プロセスを総合的に管理できます：</p>
       <ol class="list-decimal pl-6 space-y-2 text-gray-700">
-        <li><span class="font-medium">織機一覧</span> - 全生産者の織機の稼働状況および割当状況を確認できます。</li>
-        <li><span class="font-medium">発注一覧</span> - 過去の発注履歴と進捗状況を確認・管理できます</li>
-        <li><span class="font-medium">発注する</span> - 新規発注の登録ができます（各工程の詳細情報を入力）</li>
-        <li><span class="font-medium">納期の予想</span> - 工程ごとの標準納期を設定し、全体の納期予測を最適化できます</li>
-        <li><span class="font-medium">ユーザー管理</span> - 発注企業（管理者）および製造企業（機屋）のアカウント設定と権限管理を行います</li>
+        <li><span class="font-medium">ホーム画面</span> - 作業状況の簡易更新ができます</li>
+        <li><span class="font-medium">織機一覧</span> - 織機の稼働状況および割当状況を確認できます</li>
+        <li><span class="font-medium">織機の登録</span> - 織機の新規登録ができます</li>
+        <li><span class="font-medium">受注一覧</span> - 現在の受注情報と進捗状況を確認・管理できます</li>
       </ol>
     </div>
     <!-- 修正したTipsセクション -->
-    <div class="flex items-start border-t border-gray-200 pt-4">
-      <div class="flex-shrink-0 text-teal-500 mr-2 mt-1">
+    <div class="flex items-center border-t border-gray-200 pt-4">
+      <div class="flex-shrink-0 text-teal-500 mr-2">
         <i class="fas fa-info-circle"></i>
       </div>
-      <p class="text-gray-700">ホーム画面の各機屋パネルから詳細ページへ移動して、生産者毎の織機状況を確認・更新できます</p>
+      <div class="text-gray-700">
+        <p class="mb-1">本ページで各織機の状態更新ボタンは、注文に織機が割当されている時のみ有効です。</p>
+        <p>「作業開始」は製織工程以前の前工程を全て完了として製織工程を開始します</p>
+        <p>「作業終了」は製織工程を作業完了として、整理加工工程を開始します</p>
+      </div>
     </div>
   </div>
 </div>
