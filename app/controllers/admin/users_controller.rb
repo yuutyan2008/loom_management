@@ -156,6 +156,8 @@ class Admin::UsersController < ApplicationController
         :name,
         :email,
         :phone_number,
+        :company_id,
+        :new_company_name
       )
     end
   end
