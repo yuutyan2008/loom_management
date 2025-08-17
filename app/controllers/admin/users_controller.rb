@@ -88,25 +88,37 @@ class Admin::UsersController < ApplicationController
   def update_myaccount
     @user = current_user
 
-    # 現在のパスワード確認
-    unless @user.authenticate(params[:current_password])
+    password_change_requested = params[:current_password].present? ||
+                              params[:new_password].present? ||
+                              params[:new_password_confirmation].present?
 
-      flash.now[:alert] = "現在のパスワードが正しくありません"
-      render :edit_myaccount and return
-    end
+    update_params = user_params.except(:password, :password_confirmation)
+    if password_change_requested
+      # 現在のパスワード確認
+      unless @user.authenticate(params[:current_password])
+        flash[:alert] = "現在のパスワードが正しくありません"
+        redirect_to edit_myaccount_admin_users_path and return
+      end
 
-    # 新しいパスワードと確認が一致しているか
-    if params[:new_password] != params[:new_password_confirmation]
-      flash.now[:alert] = "新しいパスワードが一致しません"
-      render :edit_myaccount and return
+      # 新しいパスワードと確認が一致しているか
+      if params[:new_password] != params[:new_password_confirmation]
+        flash[:alert] = "新しいパスワードが一致しません"
+        redirect_to edit_myaccount_admin_users_path and return
+      end
+
+      # パスワードを含む更新
+      update_params = user_params.merge(
+        password: params[:new_password],
+        password_confirmation: params[:new_password_confirmation]
+      )
     end
 
     # 更新処理
-    if @user.update(password: params[:new_password], password_confirmation: params[:new_password_confirmation])
-      redirect_to show_myaccount_admin_users_path, notice: "パスワードを更新しました"
+    if @user.update(update_params)
+      redirect_to show_myaccount_admin_users_path, notice: "ユーザー情報を更新しました"
     else
-      flash.now[:alert] = "パスワードの更新に失敗しました"
-      render :edit_myaccount
+      flash[:alert] = "更新に失敗しました"
+      redirect_to edit_myaccount_admin_users_path
     end
   end
 
@@ -136,7 +148,7 @@ class Admin::UsersController < ApplicationController
       params.require(:user).permit(
         :name,
         :email,
-        :phone_number,
+        :phone_number
       )
     else
       # 本人以外が編集する場合：パスワードは許可しない

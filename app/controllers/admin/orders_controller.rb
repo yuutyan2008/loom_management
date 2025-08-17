@@ -252,11 +252,22 @@ class Admin::OrdersController < ApplicationController
       end
 
       # JSON フォーマット用のマッピング処理
-      colors = ["class-a", "class-b"]
-      @orders = @orders.map.with_index do |order, order_index|
-        custom_class = colors[order_index % 2]
-
+      @orders = @orders.map do |order|
         order.work_processes.map do |process|
+          # 作業状態に基づいてカスタムクラスを決定
+          custom_class = case process.work_process_status.name
+                         when '作業前'
+                           'status-pending'
+                         when '作業中'
+                           'status-in-progress'
+                         when '作業完了'
+                           'status-completed'
+                         when '確認中'
+                           'status-under-review'
+                         else
+                           'status-default'
+                         end
+
           {
             product_number: order.product_number.number,
             company: order.company.name,
