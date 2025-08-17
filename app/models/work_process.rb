@@ -158,12 +158,17 @@ class WorkProcess < ApplicationRecord
         start_date = target_work_prcess.start_date
       else
         input_start_date = workprocess_params[:start_date].to_date
-        # 入力された開始日が新しい場合は置き換え
-        start_date = input_start_date > next_start_date ? input_start_date : next_start_date
-        # if input_start_date < next_start_date
-        #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
-        #   render :edit and return
-        # end
+
+        # input_start_dateが、現在のworkprocessのstart_dateの設定値と異なる場合、input_start_dateを採用
+        if input_start_date != target_work_prcess.start_date
+          start_date = input_start_date
+        else
+          # input_start_dateが、現在のworkprocessのstart_dateの設定値と同じ場合、next_start_dateを採用
+          start_date = next_start_date || input_start_date
+        end
+
+        # 前工程の完了日より早い場合は前工程の完了日を採用（日付の整合性を保つ）
+        # start_date = [start_date, next_start_date].compact.max if next_start_date.present?
       end
 
       actual_completion_date =  workprocess_params[:actual_completion_date]
@@ -181,7 +186,7 @@ class WorkProcess < ApplicationRecord
       # 更新したナレッジで全行程の日時の更新処理の呼び出し
       new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
       # 開始日の方が新しい場合は置き換え
-      next_start_date = start_date > next_start_date ? start_date : next_start_date
+      # next_start_date = start_date > next_start_date ? start_date : next_start_date
 
       new_target_work_prcess.actual_completion_date = actual_completion_date
       new_target_work_prcess.save
