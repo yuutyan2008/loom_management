@@ -33,19 +33,65 @@ class HomeController < ApplicationController
       # ボタンの種類(作業開始,作業終了)を識別
       if params[:commit] == "作業開始"
         # 作業開始処理
-        # 指定のWorkProcessを更新
+        today = Date.current
+
+        # 作業1-3を完了にし、完了日を今日に設定
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
-                   .update_all(work_process_status_id: 3) # 完了
-                   #binding.irb
+                   .update_all(
+                     work_process_status_id: 3,           # 完了
+                     actual_completion_date: today        # 完了日を今日に設定
+                   )
+
+        # 作業1-3の完了予定日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                   .where('earliest_estimated_completion_date > ?', today)
+                   .update_all(earliest_estimated_completion_date: today)
+
+        # 作業1-4の開始日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
+                   .where('start_date > ?', today)
+                   .update_all(start_date: today)
+
+        # 作業1-3の完了予定日を条件付きで更新（明日以降または空白の場合、本日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3])
+                   .where('factory_estimated_completion_date > ? OR factory_estimated_completion_date IS NULL', today)
+                   .update_all(factory_estimated_completion_date: today)
+
+        # 作業4を作業中にする
         WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
                    .update_all(work_process_status_id: 2) # 作業中に更新
+
         # MachineAssignmentを稼働中に更新
         MachineAssignment.where(machine_id: machine_id, machine_status_id: [1,2,4]) # 未稼働{1}, 準備中{2}, 故障中{4}
                          .update_all(machine_status_id: 3) # 稼働中
       elsif params[:commit] == "作業終了"
         # 作業終了処理
+        today = Date.current
+
+        # 作業1-4を完了にする（1-3の完了日は変更しない）
         WorkProcess.where(order_id: order_id, work_process_definition_id: [1,2,3,4])
                    .update_all(work_process_status_id: 3) # 完了
+
+        # 作業4の完了日を今日に設定
+        WorkProcess.where(order_id: order_id, work_process_definition_id: 4)
+                   .update_all(actual_completion_date: today)
+
+        # 作業4の開始日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [4,5])
+                   .where('start_date > ?', today)
+                   .update_all(start_date: today)
+
+        # 作業4の完了予定日を条件付きで更新（現在日より後の場合のみ今日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [4])
+                   .where('earliest_estimated_completion_date > ?', today)
+                   .update_all(earliest_estimated_completion_date: today)
+
+        # 作業4の完了予定日を条件付きで更新（明日以降または空白の場合、本日に設定）
+        WorkProcess.where(order_id: order_id, work_process_definition_id: [4])
+                   .where('factory_estimated_completion_date > ? OR factory_estimated_completion_date IS NULL', today)
+                   .update_all(factory_estimated_completion_date: today)
+
+        # 作業5を作業中に更新
         WorkProcess.where(order_id: order_id, work_process_definition_id: 5)
                    .update_all(work_process_status_id: 2) # 作業中に更新
 

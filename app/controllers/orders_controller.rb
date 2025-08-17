@@ -91,7 +91,7 @@ class OrdersController < ApplicationController
       update_order_details
     end
     redirect_to order_path(@order), notice: "更新されました。"
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     flash.now[:alert] = "更新に失敗しました: #{e.message}"
     Rails.logger.debug "Flash alert set: 更新に失敗しました: #{e.message}"
     render :edit
@@ -188,26 +188,22 @@ class OrdersController < ApplicationController
   # WorkProcess の更新を担当
   def update_work_processes
     order_work_processes = update_order_params.except(:machine_assignments_attributes)
-
-      # 完了日の取得
-      workprocesses_params = order_work_processes[:work_processes_attributes].values
-      machine = nil
+    workprocesses_params = order_work_processes[:work_processes_attributes].values
 
       # 織機の種類変更がある場合
       # WorkProcessのprocess_estimate_idを更新
       # 変更があった場合の新しいナレッジ
-      machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
-      process_estimates = ProcessEstimate.where(machine_type_id: machine.machine_type)
-      # 選択されている織機typeと新しいナレッジの織機タイプが一致しているか確認
-      if update_order_params[:machine_assignments_attributes]
-        machine
-      end
 
-      # unless machine&.machine_type == process_estimates.first.machine_type
-      #   # type不一致です
-      #   flash[:notice] = "織機の種類が一致していないため、更新できません"
-      #   render :edit and return
-      # end
+      machine_type_id = 1 # デフォルト値を設定（ドビー）
+      # 織機が指定されている場合、その織機の種類を取得
+      if update_order_params[:machine_assignments_attributes].present?
+        machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+        machine_type_id = machine.machine_type.id if machine.present?
+      # 織機が指定されていない場合、orderに紐づく最初のwork_processのprocess_estimatesの織機種別を参照する
+      else
+        machine_type_id = @order.work_processes.first.process_estimate.machine_type_id if @order.work_processes.any?
+      end
+      process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
 
       current_work_processes = @order.work_processes
 
@@ -222,10 +218,6 @@ class OrdersController < ApplicationController
           input_start_date = workprocess_params[:start_date].to_date
           # 入力された開始日が新しい場合は置き換え
           start_date = input_start_date > next_start_date ? input_start_date : next_start_date
-          # if input_start_date < next_start_date
-          #   flash[:alert] = "開始日 (#{input_start_date}) は前の工程の完了日 (#{next_start_date}) よりも新しい日付にしてください。"
-          #   render :edit and return
-          # end
         end
 
         actual_completion_date =  workprocess_params[:actual_completion_date]
@@ -240,14 +232,13 @@ class OrdersController < ApplicationController
         end
         target_work_prcess.work_process_status_id = workprocess_params[:work_process_status_id]
         target_work_prcess.factory_estimated_completion_date = workprocess_params[:factory_estimated_completion_date]
-        target_work_prcess.save
+        target_work_prcess.actual_completion_date = workprocess_params[:actual_completion_date]
+        target_work_prcess.start_date = workprocess_params[:start_date] #25.8.15 追加 開始日の変更が反映されない問題の対応
+        target_work_prcess.save!
         # 更新したナレッジで全行程の日時の更新処理の呼び出し
         new_target_work_prcess, next_start_date = WorkProcess.check_current_work_process(target_work_prcess, start_date, actual_completion_date)
         # 開始日の方が新しい場合は置き換え
         next_start_date = start_date > next_start_date ? start_date : next_start_date
-
-        new_target_work_prcess.actual_completion_date = actual_completion_date
-        new_target_work_prcess.save
 
       end
   end
