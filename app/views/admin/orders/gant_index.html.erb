@@ -14,13 +14,30 @@
         border-collapse: collapse; /* 境界線の余白を削除 */
       }
 
-        /* クラスに応じたスタイルを設定 */
-      g.bar-wrapper.class-a rect.bar-progress {
-        fill: #3498db !important; /* 青 */
+        /* 作業状態に応じたスタイルを設定 */
+      /* 作業前 - ライトグレー */
+      g.bar-wrapper.status-pending rect.bar-progress {
+        fill: #3B82F6 !important;
       }
 
-      g.bar-wrapper.class-b rect.bar-progress {
-        fill: #2ecc71 !important; /* 緑 */
+      /* 作業中 - ブルー */
+      g.bar-wrapper.status-in-progress rect.bar-progress {
+        fill: #10B981 !important;
+      }
+
+      /* 作業完了 - グリーン */
+      g.bar-wrapper.status-completed rect.bar-progress {
+        fill: #9CA3AF !important;
+      }
+
+      /* 確認中 - オレンジ */
+      g.bar-wrapper.status-under-review rect.bar-progress {
+        fill: #F59E0B !important;
+      }
+
+      /* デフォルト（予期しない状態用） */
+      g.bar-wrapper.status-default rect.bar-progress {
+        fill: #6B7280 !important;
       }
 
 
