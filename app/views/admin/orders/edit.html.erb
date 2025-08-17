@@ -117,6 +117,7 @@
       </thead>
       <tbody>
         <%= f.fields_for :work_processes do |wp_form| %>
+          <% wp_index = wp_form.options[:child_index] || @order.work_processes.index(wp_form.object) %>
           <tr class="hover:bg-gray-100">
             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.work_process_definition&.name %></td>
             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.collection_select :work_process_status_id,
@@ -124,7 +125,11 @@
               selected: wp_form.object&.work_process_status_id,
               include_blank: "選択してください" %></td>
             <td class="px-4 py-2 border-b text-gray-900">
-              <%= wp_form.date_field :start_date, required: true, value: wp_form.object&.start_date, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+              <% if wp_index == 0 %>
+                <%= wp_form.date_field :start_date, required: true, value: wp_form.object&.start_date, readonly: true, class: "block w-full rounded-md bg-gray-100 px-4 py-2 text-base text-gray-500 border border-gray-300 cursor-not-allowed sm:text-sm" %>
+              <% else %>
+                <%= wp_form.date_field :start_date, required: true, value: wp_form.object&.start_date, class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+              <% end %>
             </td>
             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.earliest_estimated_completion_date %></td>
             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.factory_estimated_completion_date || "未設定" %></td>

@@ -106,7 +106,7 @@
             <table class="min-w-full border text-left border-gray-300">
                 <thead>
                     <tr class="bg-gray-100">
-                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">作業工程名</th>
+                        <th class="w-1/5 px-4 py-2 text-gray-700 border-b">##作業工程名</th>
                         <th class="w-1/4 px-4 py-2 text-gray-700 border-b">現在の進捗</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">開始日</th>
                         <th class="w-1/5 px-4 py-2 text-gray-700 border-b">完了予定日</th>
@@ -115,6 +115,7 @@
                 </thead>
                 <tbody>
                     <%= form.fields_for :work_processes do |wp_form| %>
+                        <% wp_index = wp_form.options[:child_index] || form.object.work_processes.index(wp_form.object) %>
                         <tr class="hover:bg-gray-100">
                             <td class="px-4 py-2 border-b text-gray-900"><%= wp_form.object&.work_process_definition&.name || "N/A" %></td>
                             <td class="px-4 py-2 border-b text-gray-900">
@@ -125,7 +126,11 @@
                             </td>
                                 <%= wp_form.hidden_field :start_date, value: wp_form.object&.start_date %>
                             <td class="px-4 py-2 border-b text-gray-900">
-                                <%= wp_form.date_field :start_date, placeholder: "開始日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                                <% if wp_index == 0 %>
+                                    <%= wp_form.date_field :start_date, readonly: true, class: "block w-full rounded-md bg-gray-100 px-4 py-2 text-base text-gray-500 border border-gray-300 cursor-not-allowed sm:text-sm" %>
+                                <% else %>
+                                    <%= wp_form.date_field :start_date, placeholder: "開始日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+                                <% end %>
                             </td>
                             <td class="px-4 py-2 border-b text-gray-900">
                                 <%= wp_form.date_field :factory_estimated_completion_date, placeholder: "機屋の完了予定日を選択してください", class: "block w-full rounded-md bg-white px-4 py-2 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
