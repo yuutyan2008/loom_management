@@ -154,6 +154,7 @@ class WorkProcess < ApplicationRecord
       # target_work_prcess：current_work_processesの１工程
       target_work_prcess = current_work_processes.find(workprocess_params[:id])
 
+      # 開始日の更新
       if index == 0
         start_date = target_work_prcess.start_date
       else
