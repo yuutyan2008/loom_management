@@ -4,7 +4,7 @@ class HomeController < ApplicationController
 
   def index
     @company = current_user&.company
-    @machines = @company&.machines&.includes(:company, :work_processes)
+    @machines = @company&.machines&.includes(:company, :work_processes)&.order(:id)
 
     @machine_status_data = @machines.map do |machine|
       work_process = machine.latest_work_process
@@ -105,7 +105,7 @@ class HomeController < ApplicationController
     end
 
     @company = current_user&.company
-    @machines = @company&.machines&.includes(:company, :work_processes)
+    @machines = @company&.machines&.includes(:company, :work_processes)&.order(:id)
 
     @machine_status_data = @machines.map do |machine|
       work_process = machine.latest_work_process
