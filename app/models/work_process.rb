@@ -278,7 +278,8 @@ class WorkProcess < ApplicationRecord
   end
 
 
-
+##### 全WorkProcessレコードを対象にしていた問題を解消
+##### Orderモデルに移動、Associationを利用した関連レコードの取得を容易にした
   # 現在作業中の作業工程を取得するスコープ
   # def self.current_work_process
   #   # 最新の「作業完了」ステータスの作業工程を取得
@@ -300,15 +301,18 @@ class WorkProcess < ApplicationRecord
   #       .first
   #   end
   # end
+#####
 
-  private
 
-  # 更新時のバリデーション
-  def actual_completion_date_presence_if_completed
-    completed_status_id = WorkProcessStatus.find_by(name: "作業完了")&.id
-    if work_process_status_id == completed_status_id && actual_completion_date.blank?
 
-      errors.add(:actual_completion_date, "完了日が入力されていません")
-    end
-  end
+  # private
+
+  # # 更新時のバリデーション
+  # def actual_completion_date_presence_if_completed
+  #   completed_status_id = WorkProcessStatus.find_by(name: "作業完了")&.id
+  #   if work_process_status_id == completed_status_id && actual_completion_date.blank?
+
+  #     errors.add(:actual_completion_date, "完了日が入力されていません")
+  #   end
+  # end
 end

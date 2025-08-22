@@ -24,6 +24,8 @@ class Order < ApplicationRecord
     joins(:incomplete_work_processes).distinct
   }
 
+
+  # 取得中のorderインスタンスに関連するレコードを取得するため、work_processクラスメソッドから移動
   def current_work_process
     processes = work_processes.joins(:work_process_status)  # 変数に代入
 
