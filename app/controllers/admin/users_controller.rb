@@ -93,6 +93,7 @@ class Admin::UsersController < ApplicationController
                               params[:new_password_confirmation].present?
 
     update_params = user_params.except(:password, :password_confirmation)
+    # パスワード変更をする場合
     if password_change_requested
       # 現在のパスワード確認
       unless @user.authenticate(params[:current_password])
@@ -113,7 +114,7 @@ class Admin::UsersController < ApplicationController
       )
     end
 
-    # 更新処理
+    # パスワード変更しない場合の更新処理
     if @user.update(update_params)
       redirect_to show_myaccount_admin_users_path, notice: "ユーザー情報を更新しました"
     else

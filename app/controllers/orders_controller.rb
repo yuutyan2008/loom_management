@@ -300,14 +300,21 @@ class OrdersController < ApplicationController
     end
   end
 
-  # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
+  # 工程ステータスを完了にすると、現工程以前のステータスも完了に更新し、日付も自動入力、または入力値を反映させる
   def set_work_process_status_completed
+    # binding.irb
+    completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
+
     @order.work_processes.each do |work_process|
-      if work_process.actual_completion_date.present? && work_process.work_process_status_id != 3
-        work_process.update!(work_process_status_id: 3)
+      status_completed   = (work_process.work_process_status_id == completed_id) # ステータスを完了に変更した場合
+      date_inputed = work_process.actual_completion_date if work_process.actual_completion_date.present? # 完了日付を入力した場合
+
+      next unless status_completed || date_inputed
+      update_date = date_inputed ? work_process.actual_completion_date : Date.current
+      work_process.unify_previous_completion(update_date, completed_id)
       end
-    end
   end
+
 
   # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   ## 追加: indexアクション用のWorkProcess遅延チェックメソッド

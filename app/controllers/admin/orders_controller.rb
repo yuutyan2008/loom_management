@@ -144,6 +144,7 @@ class Admin::OrdersController < ApplicationController
         @order.update!(update_order)
       end
       set_work_process_status_completed
+
       # handle_machine_assignment_updates if machine_assignments_present?
 
     end
@@ -387,42 +388,23 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  # def handle_machine_assignment_updates
-  #   relevant_work_process_definition_ids = [1, 2, 3, 4]
-  #   # 対象のWorkProcess群を取得
-  #   relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
-  #   target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-  #   # 条件: 全てがstatus_id=3の場合のみ処理
-  #   if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
-  #     machine_id = order_params[:machine_assignments_attributes][0][:machine_id].to_i
-  #     if machine_id.present?
-  #       # 全WorkProcessを取得(5などその他も含む場合)
-  #       all_work_process_ids = @order.work_processes.pluck(:id)
-  #       # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
-  #       MachineAssignment.where(
-  #         machine_id: machine_id,
-  #         work_process_id: all_work_process_ids
-  #       ).update_all(machine_id: nil, machine_status_id: nil)
-  #       # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
-  #       # 既存があればそれを使い、新たなcreateは行わない
-  #       assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
-  #       if assignment.new_record?
-  #         # 新規の場合のみ作成
-  #         assignment.machine_status_id = 1
-  #         assignment.save!
-  #       end
-  #     end
-  #   end
-  # end
 
-  # actual_completion_date が入力された WorkProcess のステータスを「作業完了」（3）に設定するメソッド
+  # 工程ステータスを完了にすると、現工程以前のステータスも完了に更新し、日付も自動入力、または入力値を反映させる
   def set_work_process_status_completed
+    # binding.irb
+    completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
+
     @order.work_processes.each do |work_process|
-      if work_process.actual_completion_date.present? && work_process.work_process_status_id != 3
-        work_process.update!(work_process_status_id: 3)
+      status_completed   = (work_process.work_process_status_id == completed_id) # ステータスを完了に変更した場合
+      date_inputed = work_process.actual_completion_date if work_process.actual_completion_date.present? # 完了日付を入力した場合
+
+      next unless status_completed || date_inputed
+      update_date = date_inputed ? work_process.actual_completion_date : Date.current
+      work_process.unify_previous_completion(update_date, completed_id)
       end
-    end
   end
+
+
 
   # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
   ## 遅延している作業工程のチェック (indexアクション用)
