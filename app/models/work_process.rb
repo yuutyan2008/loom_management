@@ -194,6 +194,31 @@ class WorkProcess < ApplicationRecord
     end
   end
 
+  # 実際の完了日が入力されたら、現工程と前工程ステータスも完了にする
+  # 工程ステータスを完了にしたら、その工程以前実際の完了日の入力がない工程も、最新完了日と同じ日を入力する
+
+    # actual_completion_date がある場合のみ過去工程を完了にする
+    def unify_previous_completion(update_date, completed_id)
+      # binding.irb
+      target_work_processes = order.work_processes
+        .ordered  # scope
+        .where('work_process_definitions.sequence <= ?', work_process_definition.sequence)
+
+
+      target_work_processes.each do |wp|
+        changes = {}
+        # まだ日付が無い工程だけ埋める
+        changes[:actual_completion_date] = update_date if wp.actual_completion_date.blank?
+        # binding.irb
+        # まだ完了でない工程は完了に更新
+        changes[:work_process_status_id] = completed_id if wp.work_process_status_id != completed_id
+
+        wp.update!(changes) if changes.any?
+        # binding.irb
+      end
+    end
+
+
 
   # 更新：全行程の日時の更新
   def self.check_current_work_process(process, start_date, actual_completion_date)
@@ -278,8 +303,8 @@ class WorkProcess < ApplicationRecord
   end
 
 
-##### 全WorkProcessレコードを対象にしていた問題を解消
-##### Orderモデルに移動、Associationを利用した関連レコードの取得を容易にした
+##### 削除理由：全WorkProcessレコードを対象にしていた問題解消のため
+##### Orderモデルに移動させ、Associationを利用した関連レコードの取得を容易にした
   # 現在作業中の作業工程を取得するスコープ
   # def self.current_work_process
   #   # 最新の「作業完了」ステータスの作業工程を取得
