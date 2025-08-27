@@ -86,20 +86,12 @@ class WorkProcess < ApplicationRecord
       raise "No process_estimates found for machine_type_id=#{machine_type_id}"
     end
 
-    puts "### process_estimates.inspect " + process_estimates.inspect
-    puts "### workprocesses.inspect" + workprocesses.inspect
-
     workprocesses.each do |process|
-      #binding.irb
-      puts "### Comparing process ID: #{process[:work_process_definition_id]}"
-      puts "### Process Estimates: #{process_estimates.map(&:work_process_definition_id)}"
       estimate = process_estimates.find_by(work_process_definition_id: process[:work_process_definition_id])
-      #binding.irb
-      if estimate.nil?
-        raise "### No matching estimate found for work_process_definition_id=#{process[:work_process_definition_id]}"
-      end
+      # if estimate.nil?
+      #   raise "### No matching estimate found for work_process_definition_id=#{process[:work_process_definition_id]}"
+      # end
       process[:process_estimate_id] = estimate[:id]
-
     end
   end
 
@@ -116,7 +108,6 @@ class WorkProcess < ApplicationRecord
         start_date = process[:start_date]
       end
       # 納期の見込み日数のレコードを取得
-
       target_estimate_record = ProcessEstimate.find_by(
         id: process[:process_estimate_id]
       )
@@ -137,22 +128,20 @@ class WorkProcess < ApplicationRecord
         next_start_date = process[:earliest_estimated_completion_date]
       end
       update = false
-      #
-
     end
     estimate_workprocesses
   end
 
   # 更新全体処理
-  def self.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
+  def self.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
     # 入力値を元にDBからProcessEstimateデータ5個分を取得
     process_estimates = ProcessEstimate.where(machine_type_id: machine_type_id)
 
     next_start_date = nil
 
     workprocesses_params.each_with_index do |workprocess_params, index|
-      # target_work_prcess：current_work_processesの１工程
-      target_work_prcess = current_work_processes.find(workprocess_params[:id])
+      # target_work_prcess：all_work_processesの１工程
+      target_work_prcess = all_work_processes.find(workprocess_params[:id])
 
       # 開始日の更新
       if index == 0
@@ -176,7 +165,8 @@ class WorkProcess < ApplicationRecord
 
       # 織機の種類を変更した場合
       # 選択されたparams[:machine_type_id]
-      if target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
+      if target_work_prcess.process_estimate&.machine_type.present? && process_estimates.first.present? &&  # 整理加工で織機との関連付けを解除した時にも対応
+        target_work_prcess.process_estimate.machine_type != process_estimates.first.machine_type
         estimate = process_estimates.find_by(work_process_definition_id: target_work_prcess.work_process_definition_id)
         # ナレッジ置き換え
         target_work_prcess.process_estimate = estimate
