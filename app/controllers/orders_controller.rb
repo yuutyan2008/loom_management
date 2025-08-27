@@ -76,7 +76,7 @@ class OrdersController < ApplicationController
   # 修正対象
   def update
     # ここで織機の選択条件を検証
-    unless validate_machine_selection
+    unless @order.validate_machine_selection(update_order_params[:machine_assignments_attributes], flash)
       # 条件に合わず更新できない場合はここで処理を終了
       render :edit and return
     end
@@ -191,7 +191,7 @@ class OrdersController < ApplicationController
     workprocesses_params = order_work_processes[:work_processes_attributes].values
 
     # 織機の種類を決定
-    machine_type_id = 1 # デフォルト値を設定（ドビー）
+    # machine_type_id = 1 # デフォルト値を設定（ドビー）
     if update_order_params[:machine_assignments_attributes].present?
       machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
       machine_type_id = machine.machine_type.id if machine.present?
@@ -199,10 +199,10 @@ class OrdersController < ApplicationController
       machine_type_id = @order.work_processes.first.process_estimate.machine_type_id if @order.work_processes.any?
     end
 
-    current_work_processes = @order.work_processes
+    all_work_processes = @order.work_processes
 
     # 管理者画面と同じ処理を使用（自動的な開始日調整を含む）
-    WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
+    WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
   end
 
   # machine_status_id:1をselect_tagに出さないためのメソッド
@@ -363,49 +363,49 @@ class OrdersController < ApplicationController
     end
   end
 
-  # 織機選択時のバリデーションを行うメソッド
-  def validate_machine_selection
-    machine_assignments_params = update_order_params[:machine_assignments_attributes]
-    return true unless machine_assignments_params.present? # 織機が未指定の場合は特にチェックせずスキップ
+  # # 織機選択時のバリデーションを行うメソッド
+  # def validate_machine_selection
+  #   machine_assignments_params = update_order_params[:machine_assignments_attributes]
+  #   return true unless machine_assignments_params.present? # 織機が未指定の場合は特にチェックせずスキップ
 
-    selected_machine_id = machine_assignments_params[0][:machine_id].to_i
-    selected_machine = Machine.find_by(id: selected_machine_id)
+  #   selected_machine_id = machine_assignments_params[0][:machine_id].to_i
+  #   selected_machine = Machine.find_by(id: selected_machine_id)
 
-    # 存在しない織機の場合は特にチェックしない（別エラーになるはず）
-    return true unless selected_machine
+  #   # 存在しない織機の場合は特にチェックしない（別エラーになるはず）
+  #   return true unless selected_machine
 
-    order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
-    selected_machine_type_name = selected_machine.machine_type.name
+  #   order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
+  #   selected_machine_type_name = selected_machine.machine_type.name
 
-    # 1. 織機タイプのチェック
-    if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
-      flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
-      return false
-    end
+  #   # 1. 織機タイプのチェック
+  #   if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+  #     flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
+  #     return false
+  #   end
 
-    # 2. 既に割り当てられているかチェック
-    # 他の未完了の受注に同じ織機が割り当てられていないかを確認
-    # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
-    incomplete_orders_using_machine = Order
-      .incomplete
-      .joins(:machine_assignments)
-      .where(machine_assignments: { machine_id: selected_machine_id })
-      .where.not(id: @order.id) # 自分自身は除外
-    if incomplete_orders_using_machine.exists?
-      flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
-      return false
-    end
+  #   # 2. 既に割り当てられているかチェック
+  #   # 他の未完了の受注に同じ織機が割り当てられていないかを確認
+  #   # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
+  #   incomplete_orders_using_machine = Order
+  #     .incomplete
+  #     .joins(:machine_assignments)
+  #     .where(machine_assignments: { machine_id: selected_machine_id })
+  #     .where.not(id: @order.id) # 自分自身は除外
+  #   if incomplete_orders_using_machine.exists?
+  #     flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
+  #     return false
+  #   end
 
-    # 条件3: machine_status_idが4（使用できない状態）の場合
-    current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
-    current_machine_status_id = current_assignment&.machine_status_id
-    # binding.irb
-    # current_machine_status_idが4ならエラーメッセージを表示する例
-    if current_machine_status_id == 4
-      flash.now[:alert] = "選択した織機は現在故障中です。別の織機を選択してください。"
-      return false
-    end
+  #   # 条件3: machine_status_idが4（使用できない状態）の場合
+  #   current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
+  #   current_machine_status_id = current_assignment&.machine_status_id
+  #   # binding.irb
+  #   # current_machine_status_idが4ならエラーメッセージを表示する例
+  #   if current_machine_status_id == 4
+  #     flash.now[:alert] = "選択した織機は現在故障中です。別の織機を選択してください。"
+  #     return false
+  #   end
 
-    true
-  end
+  #   true
+  # end
 end

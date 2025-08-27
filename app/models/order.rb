@@ -68,6 +68,83 @@ class Order < ApplicationRecord
     joins(:work_processes).where(work_processes: { work_process_definition_id: work_process_definition_id }) if work_process_definition_id.present?
   }
 
+
+  ## 織機選択時のバリデーションを行うメソッド
+  def validate_machine_selection(machine_assignments_params, flash)
+    # 整理加工はvalidation不要
+    return true if skip_machine_assignment_validation?
+
+    # machine_assignments_params = update_order_params[:machine_assignments_attributes]
+
+    # 織機が未指定の場合はバリデーションエラー
+    if machine_assignments_params.blank? || machine_assignments_params[0][:machine_id].blank?
+      flash[:alert] = "織機を選択してください"
+      return false
+    end
+
+    selected_machine_id = machine_assignments_params[0][:machine_id].to_i
+    selected_machine = Machine.find_by(id: selected_machine_id)
+
+    # 存在しない織機の場合はskip
+    return true unless selected_machine
+
+    order_machine_type_name = work_processes&.first&.process_estimate&.machine_type&.name
+    selected_machine_type_name = selected_machine.machine_type.name
+
+    # 1. 織機タイプのチェック
+    if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+      # 新しいmachine_typeが一致する場合は変更を許可
+      return true if permit_change_machine_type_same_time(selected_machine_type_name)
+      flash[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
+      return false
+    end
+
+    # 2. 既に割り当てられているかチェック
+    # 他の未完了の受注に同じ織機が割り当てられていないかを確認
+    # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
+    if Order.incomplete.joins(:machine_assignments)
+      .where(machine_assignments: { machine_id: selected_machine_id })
+      .where.not(id: id).exists?
+      flash[:alert] = "選択した織機は既に他の未完了の受注で使用されています。"
+      return false
+    end
+
+
+    # 条件3: machine_status_idが4（使用できない状態）の場合
+    current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
+    # current_machine_status_idが4ならエラーメッセージを表示する例
+    if current_assignment&.machine_status_id == 4
+      flash[:alert] = "選択した織機は現在故障中です。"
+      return false
+    end
+
+    # すべて問題ない場合
+    true # 呼び出し元の処理を続ける
+  end
+
+  # 整理加工では machine_assignment_validationを実施しない
+  def skip_machine_assignment_validation?
+    current_work_process&.work_process_definition&.name == "整理加工"
+  end
+
+  # 同時にmachine_typeが変更される場合は許可
+  def permit_change_machine_type_same_time(selected_machine_type_name)
+    return false unless params[:machine_type_id].present?
+
+    new_machine_type = MachineType.find_by(id: params[:machine_type_id])
+    return false unless new_machine_type && new_machine_type.name == selected_machine_type_name
+
+    work_processes.each do |work_process|
+      process_estimate = ProcessEstimate.find_by(
+        work_process_definition_id: work_process.work_process_definition_id,
+        machine_type_id: new_machine_type.id
+      )
+      work_process.update!(process_estimate: process_estimate)
+    end
+
+    true # 呼び出し元の処理を続ける
+  end
+
   # 注文が1週間以内に作成されたかを判定するメソッド
   def recent?
     created_at >= 1.weeks.ago

@@ -2,8 +2,6 @@ class Admin::OrdersController < ApplicationController
   # 定義された関数の使用
   include ApplicationHelper
   include FlashHelper
-  before_action :order_params, only: [ :update ]
-  before_action :create_order_params, only: [ :create ]
 
   before_action :set_order, only: [ :edit, :show, :update, :destroy ]
   # before_action :work_process_params, only: [:create, :update]
@@ -111,35 +109,47 @@ class Admin::OrdersController < ApplicationController
 
   def update
     # ここで織機の選択条件を検証
-    unless validate_machine_selection
+    unless @order.validate_machine_selection(update_order_params[:machine_assignments_attributes], flash)
       # 条件に合わず更新できない場合はここで処理を終了
+      flash.now[:alert] = "織機を選択してください"
       render :edit and return
     end
 
     ActiveRecord::Base.transaction do
       # パラメータ処理
-      order_work_processes = order_params.except(:machine_assignments_attributes)
+      order_work_processes = update_order_params.except(:machine_assignments_attributes)
       workprocesses_params = order_work_processes[:work_processes_attributes].values
-      machine_type_id = params[:machine_type_id]
+      # machine_type_id = params[:machine_type_id]
 
-      if order_params[:machine_assignments_attributes].present? && order_params[:machine_assignments_attributes].first[:machine_id].present?
-        machine_id = order_params[:machine_assignments_attributes].first[:machine_id]
+      if update_order_params[:machine_assignments_attributes].present? && update_order_params[:machine_assignments_attributes].first[:machine_id].present?
+        machine_id = update_order_params[:machine_assignments_attributes].first[:machine_id]
       else
         machine_id = nil
       end
-      current_work_processes = @order.work_processes
-      machine_assignments_params = order_params[:machine_assignments_attributes]
-      machine_status_id = machine_assignments_params[0][:machine_status_id]
-      # WorkProcess更新処理
-      WorkProcess.update_work_processes(workprocesses_params, current_work_processes, machine_type_id)
+      all_work_processes = @order.work_processes
+      machine_assignments_params = update_order_params[:machine_assignments_attributes]
 
-      # 織機詳細変更した場合
-      if machine_id.present?
-        WorkProcess.change_machine_assignment(@order, machine_id, machine_status_id)
+      # 整理加工は織機更新処理をしないためskip
+      unless @order.skip_machine_assignment_validation?
+        machine_type_id = params[:machine_type_id]
+
+        if machine_assignments_params.present? && machine_assignments_params[0].present?
+          machine_id = machine_assignments_params[0][:machine_id]
+          machine_status_id = machine_assignments_params[0][:machine_status_id]
+
+          # 織機割当を更新
+          WorkProcess.change_machine_assignment(@order, machine_id, machine_status_id)
+        else
+          flash.now[:alert] = "織機割当が不正です"
+          render :edit and return
+        end
       end
 
+      # WorkProcess更新処理
+      WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
+
       # Orderの更新
-      update_order = order_params.except(:machine_assignments_attributes, :work_processes_attributes)
+      update_order = update_order_params.except(:machine_assignments_attributes, :work_processes_attributes)
       if update_order.present?
         @order.update!(update_order)
       end
@@ -310,7 +320,7 @@ class Admin::OrdersController < ApplicationController
     )
   end
 
-  def order_params
+  def update_order_params
     params.require(:order).permit(
       :company_id,
       :product_number_id,
@@ -368,7 +378,7 @@ class Admin::OrdersController < ApplicationController
 
   # MachineAssignmentの存在を確認
   def machine_assignments_present?
-    order_params[:machine_assignments_attributes].present?
+    update_order_params[:machine_assignments_attributes].present?
   end
 
   # machine_assignments_attributesが配列で来た場合にも対応
@@ -439,7 +449,7 @@ class Admin::OrdersController < ApplicationController
     overdue_work_processes = work_processes.where("earliest_estimated_completion_date < ?", Date.today)
                                           .where.not(work_process_status_id: completed_status.id)
 
-    if overdue_work_processes.exists?
+    if overdue_work_processes.exists? # flashメッセージを追加
       flash.now[:alerts] ||= []
       flash.now[:alerts] << {
         title: "以下の作業工程が予定完了日を過ぎており、まだ完了していません。修正がある場合は 編集 を確認ください。",
@@ -453,77 +463,82 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  ## 織機選択時のバリデーションを行うメソッド
-  def validate_machine_selection
-    machine_assignments_params = order_params[:machine_assignments_attributes]
+  # ## 織機選択時のバリデーションを行うメソッド
+  # def validate_machine_selection
+  #   # 整理加工はvalidation不要
+  #   return true if @order.skip_machine_assignment_validation?
 
-    # 織機が未指定の場合はバリデーションエラー
-    if machine_assignments_params.blank? || machine_assignments_params[0][:machine_id].blank?
-      flash.now[:alert] = "織機を選択してください。"
-      return false
-    end
+  #   machine_assignments_params = update_order_params[:machine_assignments_attributes]
 
-    selected_machine_id = machine_assignments_params[0][:machine_id].to_i
-    selected_machine = Machine.find_by(id: selected_machine_id)
+  #   # 織機が未指定の場合はバリデーションエラー
+  #   if machine_assignments_params.blank? || machine_assignments_params[0][:machine_id].blank?
+  #     flash.now[:alert] = "織機を選択してください。"
+  #     return false
+  #   end
 
-    # 存在しない織機の場合は特にチェックしない（別エラーになるはず）
-    return true unless selected_machine
+  #   selected_machine_id = machine_assignments_params[0][:machine_id].to_i
+  #   selected_machine = Machine.find_by(id: selected_machine_id)
 
-    order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
-    selected_machine_type_name = selected_machine.machine_type.name
+  #   # 存在しない織機の場合は特にチェックしない（別エラーになるはず）
+  #   return true unless selected_machine
 
-    # 1. 織機タイプのチェック
-    if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
-      # 新しいmachine_typeが一致する場合は変更を許可
-      return true if permit_change_machine_type_same_time(selected_machine_type_name)
+  #   order_machine_type_name = @order&.work_processes&.first&.process_estimate&.machine_type&.name
+  #   selected_machine_type_name = selected_machine.machine_type.name
 
-      flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
-      return false
-    end
+  #   # 1. 織機タイプのチェック
+  #   if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+  #     # 新しいmachine_typeが一致する場合は変更を許可
+  #     return true if permit_change_machine_type_same_time(selected_machine_type_name)
 
-    # 2. 既に割り当てられているかチェック
-    # 他の未完了の受注に同じ織機が割り当てられていないかを確認
-    # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
-    incomplete_orders_using_machine = Order
-      .incomplete
-      .joins(:machine_assignments)
-      .where(machine_assignments: { machine_id: selected_machine_id })
-      .where.not(id: @order.id) # 自分自身は除外
-    if incomplete_orders_using_machine.exists?
-      flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
-      return false
-    end
+  #     flash.now[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
+  #     return false
+  #   end
 
-    # 条件3: machine_status_idが4（使用できない状態）の場合
-    current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
-    current_machine_status_id = current_assignment&.machine_status_id
-    # binding.irb
-    # current_machine_status_idが4ならエラーメッセージを表示する例
-    if current_machine_status_id == 4
-      flash.now[:alert] = "選択した織機は現在故障中です。別の織機を選択してください。"
-      return false
-    end
+  #   # 2. 既に割り当てられているかチェック
+  #   # 他の未完了の受注に同じ織機が割り当てられていないかを確認
+  #   # 未完了の作業工程がある受注で同じ織機を使用している場合はエラー
+  #   incomplete_orders_using_machine = Order
+  #     .incomplete
+  #     .joins(:machine_assignments)
+  #     .where(machine_assignments: { machine_id: selected_machine_id })
+  #     .where.not(id: @order.id) # 自分自身は除外
+  #   if incomplete_orders_using_machine.exists?
+  #     flash.now[:alert] = "選択した織機は既に他の未完了の受注で使用されています。別の織機を選択してください。"
+  #     return false
+  #   end
 
-    true # 呼び出し元の処理を続ける
-  end
+  #   # 条件3: machine_status_idが4（使用できない状態）の場合
+  #   current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
+  #   current_machine_status_id = current_assignment&.machine_status_id
+  #   # binding.irb
+  #   # current_machine_status_idが4ならエラーメッセージを表示する例
+  #   if current_machine_stunless @order.validate_machine_selectiontus_id == 4
+  #     flunless @order.validate_machine_selectionsh.now[:alert] = "選択した織機は現在故障中です。別の織機を選択してください。"
+  #     return false
+  #   end
 
-  # 同時にmachine_typeが変更される場合は許可
-  def permit_change_machine_type_same_time(selected_machine_type_name)
-    return false unless params[:machine_type_id].present?
+  #   true # 呼び出し元の処理を続ける
+  # end
 
-    new_machine_type = MachineType.find_by(id: params[:machine_type_id])
-    return false unless new_machine_type && new_machine_type.name == selected_machine_type_name
 
-    @order.work_processes.each do |work_process|
-      process_estimate = ProcessEstimate.find_by(
-        work_process_definition_id: work_process.work_process_definition_id,
-        machine_type_id: new_machine_type.id
-      )
-      work_process.update!(process_estimate: process_estimate)
-    end
 
-    true # 呼び出し元の処理を続ける
-  end
+  # # 同時にmachine_typeが変更される場合は許可
+  # def permit_change_machine_type_same_time(selected_machine_type_name)
+  #   return false unless params[:machine_type_id].present?
+
+  #   new_machine_type = MachineType.find_by(id: params[:machine_type_id])
+  #   return false unless new_machine_type && new_machine_type.name == selected_machine_type_name
+
+  #   @order.work_processes.each do |work_process|
+  #     process_estimate = ProcessEstimate.find_by(
+  #       work_process_definition_id: work_process.work_process_definition_id,
+  #       machine_type_id: new_machine_type.id
+  #     )
+  #     work_process.update!(process_estimate: process_estimate)
+  #   end
+
+  #   true # 呼び出し元の処理を続ける
+  # end
 
 
 
