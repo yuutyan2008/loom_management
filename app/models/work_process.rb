@@ -184,29 +184,49 @@ class WorkProcess < ApplicationRecord
     end
   end
 
+  # WorkProcess の更新を担当（元の実装を維持）
+  def apply_work_process_updates
+    order_work_processes = update_order_params.except(:machine_assignments_attributes)
+    workprocesses_params = order_work_processes[:work_processes_attributes].values
+
+    # 織機の種類を決定
+    if update_order_params[:machine_assignments_attributes].present?
+      machine_id = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+      machine_type_id = machine_id.machine_type.id if machine_id.present?
+    else
+      machine_type_id = @order.work_processes.first.process_estimate.machine_type_id if @order.work_processes.any?
+    end
+
+    all_work_processes = @order.work_processes
+
+    # 管理者画面と同じ処理を使用（自動的な開始日調整を含む）
+    WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
+  end
+
+
   # 実際の完了日が入力されたら、現工程と前工程ステータスも完了にする
   # 工程ステータスを完了にしたら、その工程以前実際の完了日の入力がない工程も、最新完了日と同じ日を入力する
 
-    # actual_completion_date がある場合のみ過去工程を完了にする
-    def unify_previous_completion(update_date, completed_id)
+  # actual_completion_date がある場合のみ過去工程を完了にする
+  def unify_previous_completion(update_date, completed_id)
+    # binding.irb
+    target_work_processes = order.work_processes
+      .ordered  # scope
+      .where('work_process_definitions.sequence <= ?', work_process_definition.sequence)
+
+
+    target_work_processes.each do |wp|
+      changes = {}
+      # まだ日付が無い工程だけ埋める
+      changes[:actual_completion_date] = update_date if wp.actual_completion_date.blank?
       # binding.irb
-      target_work_processes = order.work_processes
-        .ordered  # scope
-        .where('work_process_definitions.sequence <= ?', work_process_definition.sequence)
+      # まだ完了でない工程は完了に更新
+      changes[:work_process_status_id] = completed_id if wp.work_process_status_id != completed_id
 
-
-      target_work_processes.each do |wp|
-        changes = {}
-        # まだ日付が無い工程だけ埋める
-        changes[:actual_completion_date] = update_date if wp.actual_completion_date.blank?
-        # binding.irb
-        # まだ完了でない工程は完了に更新
-        changes[:work_process_status_id] = completed_id if wp.work_process_status_id != completed_id
-
-        wp.update!(changes) if changes.any?
-        # binding.irb
-      end
+      wp.update!(changes) if changes.any?
+      # binding.irb
     end
+  end
 
 
 

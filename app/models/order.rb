@@ -145,6 +145,57 @@ class Order < ApplicationRecord
     true # 呼び出し元の処理を続ける
   end
 
+  # 織機割当更新処理
+  def update_machine_assignment(machine_assignments_params)
+    return true if skip_machine_assignment_validation?
+
+    first_row = machine_assignments_params&.first
+    return false unless first_row.present? && first_row[:machine_id].present?
+
+    machine_id        = first_row[:machine_id]
+    machine_status_id = first_row[:machine_status_id]
+
+    WorkProcess.change_machine_assignment(self, machine_id, machine_status_id)
+    true
+  end
+
+
+  # 整理加工になると、作業工程と関連付けられている織機の割当を外す
+  def handle_machine_assignment_updates(machine_assignments_params)
+    target_definition = WorkProcessDefinition.find_by(name: "整理加工")
+
+    # 全ての前工程取得(更新条件として利用のため)
+    pre_work_processes = work_processes
+      .where.not(work_process_definition_id: target_definition&.id)
+
+    # MachineAssignment更新
+    if pre_work_processes.any? && pre_work_processes.all? { |wp| wp.work_process_status_id == 3 }
+      # パラメータのハッシュ形式を配列化、重複のため一行化
+      first_row = machine_assignments_params.first
+      return unless first_row.present? && first_row[:machine_id].present? # フォーム入力値がない場合
+
+      machine_id = first_row[:machine_id].to_i
+
+      # 更新対象のwork_processesのid取得
+      all_work_process_ids = work_processes.pluck(:id)
+
+      # 織機割当を「未割当」状態にリセット
+      MachineAssignment.where(
+        machine_id: machine_id,
+        work_process_id: all_work_process_ids
+      ).update_all(machine_id: nil, machine_status_id: nil)
+    end
+  end
+
+  # order更新
+  def update_order_details(order_params)
+    update_order = order_params.except(:machine_assignments_attributes, :work_processes_attributes)
+
+    update!(update_order) if update_order.present?
+  end
+
+
+
   # 注文が1週間以内に作成されたかを判定するメソッド
   def recent?
     created_at >= 1.weeks.ago

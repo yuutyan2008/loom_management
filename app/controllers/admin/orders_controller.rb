@@ -116,47 +116,25 @@ class Admin::OrdersController < ApplicationController
     end
 
     ActiveRecord::Base.transaction do
-      # パラメータ処理
-      order_work_processes = update_order_params.except(:machine_assignments_attributes)
-      workprocesses_params = order_work_processes[:work_processes_attributes].values
-      # machine_type_id = params[:machine_type_id]
+      # WorkProcessの更新
+      apply_work_process_updates
 
-      if update_order_params[:machine_assignments_attributes].present? && update_order_params[:machine_assignments_attributes].first[:machine_id].present?
-        machine_id = update_order_params[:machine_assignments_attributes].first[:machine_id]
-      else
-        machine_id = nil
-      end
-      all_work_processes = @order.work_processes
-      machine_assignments_params = update_order_params[:machine_assignments_attributes]
-
-      # 整理加工は織機更新処理をしないためskip
+      # 織機割当を更新（整理加工は織機更新処理をスキップ）
       unless @order.skip_machine_assignment_validation?
-        machine_type_id = params[:machine_type_id]
+        machine_assignments_params = update_order_params[:machine_assignments_attributes]
 
-        if machine_assignments_params.present? && machine_assignments_params[0].present?
-          machine_id = machine_assignments_params[0][:machine_id]
-          machine_status_id = machine_assignments_params[0][:machine_status_id]
-
-          # 織機割当を更新
-          WorkProcess.change_machine_assignment(@order, machine_id, machine_status_id)
-        else
+        unless @order.update_machine_assignment(machine_assignments_params)
           flash.now[:alert] = "織機割当が不正です"
           render :edit and return
         end
       end
 
-      # WorkProcess更新処理
-      WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
-
       # Orderの更新
-      update_order = update_order_params.except(:machine_assignments_attributes, :work_processes_attributes)
-      if update_order.present?
-        @order.update!(update_order)
-      end
+      @order.update_order_details(update_order_params)
+
       set_work_process_status_completed
 
-      # handle_machine_assignment_updates if machine_assignments_present?
-
+      @order.handle_machine_assignment_updates(machine_assignments_params) if machine_assignments_present?
     end
     redirect_to admin_order_path(@order), notice: "更新されました。"
 
@@ -299,6 +277,26 @@ class Admin::OrdersController < ApplicationController
 
   private
 
+  # WorkProcess の更新を担当（管理画面用）
+  def apply_work_process_updates
+    # ネストされた作業工程パラメータを抽出
+    order_work_processes = update_order_params.except(:machine_assignments_attributes)
+    workprocesses_params = order_work_processes[:work_processes_attributes]&.values || []
+
+    # 織機タイプを決定
+    if update_order_params[:machine_assignments_attributes].present?
+      machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+      machine_type_id = machine&.machine_type_id
+    else
+      machine_type_id = @order.work_processes.first&.process_estimate&.machine_type_id if @order.work_processes.any?
+    end
+
+    all_work_processes = @order.work_processes
+
+    # 自動開始日調整を含む一括更新
+    WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
+  end
+
   def create_order_params
     params.require(:order).permit(
       :company_id,
@@ -351,13 +349,9 @@ class Admin::OrdersController < ApplicationController
     end
   end
 
-  # def set_work_process
-  #   @work_process = Task.find(params[:id])
+  # def set_product_number
+  #   @product_number = current_user.product_number
   # end
-
-  def set_product_number
-    @product_number = current_user.product_number
-  end
 
   # 一般ユーザがアクセスした場合には一覧画面にリダイレクト
   def admin_user

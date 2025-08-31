@@ -73,7 +73,7 @@ class OrdersController < ApplicationController
     end
   end
 
-  # 修正対象
+
   def update
     # ここで織機の選択条件を検証
     unless @order.validate_machine_selection(update_order_params[:machine_assignments_attributes], flash)
@@ -82,18 +82,31 @@ class OrdersController < ApplicationController
     end
 
     ActiveRecord::Base.transaction do
-      update_work_processes
-      set_work_process_status_completed
-      if machine_assignments_present?
-        update_machine_assignments
-        handle_machine_assignment_updates
+      # WorkProcessの更新
+      apply_work_process_updates
+
+      # 織機割当を更新（整理加工は織機更新処理をスキップ）
+      unless @order.skip_machine_assignment_validation?
+        machine_assignments_params = update_order_params[:machine_assignments_attributes]
+
+        unless @order.update_machine_assignment(machine_assignments_params)
+          flash.now[:alert] = "織機割当が不正です"
+          render :edit and return
+        end
       end
-      update_order_details
+
+      # Orderの更新
+      @order.update_order_details(update_order_params)
+
+      set_work_process_status_completed
+
+      @order.handle_machine_assignment_updates(machine_assignments_params) if machine_assignments_present?
     end
-    redirect_to order_path(@order), notice: "更新されました。"
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
-    flash.now[:alert] = "更新に失敗しました: #{e.message}"
-    Rails.logger.debug "Flash alert set: 更新に失敗しました: #{e.message}"
+    redirect_to admin_order_path(@order), notice: "更新されました。"
+
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    # トランザクション内でエラーが発生した場合はロールバックされる
+    flash[:alert] = "更新に失敗しました: #{e.message}"
     render :edit
   end
 
@@ -185,25 +198,24 @@ class OrdersController < ApplicationController
   #   end
   # end
 
-  # WorkProcess の更新を担当
-  def update_work_processes
-    order_work_processes = update_order_params.except(:machine_assignments_attributes)
-    workprocesses_params = order_work_processes[:work_processes_attributes].values
+  # # WorkProcess の更新を担当
+  # def apply_work_process_updates
+  #   order_work_processes = update_order_params.except(:machine_assignments_attributes)
+  #   workprocesses_params = order_work_processes[:work_processes_attributes].values
 
-    # 織機の種類を決定
-    # machine_type_id = 1 # デフォルト値を設定（ドビー）
-    if update_order_params[:machine_assignments_attributes].present?
-      machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
-      machine_type_id = machine.machine_type.id if machine.present?
-    else
-      machine_type_id = @order.work_processes.first.process_estimate.machine_type_id if @order.work_processes.any?
-    end
+  #   # 織機の種類を決定
+  #   if update_order_params[:machine_assignments_attributes].present?
+  #     machine_id = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+  #     machine_type_id = machine_id.machine_type.id if machine_id.present?
+  #   else
+  #     machine_type_id = @order.work_processes.first.process_estimate.machine_type_id if @order.work_processes.any?
+  #   end
 
-    all_work_processes = @order.work_processes
+  #   all_work_processes = @order.work_processes
 
-    # 管理者画面と同じ処理を使用（自動的な開始日調整を含む）
-    WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
-  end
+  #   # 管理者画面と同じ処理を使用（自動的な開始日調整を含む）
+  #   WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
+  # end
 
   # machine_status_id:1をselect_tagに出さないためのメソッド
   def set_machine_statuses_for_form
@@ -220,40 +232,55 @@ class OrdersController < ApplicationController
     update_order_params[:machine_assignments_attributes].present?
   end
 
-  # MachineAssignmentの更新
-  def update_machine_assignments
-    # MachineAssignmentの更新
-    machine_assignments_params = update_order_params[:machine_assignments_attributes]
-    machine_id = machine_assignments_params[0][:machine_id].to_i
-    machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
-    # フォームで送られた ID に基づき MachineAssignment を取得
-    machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
-    if machine_ids.any?
-      @order.machine_assignments.each do |assignment|
-        assignment.update!(
-          machine_id: machine_id,
-          machine_status_id: machine_status_id
-        )
-      end
+  # WorkProcess の更新を担当（一般画面用）
+  def apply_work_process_updates
+    # ネストされた作業工程パラメータを抽出
+    order_work_processes = update_order_params.except(:machine_assignments_attributes)
+    workprocesses_params = order_work_processes[:work_processes_attributes]&.values || []
+
+    # 織機タイプを決定
+    if update_order_params[:machine_assignments_attributes].present?
+      machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+      machine_type_id = machine&.machine_type_id
     else
-      # 存在しない場合は新規作成し、@order に関連付ける
-      @order.work_processes.each do |work_process|
-        # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
-        ma = MachineAssignment.find_or_initialize_by(
-          work_process_id: work_process.id,
-          machine_id: machine_id,
-          machine_status_id: 2
-        )
-        ma.save!
-      end
+      machine_type_id = @order.work_processes.first&.process_estimate&.machine_type_id if @order.work_processes.any?
     end
+
+    all_work_processes = @order.work_processes
+
+    # 自動開始日調整を含む一括更新
+    WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
   end
 
-  # Order のその他の詳細を更新
-  def update_order_details
-    update_order = update_order_params.except(:machine_assignments_attributes, :work_processes_attributes)
-    @order.update!(update_order) if update_order.present?
-  end
+  # # MachineAssignmentの更新
+  # def update_machine_assignments
+  #   # MachineAssignmentの更新
+  #   machine_assignments_params = update_order_params[:machine_assignments_attributes]
+  #   machine_id = machine_assignments_params[0][:machine_id].to_i
+  #   machine_status_id = machine_assignments_params[0][:machine_status_id].to_i
+  #   # フォームで送られた ID に基づき MachineAssignment を取得
+  #   machine_ids = @order.work_processes.joins(:machine_assignments).pluck('machine_assignments.machine_id').uniq
+  #   if machine_ids.any?
+  #     @order.machine_assignments.each do |assignment|
+  #       assignment.update!(
+  #         machine_id: machine_id,
+  #         machine_status_id: machine_status_id
+  #       )
+  #     end
+  #   else
+  #     # 存在しない場合は新規作成し、@order に関連付ける
+  #     @order.work_processes.each do |work_process|
+  #       # ここでfind_or_initialize_byを利用して同一work_process_idでの重複作成を防ぐ
+  #       ma = MachineAssignment.find_or_initialize_by(
+  #         work_process_id: work_process.id,
+  #         machine_id: machine_id,
+  #         machine_status_id: 2
+  #       )
+  #       ma.save!
+  #     end
+  #   end
+  # end
+
 
   # machine_assignments_attributesが配列で来た場合にも対応
   def sanitize_machine_assignments_params
@@ -272,48 +299,49 @@ class OrdersController < ApplicationController
     end
   end
 
-  def handle_machine_assignment_updates
-    relevant_work_process_definition_ids = [1, 2, 3, 4]
-    # 対象のWorkProcess群を取得
-    relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
-    target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
-    # 条件: 全てがstatus_id=3の場合のみ処理
-    if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
-      machine_id = update_order_params[:machine_assignments_attributes][0][:machine_id].to_i
-      if machine_id.present?
-        # 全WorkProcessを取得(5などその他も含む場合)
-        all_work_process_ids = @order.work_processes.pluck(:id)
-        # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
-        MachineAssignment.where(
-          machine_id: machine_id,
-          work_process_id: all_work_process_ids
-        ).update_all(machine_id: nil, machine_status_id: nil)
-        # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
-        # 既存があればそれを使い、新たなcreateは行わない
-        assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
-        if assignment.new_record?
-          # 新規の場合のみ作成
-          assignment.machine_status_id = 1
-          assignment.save!
-        end
-      end
-    end
-  end
+  ### 共通処理のためorderモデルに移動 ###
+  # def handle_machine_assignment_updates
+  #   relevant_work_process_definition_ids = [1, 2, 3, 4]
+  #   # 対象のWorkProcess群を取得
+  #   relevant_work_processes = @order.work_processes.where(work_process_definition_id: relevant_work_process_definition_ids)
+  #   target_work_processes = relevant_work_processes.where(work_process_status_id: 3)
+  #   # 条件: 全てがstatus_id=3の場合のみ処理
+  #   if relevant_work_processes.count == target_work_processes.count && relevant_work_processes.count > 0
+  #     machine_id = update_order_params[:machine_assignments_attributes][0][:machine_id].to_i
+  #     if machine_id.present?
+  #       # 全WorkProcessを取得(5などその他も含む場合)
+  #       all_work_process_ids = @order.work_processes.pluck(:id)
+  #       # 既存の該当machine_idに紐づく全WorkProcessのMachineAssignmentを未割り当て状態に戻す
+  #       MachineAssignment.where(
+  #         machine_id: machine_id,
+  #         work_process_id: all_work_process_ids
+  #       ).update_all(machine_id: nil, machine_status_id: nil)
+  #       # work_process_idがnil、machine_idが同一のMachineAssignmentがあるか確認
+  #       # 既存があればそれを使い、新たなcreateは行わない
+  #       assignment = MachineAssignment.find_or_initialize_by(machine_id: machine_id, work_process_id: nil)
+  #       if assignment.new_record?
+  #         # 新規の場合のみ作成
+  #         assignment.machine_status_id = 1
+  #         assignment.save!
+  #       end
+  #     end
+  #   end
+  # end
 
-  # 工程ステータスを完了にすると、現工程以前のステータスも完了に更新し、日付も自動入力、または入力値を反映させる
-  def set_work_process_status_completed
-    # binding.irb
-    completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
+  # # 工程ステータスを完了にすると、現工程以前のステータスも完了に更新し、日付も自動入力、または入力値を反映させる
+  # def set_work_process_status_completed
+  #   # binding.irb
+  #   completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
 
-    @order.work_processes.each do |work_process|
-      status_completed   = (work_process.work_process_status_id == completed_id) # ステータスを完了に変更した場合
-      date_inputed = work_process.actual_completion_date if work_process.actual_completion_date.present? # 完了日付を入力した場合
+  #   @order.work_processes.each do |work_process|
+  #     status_completed   = (work_process.work_process_status_id == completed_id) # ステータスを完了に変更した場合
+  #     date_inputed = work_process.actual_completion_date if work_process.actual_completion_date.present? # 完了日付を入力した場合
 
-      next unless status_completed || date_inputed
-      update_date = date_inputed ? work_process.actual_completion_date : Date.current
-      work_process.unify_previous_completion(update_date, completed_id)
-      end
-  end
+  #     next unless status_completed || date_inputed
+  #     update_date = date_inputed ? work_process.actual_completion_date : Date.current
+  #     work_process.unify_previous_completion(update_date, completed_id)
+  #     end
+  # end
 
 
   # ↓↓ フラッシュメッセージを出すのに必要なメソッド ↓↓
