@@ -150,10 +150,8 @@ class Order < ApplicationRecord
 
   # 同時にmachine_typeが変更される場合は許可
   def permit_change_machine_type_same_time(selected_machine_type_name)
-    return false unless params[:machine_type_id].present?
-
-    new_machine_type = MachineType.find_by(id: params[:machine_type_id])
-    return false unless new_machine_type && new_machine_type.name == selected_machine_type_name
+    new_machine_type = MachineType.find_by(name: selected_machine_type_name)
+    return false unless new_machine_type
 
     work_processes.each do |work_process|
       process_estimate = ProcessEstimate.find_by(

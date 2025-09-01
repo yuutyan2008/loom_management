@@ -184,26 +184,6 @@ class WorkProcess < ApplicationRecord
     end
   end
 
-  # # WorkProcess の更新を担当（元の実装を維持）
-  # def apply_work_process_updates
-  #   order_work_processes = update_order_params.except(:machine_assignments_attributes)
-  #   workprocesses_params = order_work_processes[:work_processes_attributes].values
-
-  #   # 織機の種類を決定
-  #   if update_order_params[:machine_assignments_attributes].present?
-  #     machine_id = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
-  #     machine_type_id = machine_id.machine_type.id if machine_id.present?
-  #   else
-  #     machine_type_id = @order.work_processes.first.process_estimate.machine_type_id if @order.work_processes.any?
-  #   end
-
-  #   all_work_processes = @order.work_processes
-
-  #   # 管理者画面と同じ処理を使用（自動的な開始日調整を含む）
-  #   WorkProcess.update_work_processes(workprocesses_params, all_work_processes, machine_type_id)
-  # end
-
-
 
   # 実際の完了日が入力されたら、現工程と前工程ステータスも完了にする
   # 工程ステータスを完了にしたら、その工程以前実際の完了日の入力がない工程も、最新完了日と同じ日を入力する
@@ -312,43 +292,4 @@ class WorkProcess < ApplicationRecord
       end
     end
   end
-
-
-##### 削除理由：全WorkProcessレコードを対象にしていた問題解消のため
-##### Orderモデルに移動させ、Associationを利用した関連レコードの取得を容易にした
-  # 現在作業中の作業工程を取得するスコープ
-  # def self.current_work_process
-  #   # 最新の「作業完了」ステータスの作業工程を取得
-  #   latest_completed_wp = joins(:work_process_status)
-  #                           .where(work_process_statuses: { name: '作業完了' })
-  #                           .order(start_date: :desc)
-  #                           .first
-
-  #   if latest_completed_wp
-  #     # 最新の「作業完了」より後の作業工程を取得
-  #     select('work_processes.*')
-  #       .where('start_date > ?', latest_completed_wp.start_date)
-  #       .order(:start_date)
-  #       .first
-  #   else
-  #     # 「作業完了」がない場合、最も古い作業工程を取得
-  #     select('work_processes.*')
-  #       .order(:start_date)
-  #       .first
-  #   end
-  # end
-#####
-
-
-
-  # private
-
-  # # 更新時のバリデーション
-  # def actual_completion_date_presence_if_completed
-  #   completed_status_id = WorkProcessStatus.find_by(name: "作業完了")&.id
-  #   if work_process_status_id == completed_status_id && actual_completion_date.blank?
-
-  #     errors.add(:actual_completion_date, "完了日が入力されていません")
-  #   end
-  # end
 end
