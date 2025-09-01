@@ -117,11 +117,11 @@ class Admin::OrdersController < ApplicationController
 
     ActiveRecord::Base.transaction do
       # WorkProcessの更新
-      apply_work_process_updates
+      @order.apply_work_process_updates(update_order_params)
 
+      machine_assignments_params = update_order_params[:machine_assignments_attributes]
       # 織機割当を更新（整理加工は織機更新処理をスキップ）
       unless @order.skip_machine_assignment_validation?
-        machine_assignments_params = update_order_params[:machine_assignments_attributes]
 
         unless @order.update_machine_assignment(machine_assignments_params)
           flash.now[:alert] = "織機割当が不正です"
@@ -132,7 +132,7 @@ class Admin::OrdersController < ApplicationController
       # Orderの更新
       @order.update_order_details(update_order_params)
 
-      set_work_process_status_completed
+      @order.set_work_process_status_completed
 
       @order.handle_machine_assignment_updates(machine_assignments_params) if machine_assignments_present?
     end
@@ -393,20 +393,19 @@ class Admin::OrdersController < ApplicationController
   end
 
 
-  # 工程ステータスを完了にすると、現工程以前のステータスも完了に更新し、日付も自動入力、または入力値を反映させる
-  def set_work_process_status_completed
-    # binding.irb
-    completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
+  # # 工程ステータスを完了にすると、現工程以前のステータスも完了に更新し、日付も自動入力、または入力値を反映させる
+  # def set_work_process_status_completed
+  #   completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
 
-    @order.work_processes.each do |work_process|
-      status_completed   = (work_process.work_process_status_id == completed_id) # ステータスを完了に変更した場合
-      date_inputed = work_process.actual_completion_date if work_process.actual_completion_date.present? # 完了日付を入力した場合
+  #   @order.work_processes.each do |work_process|
+  #     status_completed   = (work_process.work_process_status_id == completed_id) # ステータスを完了に変更した場合
+  #     date_inputed = work_process.actual_completion_date if work_process.actual_completion_date.present? # 完了日付を入力した場合
 
-      next unless status_completed || date_inputed
-      update_date = date_inputed ? work_process.actual_completion_date : Date.current
-      work_process.unify_previous_completion(update_date, completed_id)
-      end
-  end
+  #     next unless status_completed || date_inputed
+  #     update_date = date_inputed ? work_process.actual_completion_date : Date.current
+  #     work_process.unify_previous_completion(update_date, completed_id)
+  #     end
+  # end
 
 
 

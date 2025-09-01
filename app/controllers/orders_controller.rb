@@ -83,11 +83,11 @@ class OrdersController < ApplicationController
 
     ActiveRecord::Base.transaction do
       # WorkProcessの更新
-      apply_work_process_updates
+      @order.apply_work_process_updates(update_order_params)
 
+      machine_assignments_params = update_order_params[:machine_assignments_attributes]
       # 織機割当を更新（整理加工は織機更新処理をスキップ）
       unless @order.skip_machine_assignment_validation?
-        machine_assignments_params = update_order_params[:machine_assignments_attributes]
 
         unless @order.update_machine_assignment(machine_assignments_params)
           flash.now[:alert] = "織機割当が不正です"
@@ -98,11 +98,12 @@ class OrdersController < ApplicationController
       # Orderの更新
       @order.update_order_details(update_order_params)
 
-      set_work_process_status_completed
+      @order.set_work_process_status_completed
+
 
       @order.handle_machine_assignment_updates(machine_assignments_params) if machine_assignments_present?
     end
-    redirect_to admin_order_path(@order), notice: "更新されました。"
+    redirect_to order_path(@order), notice: "更新されました。"
 
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     # トランザクション内でエラーが発生した場合はロールバックされる

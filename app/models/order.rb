@@ -122,6 +122,27 @@ class Order < ApplicationRecord
     true # 呼び出し元の処理を続ける
   end
 
+
+  def apply_work_process_updates(update_order_params)
+    # ネストされた作業工程パラメータを抽出
+    order_work_processes = update_order_params.except(:machine_assignments_attributes)
+    workprocesses_params = order_work_processes[:work_processes_attributes]&.values
+
+    # 織機タイプを決定
+    machine_type_id =
+      if update_order_params[:machine_assignments_attributes].present?
+        machine = Machine.find_by(id: update_order_params[:machine_assignments_attributes][0][:machine_id])
+        machine&.machine_type_id
+      else
+
+        work_processes.first&.process_estimate&.machine_type_id
+      end
+
+    # 自動開始日調整を含む一括更新
+    WorkProcess.update_work_processes(workprocesses_params, work_processes, machine_type_id)
+  end
+
+
   # 整理加工では machine_assignment_validationを実施しない
   def skip_machine_assignment_validation?
     current_work_process&.work_process_definition&.name == "整理加工"
@@ -194,6 +215,18 @@ class Order < ApplicationRecord
     update!(update_order) if update_order.present?
   end
 
+  def set_work_process_status_completed
+    completed_id = WorkProcessStatus.find_by!(name: "作業完了").id
+
+    work_processes.each do |wp|
+      status_completed = (wp.work_process_status_id == completed_id)
+      date_inputed = wp.actual_completion_date
+      next unless status_completed || date_inputed.present?
+
+      update_date = date_inputed.present? ? date_inputed : Date.current
+      wp.unify_previous_completion(update_date, completed_id)
+    end
+  end
 
 
   # 注文が1週間以内に作成されたかを判定するメソッド
