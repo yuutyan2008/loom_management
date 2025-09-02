@@ -40,7 +40,7 @@
           <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
           <td class="w-2/3 px-4 py-2 text-gray-900 bg-white">
             <% machine_type_name = @order.work_processes.joins(process_estimate: :machine_type).pluck("machine_types.id").uniq %>
-            <%= select_tag :machine_type_id,
+            <%= select_tag "order[machine_type_id]",
                           options_from_collection_for_select(MachineType.all, :id, :name, machine_type_name) %>
           </td>
         </tr>
