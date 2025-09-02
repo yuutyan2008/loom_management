@@ -108,14 +108,15 @@ class Admin::OrdersController < ApplicationController
   end
 
   def update
+    machine_assignments_params = update_order_params[:machine_assignments_attributes]
+    selected_machine_type_id = update_order_params[:machine_type_id] # 現在の織機の種類に変更がある場合値が入る
+
     # ここで織機の選択条件を検証
-    unless @order.validate_machine_selection(update_order_params[:machine_assignments_attributes], flash)
-      # 条件に合わず更新できない場合はここで処理を終了
-      flash.now[:alert] = "織機を選択してください"
-      render :edit and return
+    unless @order.validate_machine_selection(machine_assignments_params, new_machine_type_id: selected_machine_type_id)
+      flash.now[:alert] = "織機の種類と織機が一致しません"
+      return render :edit
     end
 
-    machine_assignments_params = update_order_params[:machine_assignments_attributes]
     # 現在の工程が整理加工の場合
     skip_ma = @order.skip_machine_assignment_validation?
 
@@ -123,7 +124,6 @@ class Admin::OrdersController < ApplicationController
       # WorkProcessの更新
       @order.apply_work_process_updates(update_order_params)
 
-      # machine_assignments_params = update_order_params[:machine_assignments_attributes]
       # 織機割当を更新（整理加工は織機更新処理をスキップ）
       unless skip_ma
         unless @order.update_machine_assignment(machine_assignments_params)
@@ -327,6 +327,7 @@ class Admin::OrdersController < ApplicationController
       :color_number_id,
       :roll_count,
       :quantity,
+      :machine_type_id,
       machine_assignments_attributes: [:id, :machine_id, :machine_status_id],
       # process_estimate_attributes: [:machine_type_id],
       work_processes_attributes: [ # accepts_nested_attributes_forに対応

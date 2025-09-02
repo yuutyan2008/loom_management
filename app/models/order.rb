@@ -70,15 +70,12 @@ class Order < ApplicationRecord
 
 
   ## 織機選択時のバリデーションを行うメソッド
-  def validate_machine_selection(machine_assignments_params, flash)
+  def validate_machine_selection(machine_assignments_params, new_machine_type_id: nil)
     # 整理加工はvalidation不要
     return true if skip_machine_assignment_validation?
 
-    # machine_assignments_params = update_order_params[:machine_assignments_attributes]
-
     # 織機が未指定の場合はバリデーションエラー
     if machine_assignments_params.blank? || machine_assignments_params[0][:machine_id].blank?
-      flash[:alert] = "織機を選択してください"
       return false
     end
 
@@ -88,15 +85,21 @@ class Order < ApplicationRecord
     # 存在しない織機の場合はskip
     return true unless selected_machine
 
-    order_machine_type_name = work_processes&.first&.process_estimate&.machine_type&.name
-    selected_machine_type_name = selected_machine.machine_type.name
+    if new_machine_type_id.present?
+      # 現在の織機の種類に変更がある場合は、まず種類と織機の一致をチェック
+      return false if selected_machine.machine_type_id != new_machine_type_id.to_i
+    else
+      # 現在の織機の種類に変更がない場合
+      # 1. 織機タイプの不一致チェック
+      order_machine_type_name = work_processes&.first&.process_estimate&.machine_type&.name
+      selected_machine_type_name = selected_machine.machine_type.name
 
-    # 1. 織機タイプのチェック
-    if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
-      # 新しいmachine_typeが一致する場合は変更を許可
-      return true if permit_change_machine_type_same_time(selected_machine_type_name)
-      flash[:alert] = "織機のタイプが異なります。別の織機を選択してください。"
-      return false
+      # 登録済み織機と選択が異なる場合、登録済み織機を変更し、織機を割り当てる場合
+      if order_machine_type_name.present? && order_machine_type_name != selected_machine_type_name
+        # 新しいmachine_typeが一致する場合は変更を許可
+        return true if permit_change_machine_type_same_time(selected_machine_type_name)
+        return false
+      end
     end
 
     # 2. 既に割り当てられているかチェック
@@ -105,7 +108,6 @@ class Order < ApplicationRecord
     if Order.incomplete.joins(:machine_assignments)
       .where(machine_assignments: { machine_id: selected_machine_id })
       .where.not(id: id).exists?
-      flash[:alert] = "選択した織機は既に他の未完了の受注で使用されています。"
       return false
     end
 
@@ -114,7 +116,6 @@ class Order < ApplicationRecord
     current_assignment = selected_machine.machine_assignments.order(created_at: :desc).first
     # current_machine_status_idが4ならエラーメッセージを表示する例
     if current_assignment&.machine_status_id == 4
-      flash[:alert] = "選択した織機は現在故障中です。"
       return false
     end
 
@@ -208,7 +209,8 @@ class Order < ApplicationRecord
 
   # order更新
   def update_order_details(order_params)
-    update_order = order_params.except(:machine_assignments_attributes, :work_processes_attributes)
+    # machine_type_id は Order のカラムではないため除外
+    update_order = order_params.except(:machine_assignments_attributes, :work_processes_attributes, :machine_type_id)
 
     update!(update_order) if update_order.present?
   end

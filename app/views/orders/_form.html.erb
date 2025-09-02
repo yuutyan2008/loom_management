@@ -28,7 +28,8 @@
                     </tr>
                     <tr class="bg-gray-100 border-b">
                         <th class="w-1/3 px-4 py-2 text-center text-gray-700">織機の種類</th>
-                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><%= @order&.work_processes&.first&.process_estimate&.machine_type&.name || 'N/A' %></td>
+                        <td class="w-2/3 px-4 py-2 text-gray-900 bg-white"><% current_machine_type_ids = @order.work_processes.joins(process_estimate: :machine_type).pluck("machine_types.id").uniq %>
+                        <%= select_tag "order[machine_type_id]", options_from_collection_for_select(MachineType.all, :id, :name, current_machine_type_ids.first), class: "form-control" %>
                     </tr>
                 </tbody>
             </table>
