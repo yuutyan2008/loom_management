@@ -106,5 +106,6 @@ Rails.application.configure do
     # 許可するホスト名を追加
   config.hosts << "looma.jp"
   config.hosts << "www.looma.jp"
+  config.hosts << "loom-management.onrender.com"
 
 end
