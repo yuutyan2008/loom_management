@@ -134,10 +134,8 @@
 
 ### アクセス方法
 
-※ アクセス可能時間 9:00~21:00
-
 ```
-https://looma.jp
+https://loom-management.onrender.com/
 ```
 
 ## デモアカウント
@@ -206,8 +204,6 @@ https://looma.jp
 
 ## 付属資料
 
-
 アプリに関する詳細説明は下記をご参照ください
 
 https://www.canva.com/design/DAGV0WAuMqg/TigRgRj8cPy0KLoFw7Wpow/edit
-
