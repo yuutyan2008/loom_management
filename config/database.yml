@@ -18,5 +18,5 @@ test:
 production:
   <<: *default
   database: <%= ENV.fetch("DB_NAME", "looma_db") %>
-  ssl_mode: verify_identity
-  sslca: /etc/ssl/cert.pem
+  ssl_mode: verify_ca
+  sslca: /etc/ssl/certs/ca-certificates.crt
