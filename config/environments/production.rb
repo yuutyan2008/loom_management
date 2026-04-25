@@ -104,8 +104,7 @@ Rails.application.configure do
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 
     # 許可するホスト名を追加
-  config.hosts << "looma.jp"
-  config.hosts << "www.looma.jp"
-  config.hosts << "loom-management.onrender.com"
+  config.hosts << "loom-management-1m5z.onrender.com"
+
 
 end
