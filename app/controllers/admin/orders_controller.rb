@@ -91,8 +91,11 @@ class Admin::OrdersController < ApplicationController
   end
 
   def show
-    @work_process = @order.work_processes.ordered
-    @machines = @work_process.map { |work_process| work_process.machines}.flatten.uniq
+    @work_process = WorkProcess.includes(:work_process_definition, :work_process_status)
+                              .where(order_id: @order.id)
+                              .joins(:work_process_definition)
+                              .order('work_process_definitions.sequence')
+    @machines = @work_process.flat_map(&:machines).uniq
     # 追加: 遅延している作業工程のチェック
     check_overdue_work_processes_show(@order.work_processes)
   end
@@ -102,7 +105,7 @@ class Admin::OrdersController < ApplicationController
       Rails.logger.debug "注文が見つかりません"
     end
     # orderedスコープで並び替えて取得
-    @work_processes = @order.work_processes.ordered
+    @work_processes = @order.work_processes
 
     @work_processes.map { |work_process| work_process.machines }.flatten.uniq
   end

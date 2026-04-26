@@ -11,22 +11,19 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[7.2].define(version: 2024_12_26_101814) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
-
-  create_table "color_numbers", force: :cascade do |t|
+  create_table "color_numbers", charset: "utf8mb4", force: :cascade do |t|
     t.string "color_code"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "companies", force: :cascade do |t|
+  create_table "companies", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "machine_assignments", force: :cascade do |t|
+  create_table "machine_assignments", charset: "utf8mb4", force: :cascade do |t|
     t.bigint "work_process_id"
     t.bigint "machine_id"
     t.bigint "machine_status_id"
@@ -37,19 +34,19 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_26_101814) do
     t.index ["work_process_id"], name: "index_machine_assignments_on_work_process_id"
   end
 
-  create_table "machine_statuses", force: :cascade do |t|
+  create_table "machine_statuses", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "machine_types", force: :cascade do |t|
+  create_table "machine_types", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "machines", force: :cascade do |t|
+  create_table "machines", charset: "utf8mb4", force: :cascade do |t|
     t.bigint "machine_type_id"
     t.bigint "company_id"
     t.string "name"
@@ -59,7 +56,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_26_101814) do
     t.index ["machine_type_id"], name: "index_machines_on_machine_type_id"
   end
 
-  create_table "orders", force: :cascade do |t|
+  create_table "orders", charset: "utf8mb4", force: :cascade do |t|
     t.bigint "company_id"
     t.bigint "product_number_id"
     t.bigint "color_number_id"
@@ -72,7 +69,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_26_101814) do
     t.index ["product_number_id"], name: "index_orders_on_product_number_id"
   end
 
-  create_table "process_estimates", force: :cascade do |t|
+  create_table "process_estimates", charset: "utf8mb4", force: :cascade do |t|
     t.bigint "work_process_definition_id"
     t.bigint "machine_type_id"
     t.integer "earliest_completion_estimate"
@@ -84,13 +81,13 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_26_101814) do
     t.index ["work_process_definition_id"], name: "index_process_estimates_on_work_process_definition_id"
   end
 
-  create_table "product_numbers", force: :cascade do |t|
+  create_table "product_numbers", charset: "utf8mb4", force: :cascade do |t|
     t.string "number"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "users", force: :cascade do |t|
+  create_table "users", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.string "email"
     t.string "phone_number"
@@ -102,20 +99,20 @@ ActiveRecord::Schema[7.2].define(version: 2024_12_26_101814) do
     t.index ["company_id"], name: "index_users_on_company_id"
   end
 
-  create_table "work_process_definitions", force: :cascade do |t|
+  create_table "work_process_definitions", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.integer "sequence"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "work_process_statuses", force: :cascade do |t|
+  create_table "work_process_statuses", charset: "utf8mb4", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "work_processes", force: :cascade do |t|
+  create_table "work_processes", charset: "utf8mb4", force: :cascade do |t|
     t.bigint "order_id"
     t.bigint "process_estimate_id"
     t.bigint "work_process_status_id"
